@@ -10,7 +10,7 @@ pnpm monorepo:
 | Path              | What                                              |
 | ----------------- | ------------------------------------------------- |
 | `apps/api`        | NestJS API and BullMQ worker (not yet added)      |
-| `apps/web`        | Vue 3 + Vite recruiter app (not yet added)        |
+| `apps/web`        | Vue 3 + Vite recruiter app ([README](apps/web))   |
 | `packages/shared` | `@ats/shared` — Zod schemas shared by api and web |
 
 ## Getting started
