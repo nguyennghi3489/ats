@@ -137,22 +137,39 @@ async function build(issue) {
   return { number: n, status: 'pr-open', pr: pr.url }
 }
 
+const DASHBOARD = 'https://claude.ai/artifact/P8Fx5fYRdF9LmVEK4zomYC'
+const mode = opts.plan === false ? 'build' : opts.build === false ? 'plan' : 'plan+build'
+let created = 0
+
+// One row per run in the "ATS Agent Runs" dashboard (collection `runs`).
+async function finish(built) {
+  const row = { mode, planned: created, built, tokens: budget.spent() }
+  if (budget.total) row.budget = budget.total
+  log(`${Math.round(budget.spent() / 1000)}k output tokens this run` + (budget.total ? ` of ${Math.round(budget.total / 1000)}k budget` : ''))
+  const ok = await agent(
+    `Log this coordinator run to the dashboard. Load the ArtifactData tool with ToolSearch ("select:ArtifactData") if needed. ` +
+      `Get the current UTC time with \`date -u +%Y-%m-%dT%H:%M:%SZ\`. Then call ArtifactData with action "set", url "${DASHBOARD}", ` +
+      `collection "runs", doc_id "run-<that time with ':' replaced by '-'>", and data = this object plus "at": <that time>:\n` +
+      md(row) + `\nIf ArtifactData is not available here, reply "not logged" and do nothing else. Otherwise reply "logged".`,
+    { label: 'log run to dashboard', phase: 'Ship', effort: 'low' },
+  )
+  if (!ok || !/^logged/i.test(ok.trim())) log(`Run not logged to the dashboard (${ok || 'no reply'}).`)
+  return { built, planned: created, tokens: budget.spent() }
+}
+
 if (opts.plan !== false) {
   phase('Plan')
   const planned = await agent(
     `You are the triage agent; follow .claude/agents/triage.md, section "Filling the review queue". ` +
       `Top up the open needs-review issues to at most 10 with the next small, parallel issues from docs/roadmap.md. ` +
-      `Reply with one line per issue as triage.md says, or "queue full" / "roadmap covered".`,
-    { label: 'triage: fill review queue', phase: 'Plan', agentType: 'triage' },
+      `Return how many issues you created and the reply lines triage.md asks for (or "queue full" / "roadmap covered").`,
+    { label: 'triage: fill review queue', phase: 'Plan', agentType: 'triage', schema: {
+      type: 'object', properties: { created: { type: 'number' }, report: { type: 'string' } }, required: ['created', 'report'] } },
   )
-  log(planned || 'Triage did not return.')
+  created = planned ? planned.created : 0
+  log(planned ? planned.report : 'Triage did not return.')
 }
-const tokens = () => `${Math.round(budget.spent() / 1000)}k output tokens this run` +
-  (budget.total ? ` of ${Math.round(budget.total / 1000)}k budget` : '')
-if (opts.build === false) {
-  log(tokens())
-  return { planned: true, tokens: budget.spent() }
-}
+if (opts.build === false) return finish([])
 
 phase('Pick')
 const picked = await agent(
@@ -173,8 +190,7 @@ if (picked && picked.stale && picked.stale.length) {
 const queue = picked ? picked.issues : []
 if (!queue.length) {
   log('No agent:ready issue with closed blockers. Nothing to build.')
-  log(tokens())
-  return { built: [], tokens: budget.spent() }
+  return finish([])
 }
 log(`Building ${queue.map((i) => '#' + i.number).join(', ')} (${PARALLEL} at a time)`)
 
@@ -182,6 +198,6 @@ const results = []
 for (let i = 0; i < queue.length; i += PARALLEL) {
   const batch = await parallel(queue.slice(i, i + PARALLEL).map((issue) => () => build(issue)))
   batch.forEach((r, j) => results.push(r || { number: queue[i + j].number, status: 'crashed' }))
-  log(`after ${results.length}/${queue.length} issues: ${tokens()}`)
+  log(`after ${results.length}/${queue.length} issues: ${Math.round(budget.spent() / 1000)}k output tokens so far`)
 }
-return { built: results, tokens: budget.spent() }
+return finish(results)
