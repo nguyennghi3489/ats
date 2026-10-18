@@ -21,6 +21,19 @@ jobs:
     name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # The API worker tests run real BullMQ jobs, so they need a live Redis (same image as docker-compose.yml).
+    services:
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+    env:
+      REDIS_URL: redis://127.0.0.1:6379
     steps:
       - name: Checkout
         uses: actions/checkout@v7
