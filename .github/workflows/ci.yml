@@ -1,6 +1,7 @@
 # Lint, typecheck, unit tests and build on every PR and every push to main.
 # Playwright E2E against the Compose services in its own job.
-# Image builds, integration jobs and deploy are added by their own issues (decisions §14).
+# Docker images are built (not pushed) and smoke-tested in the `images` job.
+# Integration jobs and deploy are added by their own issues (decisions §14).
 name: CI
 
 on:
@@ -115,3 +116,81 @@ jobs:
       - name: Stop Compose services
         if: always()
         run: docker compose down -v
+
+  images:
+    name: Docker images
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Built and loaded into the runner's Docker only; pushing to a registry is the deploy issue (roadmap step 17).
+      # Layers are cached in the GitHub Actions cache, one scope per image.
+      - name: Build API image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          tags: ats-api:ci
+          load: true
+          push: false
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+      - name: Build web image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          tags: ats-web:ci
+          load: true
+          push: false
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+      - name: Start containers
+        run: |
+          docker network create ats-ci
+          docker run -d --name redis --network ats-ci redis:8-alpine
+          docker run -d --init --name api --network ats-ci -p 127.0.0.1:3000:3000 \
+            -e REDIS_URL=redis://redis:6379 ats-api:ci
+          docker run -d --init --name worker --network ats-ci \
+            -e REDIS_URL=redis://redis:6379 ats-api:ci node dist/main.worker.js
+          docker run -d --name web -p 127.0.0.1:8080:8080 ats-web:ci
+
+      - name: API answers /health
+        run: |
+          for _ in $(seq 30); do curl -fsS http://127.0.0.1:3000/health && exit 0; sleep 1; done
+          exit 1
+
+      - name: Worker processes a ping job
+        run: |
+          docker run --rm --network ats-ci -e REDIS_URL=redis://redis:6379 ats-api:ci \
+            node dist/queue/enqueue-ping.js
+          for _ in $(seq 30); do docker logs worker 2>&1 | grep -q '"ping processed"' && exit 0; sleep 1; done
+          exit 1
+
+      - name: Web serves the app and deep links
+        run: |
+          for _ in $(seq 30); do curl -fsS -o /dev/null http://127.0.0.1:8080/ && break; sleep 1; done
+          curl -fsS http://127.0.0.1:8080/ | grep -q '<div id="app">'
+          curl -fsS http://127.0.0.1:8080/jobs/123 | grep -q '<div id="app">'
+
+      - name: Containers run as non-root
+        run: |
+          for name in api worker web; do
+            uid=$(docker exec "$name" id -u)
+            echo "$name uid=$uid"
+            [ "$uid" != 0 ]
+          done
+
+      - name: Container logs
+        if: failure()
+        run: |
+          for name in redis api worker web; do echo "::group::$name"; docker logs "$name" || true; echo "::endgroup::"; done
