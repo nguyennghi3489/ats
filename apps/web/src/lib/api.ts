@@ -4,6 +4,7 @@
  * The API answers errors with a `{ code, message }` body (decisions §12). The `code` is what the app
  * branches on and translates; `message` is a developer hint and is never shown to users.
  */
+import { translateError } from '../i18n/errors';
 
 /** Client-side codes for failures that never produced an API error body. */
 export const CLIENT_ERROR_CODES = {
@@ -25,6 +26,11 @@ export class ApiError extends Error {
     options?: { cause?: unknown },
   ) {
     super(message ?? code, options);
+  }
+
+  /** User-facing text for this error in the active locale; never the raw code or API message. */
+  translate(): string {
+    return translateError(this.code);
   }
 }
 

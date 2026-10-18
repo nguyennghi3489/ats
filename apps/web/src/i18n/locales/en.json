@@ -1,0 +1,25 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "retry": "Try again",
+    "loading": "Loading…"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "The page you are looking for does not exist or you do not have access to it.",
+    "backHome": "Back to home"
+  },
+  "errors": {
+    "unknown": "Something went wrong. Please try again.",
+    "NETWORK_ERROR": "Could not reach the server. Check your connection and try again.",
+    "INTERNAL_ERROR": "The server ran into a problem. Please try again later.",
+    "NOT_FOUND": "Not found.",
+    "WORKSPACE_ACCESS_REVOKED": "You no longer have access to this workspace."
+  }
+}

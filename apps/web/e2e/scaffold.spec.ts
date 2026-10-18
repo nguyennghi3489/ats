@@ -24,7 +24,7 @@ test.describe('web scaffold', () => {
 
   test('the 404 page links back to the home page', async ({ page }) => {
     await page.goto('/unknown');
-    await page.getByRole('link', { name: 'ATS' }).click();
+    await page.getByTestId('not-found-home-link').click();
 
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByTestId('home-page')).toBeVisible();

@@ -1,7 +1,15 @@
-<!-- Placeholder 404. Translated copy comes with vue-i18n (roadmap step 2). -->
+<!-- Placeholder 404 until the app shell (roadmap step 3) gives it a layout. -->
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n';
+
+const { t } = useI18n();
+</script>
+
 <template>
   <main data-testid="not-found-page">
     <h1>404</h1>
-    <RouterLink to="/">ATS</RouterLink>
+    <p data-testid="not-found-title">{{ t('notFound.title') }}</p>
+    <p>{{ t('notFound.description') }}</p>
+    <RouterLink to="/" data-testid="not-found-home-link">{{ t('notFound.backHome') }}</RouterLink>
   </main>
 </template>

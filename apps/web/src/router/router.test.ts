@@ -3,13 +3,14 @@ import { createPinia } from 'pinia';
 import { describe, expect, it } from 'vitest';
 import { createMemoryHistory } from 'vue-router';
 import App from '../App.vue';
+import { i18n } from '../i18n';
 import { createAppRouter } from './index';
 
 async function mountAt(path: string) {
   const router = createAppRouter(createMemoryHistory());
   await router.push(path);
   await router.isReady();
-  return mount(App, { global: { plugins: [router, createPinia()] } });
+  return mount(App, { global: { plugins: [router, createPinia(), i18n] } });
 }
 
 describe('router', () => {

@@ -1,4 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
+import { setLocale } from '../i18n';
+import en from '../i18n/locales/en.json';
+import viMessages from '../i18n/locales/vi.json';
 import { ApiError, createApiClient } from './api';
 
 function jsonResponse(body: unknown, status: number): Response {
@@ -106,5 +109,25 @@ describe('createApiClient', () => {
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ code: 'NETWORK_ERROR', status: 0 });
+  });
+});
+
+describe('ApiError.translate', () => {
+  it('shows the translated message for a known code in the active locale', () => {
+    const error = new ApiError('NETWORK_ERROR', 0);
+
+    setLocale('vi');
+    expect(error.translate()).toBe(viMessages.errors.NETWORK_ERROR);
+    setLocale('en');
+    expect(error.translate()).toBe(en.errors.NETWORK_ERROR);
+  });
+
+  it('shows errors.unknown for a code the app does not know, never the raw code or message', () => {
+    setLocale('en');
+    const error = new ApiError('SOME_FUTURE_CODE', 409, 'Developer hint');
+
+    expect(error.translate()).toBe(en.errors.unknown);
+    expect(error.translate()).not.toContain('SOME_FUTURE_CODE');
+    expect(error.translate()).not.toContain('Developer hint');
   });
 });
