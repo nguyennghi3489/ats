@@ -4,6 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ATS</title>
+    <!-- Pre-paint theme (mirrors src/lib/theme.ts): set data-theme before the bundle runs, no flash. -->
+    <script>
+      (function () {
+        var theme = 'system';
+        try {
+          var stored = window.localStorage.getItem('ats.theme');
+          if (stored === 'light' || stored === 'dark' || stored === 'system') theme = stored;
+        } catch (e) {}
+        if (theme === 'system') {
+          var dark =
+            typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches;
+          theme = dark ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
