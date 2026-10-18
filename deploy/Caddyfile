@@ -1,0 +1,37 @@
+# Public entry of the production stack (docker-compose.prod.yml, service `caddy`).
+# Automatic HTTPS for DOMAIN; certificates are kept on the `caddy-data` volume.
+#
+#   /api/*  -> api:3000, with the /api prefix stripped (the API serves its routes at the root, e.g. /health)
+#   rest    -> web:8080 (static build with SPA fallback)
+#
+# DOMAIN=localhost gives a certificate from Caddy's own local CA instead of Let's Encrypt (for testing).
+# Reload after editing:  docker compose -f docker-compose.prod.yml exec caddy caddy reload --config /etc/caddy/Caddyfile
+
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	handle_path /api/* {
+		reverse_proxy api:3000
+	}
+
+	handle {
+		reverse_proxy web:8080
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
