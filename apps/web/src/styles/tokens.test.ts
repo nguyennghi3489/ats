@@ -122,10 +122,36 @@ describe('design tokens', () => {
   it('defines every colour token for both themes', () => {
     const declared = (block: string) =>
       [...block.matchAll(/(--color-[a-z-]+)\s*:/g)].map((match) => match[1]).sort();
-    const [light, dark] = tokensCss.split(/:root\[data-theme=['"]dark['"]\]\s*\{/);
+    const [light, dark] = tokensCss.split(
+      /:root\[data-theme=['"]dark['"]\],\s*\[data-theme=['"]dark['"]\]\s*\{/,
+    );
 
     expect(declared(light!)).toEqual(Object.keys(LIGHT).sort());
     expect(declared(dark!)).toEqual(Object.keys(DARK).sort());
+  });
+
+  it('applies dark colours to the subtree of any element with data-theme="dark"', () => {
+    const panel = document.createElement('div');
+    panel.setAttribute('data-theme', 'dark');
+    document.body.append(panel);
+
+    const value = getComputedStyle(panel).getPropertyValue('--color-canvas').trim();
+    panel.remove();
+
+    expect(value.toUpperCase()).toBe(DARK['--color-canvas']);
+    expect(token('--color-canvas').toUpperCase()).toBe(LIGHT['--color-canvas']);
+  });
+
+  it('applies light colours to the subtree of data-theme="light" inside a dark page', () => {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    const panel = document.createElement('div');
+    panel.setAttribute('data-theme', 'light');
+    document.body.append(panel);
+
+    const value = getComputedStyle(panel).getPropertyValue('--color-ink').trim();
+    panel.remove();
+
+    expect(value.toUpperCase()).toBe(LIGHT['--color-ink']);
   });
 
   it.each(Object.entries(SCALE))('%s is %s in both themes', (name, value) => {

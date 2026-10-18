@@ -2,11 +2,14 @@
  * Design tokens from the design page "01 · Foundations" (ATS / Foundations, Light and Dark specimens,
  * Opacity token unit verification). Components use these semantic names, never raw hex: see README.md.
  *
- * Light is the default. Dark overrides the same names under :root[data-theme='dark'].
+ * Light is the default. Dark overrides the same names under [data-theme='dark'], on <html> or on any
+ * element (the dev UI gallery's dark panel), so the subtree takes the dark values. [data-theme='light']
+ * likewise restores light values inside a dark page.
  * Theme-independent tokens (spacing, type, radii, focus, opacity, touch target) live only in :root.
  */
 
-:root {
+:root,
+[data-theme='light'] {
   color-scheme: light;
 
   /* Surfaces */
@@ -77,7 +80,8 @@
   --touch-target-min: 44px; /* minimum hit area on mobile */
 }
 
-:root[data-theme='dark'] {
+:root[data-theme='dark'],
+[data-theme='dark'] {
   color-scheme: dark;
 
   /* Surfaces */
