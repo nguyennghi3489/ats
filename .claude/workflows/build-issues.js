@@ -147,7 +147,12 @@ if (opts.plan !== false) {
   )
   log(planned || 'Triage did not return.')
 }
-if (opts.build === false) return { planned: true }
+const tokens = () => `${Math.round(budget.spent() / 1000)}k output tokens this run` +
+  (budget.total ? ` of ${Math.round(budget.total / 1000)}k budget` : '')
+if (opts.build === false) {
+  log(tokens())
+  return { planned: true, tokens: budget.spent() }
+}
 
 phase('Pick')
 const picked = await agent(
@@ -168,7 +173,8 @@ if (picked && picked.stale && picked.stale.length) {
 const queue = picked ? picked.issues : []
 if (!queue.length) {
   log('No agent:ready issue with closed blockers. Nothing to build.')
-  return { built: [] }
+  log(tokens())
+  return { built: [], tokens: budget.spent() }
 }
 log(`Building ${queue.map((i) => '#' + i.number).join(', ')} (${PARALLEL} at a time)`)
 
@@ -176,5 +182,6 @@ const results = []
 for (let i = 0; i < queue.length; i += PARALLEL) {
   const batch = await parallel(queue.slice(i, i + PARALLEL).map((issue) => () => build(issue)))
   batch.forEach((r, j) => results.push(r || { number: queue[i + j].number, status: 'crashed' }))
+  log(`after ${results.length}/${queue.length} issues: ${tokens()}`)
 }
-return { built: results }
+return { built: results, tokens: budget.spent() }
