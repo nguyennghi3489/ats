@@ -24,7 +24,8 @@ export default defineConfig(({ mode }) => {
     },
     test: {
       environment: 'happy-dom',
-      include: ['src/**/*.test.ts'],
+      // `*.spec.ts` are component specs (src/components/ui/README.md), `*.test.ts` everything else.
+      include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
     },
   };
 });
