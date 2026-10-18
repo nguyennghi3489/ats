@@ -1,0 +1,115 @@
+/*
+ * Design tokens from the design page "01 · Foundations" (ATS / Foundations, Light and Dark specimens,
+ * Opacity token unit verification). Components use these semantic names, never raw hex: see README.md.
+ *
+ * Light is the default. Dark overrides the same names under :root[data-theme='dark'].
+ * Theme-independent tokens (spacing, type, radii, focus, opacity, touch target) live only in :root.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --color-canvas: #f7f7f2; /* page background behind cards and dialogs */
+  --color-surface: #ffffff; /* cards, dialogs, panels */
+  --color-field-surface: #fcfcfa; /* text fields, selects, textareas */
+  --color-control: #ffffff; /* secondary buttons and other neutral controls */
+  --color-sidebar: #eee9fb; /* navigation sidebar, hovered navigation item */
+  --color-accent: #e7e1fb; /* selected navigation item, hovered button */
+
+  /* Text and lines */
+  --color-ink: #292822;
+  --color-muted: #66645d;
+  --color-line: #b1afa5;
+
+  /* Primary action */
+  --color-action: #d7ed99;
+  --color-action-ink: #292822;
+  --color-action-line: #798752; /* primary button border, pressed state, active tab underline */
+
+  /* Destructive */
+  --color-danger: #a42929;
+
+  /* Notices */
+  --color-info-surface: #e7e1fb;
+  --color-info-ink: #292822;
+  --color-success-surface: #e4f0d3;
+  --color-success-ink: #292822;
+  --color-success-icon: #798752;
+  --color-error-surface: #f8e2df;
+  --color-error-ink: #292822; /* the error title and icon use --color-danger */
+
+  /* Focus */
+  --color-focus-ring: #292822;
+  --focus-ring-width: 3px;
+  --focus-ring-offset: 0;
+
+  /* Spacing: the name is the multiple of 4 px */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Radii */
+  --radius-sm: 2px; /* buttons, fields, notices, dialogs */
+  --radius-full: 9999px; /* radio dots, round indicators */
+
+  /* Typography */
+  --font-family-sans:
+    'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-size-xs: 12px; /* labels, captions, metadata */
+  --font-size-sm: 14px; /* body, buttons, field values */
+  --font-size-lg: 18px; /* section and dialog titles */
+  --font-size-xl: 24px; /* page titles */
+  --line-height-xs: 16px;
+  --line-height-sm: 20px;
+  --line-height-lg: 24px;
+  --line-height-xl: 32px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* States and sizing */
+  --opacity-disabled: 0.45;
+  --touch-target-min: 44px; /* minimum hit area on mobile */
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --color-canvas: #222320;
+  --color-surface: #2a2b27;
+  --color-field-surface: #32332e; /* aliases color/control */
+  --color-control: #32332e;
+  --color-sidebar: #2e2c32;
+  --color-accent: #494252;
+
+  /* Text and lines */
+  --color-ink: #f4f1e8;
+  --color-muted: #c0beb5;
+  --color-line: #76776c;
+
+  /* Primary action */
+  --color-action: #cadd96;
+  --color-action-ink: #292822;
+  --color-action-line: #798752;
+
+  /* Destructive */
+  --color-danger: #ffb5ac;
+
+  /* Notices */
+  --color-info-surface: #494252;
+  --color-info-ink: #f4f1e8;
+  --color-success-surface: #2a2b27;
+  --color-success-ink: #f4f1e8;
+  --color-success-icon: #cadd96;
+  --color-error-surface: #2a2b27;
+  --color-error-ink: #f4f1e8;
+
+  /* Focus */
+  --color-focus-ring: #f4f1e8;
+}
