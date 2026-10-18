@@ -34,6 +34,7 @@ Labels:
 - Type, exactly one: `bug`, `enhancement`, `design`, `chore`, `documentation`. The bug and design forms add theirs.
 - Area, at least one: `area:account`, `area:workspaces`, `area:jobs`, `area:candidates`, `area:applications`, `area:ui`, `area:dev`, `area:ops`.
 - Risk, when the change touches it: `risk:privacy`, `risk:auth`, `risk:schema`.
+- Story, exactly one: `roadmap:<step number>` from `docs/roadmap.md` (create it first with `gh label create roadmap:<n> -R nguyennghi3489/ats -c EDEDED -f` if missing). It groups the issue under its story on the agent dashboard.
 - Blocked: `needs-owner` for owner actions or approvals; `needs-decision` for open product behavior, with numbered options under a "Decision needed" comment.
 - Review: every issue you create gets `needs-review`. **Never add `agent:ready` — only the owner does**, after reviewing. Design issues are agent work too; the owner reviews them before they close.
 - Never touch the coordinator's labels: `agent:ready`, `in-progress`, `pr-open`, `needs-human`.

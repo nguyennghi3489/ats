@@ -3,6 +3,7 @@ export const meta = {
   description: 'Coordinator: triage fills the review queue (max 10), then agent:ready issues go implementer → code review → QA → PR',
   whenToUse: 'Plan and build GitHub issues of nguyennghi3489/ats. args: { plan?: boolean (default true), build?: boolean (default true), max?: number (default 3), issues?: number[] (only these), parallel?: number (default 1) }',
   phases: [
+    { title: 'Track', detail: 'mirror issues and agent progress onto the ATS Agent Runs dashboard' },
     { title: 'Plan', detail: 'triage tops up needs-review issues to 10 from docs/roadmap.md' },
     { title: 'Pick', detail: 'list agent:ready issues with closed blockers and lock them' },
     { title: 'Triage', detail: 'confirm each issue is still buildable' },
@@ -62,6 +63,37 @@ const SHIP = {
 }
 
 const md = (o) => '```json\n' + JSON.stringify(o, null, 2) + '\n```'
+const DASHBOARD = 'https://claude.ai/artifact/P8Fx5fYRdF9LmVEK4zomYC'
+const ARTIFACT_DATA = `Load the ArtifactData tool with ToolSearch ("select:ArtifactData") if needed. ` +
+  `If ArtifactData is not available here, reply "not available" and do nothing else.`
+
+// Dashboard card for one issue: merge `fields` into issues/<n> (state, stage, round, pr, note).
+// ponytail: one small agent per update; batch them if dashboard updates show up in token use.
+async function card(n, fields) {
+  await agent(
+    `${ARTIFACT_DATA} Dashboard ${DASHBOARD}, collection "issues", doc_id "${n}". ` +
+      `Get the document to learn its version; if it exists, ArtifactData "update" it with if_version and data ${JSON.stringify(fields)}. ` +
+      `If it does not exist, read the issue with \`gh issue view ${n} -R ${REPO} --json number,title,labels,url\` and "set" ` +
+      `{number, title, url, labels: [label names], step: <N from a roadmap:N label, else 0>} merged with ${JSON.stringify(fields)}. Reply "ok".`,
+    { label: `dashboard #${n} ${fields.stage || fields.state}`, phase: 'Track', effort: 'low' },
+  )
+}
+
+// Mirror every GitHub issue onto the dashboard (picks up labels the owner changed by hand).
+async function sync() {
+  await agent(
+    `${ARTIFACT_DATA} Sync GitHub issues to the dashboard ${DASHBOARD}.\n` +
+      `1. \`gh issue list -R ${REPO} --state all --limit 300 --json number,title,labels,state,url\`.\n` +
+      `2. For each issue build {number, title, url, labels: [label names], step: <N from its roadmap:N label, else 0>, state}, where state is: ` +
+      `closed → "done"; else needs-human → "needs-human"; pr-open → "pr-open"; in-progress → "running"; agent:ready → "agent:ready"; ` +
+      `needs-owner or needs-decision → "blocked"; otherwise "needs-review".\n` +
+      `3. ArtifactData "list" collection "issues" (query.limit 1000) to get existing documents and versions.\n` +
+      `4. Write only new or changed documents (doc_id = the number as text) with ArtifactData "batch" (≤ 50 per call): "update" with if_version for existing ` +
+      `documents (this keeps their stage, round, pr and note; when the new state is not "running", also set stage to {"__delete__": true}), "set" for new ones.\n` +
+      `Reply "synced <count written>".`,
+    { label: 'sync issues to dashboard', phase: 'Track', effort: 'low' },
+  )
+}
 
 async function handBack(n, phaseName, why) {
   await agent(
@@ -69,12 +101,14 @@ async function handBack(n, phaseName, why) {
       `and comment on the issue (gh issue comment) with this text, verbatim:\n\nAgent run stopped at **${phaseName}**.\n\n${why}`,
     { label: `hand-back #${n}`, phase: 'Ship', effort: 'low' },
   )
+  await card(n, { state: 'needs-human', stage: { __delete__: true }, note: `stopped at ${phaseName}` })
   return { number: n, status: 'needs-human', at: phaseName }
 }
 
 async function build(issue) {
   const n = issue.number
 
+  await card(n, { state: 'running', stage: 'triage', round: 1 })
   const tri = await agent(
     `You are the triage agent; follow .claude/agents/triage.md. Do NOT create issues. Check whether ${REPO}#${n} is buildable right now: ` +
       `acceptance criteria and owned files concrete, all blockers closed (\`scripts/agent/forge.sh blockers ${n}\`), no needs-* label, ` +
@@ -85,6 +119,7 @@ async function build(issue) {
   if (!tri) return handBack(n, 'Triage', 'The triage agent did not return.')
   if (!tri.buildable) return handBack(n, 'Triage', tri.reason)
 
+  await card(n, { stage: 'implement' })
   let impl = await agent(
     `Implement ${REPO}#${n} (${issue.title}). Follow .claude/agents/implementer.md.`,
     { label: `implement #${n}`, phase: 'Implement', agentType: 'implementer', isolation: 'worktree', schema: IMPL },
@@ -94,6 +129,7 @@ async function build(issue) {
 
   let review = null
   for (let round = 0; round < 3; round++) {
+    await card(n, { stage: 'review', round: round + 1 })
     review = await agent(
       `Review branch \`${branch}\` for ${REPO}#${n}. Follow .claude/agents/code-reviewer.md.`,
       { label: `review #${n} r${round + 1}`, phase: 'Review', agentType: 'code-reviewer', schema: REVIEW },
@@ -111,6 +147,7 @@ async function build(issue) {
 
   let qa = null
   for (let round = 0; round < 2; round++) {
+    await card(n, { stage: 'qa', round: round + 1 })
     qa = await agent(
       `Verify branch \`${branch}\` for ${REPO}#${n}. Follow .claude/agents/qa.md.`,
       { label: `qa #${n} r${round + 1}`, phase: 'QA', agentType: 'qa', isolation: 'worktree', schema: QA },
@@ -125,6 +162,7 @@ async function build(issue) {
   }
   if (!qa.passed) return handBack(n, 'QA', `QA still failing after 1 fix round.\n\n${md(qa)}`)
 
+  await card(n, { stage: 'ship', round: 1 })
   const pr = await agent(
     `Open a pull request in ${REPO} from branch \`${branch}\` into main with \`gh pr create\`. Title: "${issue.title}". ` +
       `Body: a short summary of the change, "Closes #${n}", then a "QA" section with this per-criterion table and a "Review" section listing remaining nits.\n\n` +
@@ -134,17 +172,19 @@ async function build(issue) {
     { label: `pr #${n}`, phase: 'Ship', effort: 'low', schema: SHIP },
   )
   if (!pr) return handBack(n, 'Ship', 'Opening the PR failed.')
+  await card(n, { state: 'pr-open', stage: { __delete__: true }, pr: pr.url })
   return { number: n, status: 'pr-open', pr: pr.url }
 }
 
-const DASHBOARD = 'https://claude.ai/artifact/P8Fx5fYRdF9LmVEK4zomYC'
-const mode = opts.plan === false ? 'build' : opts.build === false ? 'plan' : 'plan+build'
+const mode =opts.plan === false ? 'build' : opts.build === false ? 'plan' : 'plan+build'
 let created = 0
 
 // One row per run in the "ATS Agent Runs" dashboard (collection `runs`).
 async function finish(built) {
   const row = { mode, planned: created, built, tokens: budget.spent() }
   if (budget.total) row.budget = budget.total
+  phase('Track')
+  await sync()
   log(`${Math.round(budget.spent() / 1000)}k output tokens this run` + (budget.total ? ` of ${Math.round(budget.total / 1000)}k budget` : ''))
   const ok = await agent(
     `Log this coordinator run to the dashboard. Load the ArtifactData tool with ToolSearch ("select:ArtifactData") if needed. ` +
@@ -156,6 +196,9 @@ async function finish(built) {
   if (!ok || !/^logged/i.test(ok.trim())) log(`Run not logged to the dashboard (${ok || 'no reply'}).`)
   return { built, planned: created, tokens: budget.spent() }
 }
+
+phase('Track')
+await sync()
 
 if (opts.plan !== false) {
   phase('Plan')
