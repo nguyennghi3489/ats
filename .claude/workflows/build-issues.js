@@ -1,8 +1,9 @@
 export const meta = {
   name: 'build-issues',
-  description: 'Coordinator: take agent:ready issues and run triage → implementer → code review → QA → PR for each',
-  whenToUse: 'Build the next ready GitHub issues of nguyennghi3489/ats. args: { max?: number (default 3), issues?: number[] (only these), parallel?: number (default 1) }',
+  description: 'Coordinator: triage fills the review queue (max 10), then agent:ready issues go implementer → code review → QA → PR',
+  whenToUse: 'Plan and build GitHub issues of nguyennghi3489/ats. args: { plan?: boolean (default true), build?: boolean (default true), max?: number (default 3), issues?: number[] (only these), parallel?: number (default 1) }',
   phases: [
+    { title: 'Plan', detail: 'triage tops up needs-review issues to 10 from docs/roadmap.md' },
     { title: 'Pick', detail: 'list agent:ready issues with closed blockers and lock them' },
     { title: 'Triage', detail: 'confirm each issue is still buildable' },
     { title: 'Implement', detail: 'test-first on a branch, in a worktree' },
@@ -136,6 +137,18 @@ async function build(issue) {
   return { number: n, status: 'pr-open', pr: pr.url }
 }
 
+if (opts.plan !== false) {
+  phase('Plan')
+  const planned = await agent(
+    `You are the triage agent; follow .claude/agents/triage.md, section "Filling the review queue". ` +
+      `Top up the open needs-review issues to at most 10 with the next small, parallel issues from docs/roadmap.md. ` +
+      `Reply with one line per issue as triage.md says, or "queue full" / "roadmap covered".`,
+    { label: 'triage: fill review queue', phase: 'Plan', agentType: 'triage' },
+  )
+  log(planned || 'Triage did not return.')
+}
+if (opts.build === false) return { planned: true }
+
 phase('Pick')
 const picked = await agent(
   // ponytail: stale locks (in-progress left by a killed run) are only reported, never cleared here,
@@ -145,7 +158,7 @@ const picked = await agent(
     `(\`scripts/agent/forge.sh blockers N\` prints "<number> <state>"). ` +
     (opts.issues ? `Keep only issues ${JSON.stringify(opts.issues)}. ` : '') +
     `Sort by milestone (M1 Core hiring loop, then M2 Complete v1, then Later), then by number. Take the first ${MAX}. ` +
-    `For each taken issue run \`gh issue edit N -R ${REPO} --add-label in-progress\` (the lock). ` +
+    `For each taken issue run \`gh issue edit N -R ${REPO} --add-label in-progress --remove-label needs-review\` (the lock). ` +
     `Also return \`stale\`: numbers of open issues labelled in-progress whose last update is older than 6 hours. Return them.`,
   { label: 'pick + lock', phase: 'Pick', effort: 'low', schema: PICK },
 )

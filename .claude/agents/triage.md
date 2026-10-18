@@ -35,8 +35,14 @@ Labels:
 - Area, at least one: `area:account`, `area:workspaces`, `area:jobs`, `area:candidates`, `area:applications`, `area:ui`, `area:dev`, `area:ops`.
 - Risk, when the change touches it: `risk:privacy`, `risk:auth`, `risk:schema`.
 - Blocked: `needs-owner` for owner actions or approvals; `needs-decision` for open product behavior, with numbered options under a "Decision needed" comment.
-- `agent:ready` only when the acceptance criteria and owned files are concrete, the blockers are closed and no `needs-*` label applies. Design issues are agent work too; the owner reviews them before they close.
-- Never touch the coordinator's labels: `in-progress`, `pr-open`, `needs-human`.
+- Review: every issue you create gets `needs-review`. **Never add `agent:ready` — only the owner does**, after reviewing. Design issues are agent work too; the owner reviews them before they close.
+- Never touch the coordinator's labels: `agent:ready`, `in-progress`, `pr-open`, `needs-human`.
+
+Filling the review queue (when asked to plan):
+- At most **10** open issues may carry `needs-review`. Count them first (`gh issue list -R nguyennghi3489/ats --label needs-review --state open`) and create only the difference. Zero room → create nothing.
+- Work through `docs/roadmap.md` in order: take the first step whose scope is not yet fully covered by existing issues (open or closed), and only move to the next step when it is.
+- Keep issues **small**: one component, one endpoint with its screen, one rule — about a day of work, reviewable in minutes. Split a module into its pieces instead of one big issue.
+- Keep issues **parallel**: block an issue only on what it truly needs to compile or run (usually the scaffold or one shared piece). Siblings in the same step must not block each other unless one really uses the other.
 
 Milestones: `M1 Core hiring loop` (sign in → workspace → job with stages → candidate → application → move and hire), `M2 Complete v1` (the rest of docs/decisions.md v1 scope), `Later` (everything in "Out of v1" and anything new that isn't v1). Tooling and workflow issues take the milestone of the work they unblock.
 
