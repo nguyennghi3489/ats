@@ -55,11 +55,31 @@ try {
 
 Use `createApiClient({ baseUrl, fetch })` for a separate client, such as in tests with a stub `fetch`.
 
+To show an error to the user, call `error.translate()`. It returns `errors.<code>` in the active language,
+or `errors.unknown` when there is no text for that code. It never returns the raw code.
+
+## Language and formatting
+
+`src/i18n/` sets up vue-i18n in Composition API mode (decisions §12). All user-facing text lives in
+`src/i18n/locales/vi.json` and `en.json`. Both files must have the same keys, and `pnpm test` fails if they
+don't. English copy needs human review.
+
+- Components: `const { t } = useI18n();` then `t('common.save')`.
+- Start-up language: the choice stored in `localStorage` (`ats.locale`), then the first vi/en entry in
+  `navigator.languages`, then `vi`.
+- `setLocale(locale)` from `src/i18n` switches vue-i18n, `<html lang>` and the stored choice.
+  `onLocaleChange(listener)` lets other code react, for example to save the choice on the user's account.
+- `formatDate(value)` from `src/i18n/format` always returns `dd/mm/yyyy`. `formatMoney(amount, 'VND' | 'USD')`
+  uses the active locale's grouping: `25.000.000 VND` in vi, `25,000,000 VND` in en.
+- `translateError(code)` from `src/i18n/errors` maps an API error code to text. `ApiError.translate()`
+  uses it.
+
 ## Folder layout
 
 ```
 src/
-  main.ts            app bootstrap (Pinia, router)
+  main.ts            app bootstrap (vue-i18n, Pinia, router)
+  i18n/              vue-i18n setup, locale files, date/money/error formatters
   App.vue            root component
   router/            route table and router factory
   lib/               framework-level helpers with no feature knowledge (api client, ...)
