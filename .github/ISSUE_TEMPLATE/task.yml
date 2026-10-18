@@ -1,0 +1,52 @@
+name: Task
+description: An independently shippable change (feature, chore, docs).
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What changes for the user or the team, in one or two sentences.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Sections of docs/decisions.md and design pages this follows. Note every place the issue differs from the design.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What to build, as a bullet list.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Checklist that QA verifies. Each item observable and testable.
+    validations:
+      required: true
+  - type: textarea
+    id: owned-files
+    attributes:
+      label: Owned files
+      description: Paths (or globs) this change creates or edits. Agents stay inside them unless they say why.
+    validations:
+      required: true
+  - type: textarea
+    id: design-screens
+    attributes:
+      label: Design screens
+      description: Images from docs/design/ that show the target, or "None".
+    validations:
+      required: false
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: Related work that belongs to another issue.
+    validations:
+      required: false

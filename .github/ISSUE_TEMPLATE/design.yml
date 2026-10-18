@@ -1,0 +1,39 @@
+name: Design
+description: A screen, state or component the design file does not cover yet. The owner reviews it before it closes.
+labels: [design]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What needs designing, in one sentence.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: The decision in docs/decisions.md or the issue that needs this, and the closest existing design screens to follow.
+    validations:
+      required: true
+  - type: textarea
+    id: states
+    attributes:
+      label: States to cover
+      description: Every state the result must show (default, empty, loading, error, permission, mobile, dark).
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Checklist the owner uses to approve the design.
+    validations:
+      required: true
+  - type: textarea
+    id: owned-files
+    attributes:
+      label: Owned files
+      description: Where the result lives (for example docs/design/<page>/<screen>.png or a component in apps/web).
+    validations:
+      required: true

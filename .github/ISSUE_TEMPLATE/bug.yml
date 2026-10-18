@@ -1,0 +1,53 @@
+name: Bug
+description: Something behaves differently from the design, docs/decisions.md or an acceptance criterion.
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is wrong, in one sentence.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps from a clean local environment. Use synthetic data only.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected
+      description: What should happen, with the decision, design screen or issue that says so.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual
+      description: What happens instead.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Error text, logs, failing test, screenshot. Never real candidate data.
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Checklist that proves the fix, including a regression test.
+    validations:
+      required: true
+  - type: textarea
+    id: owned-files
+    attributes:
+      label: Owned files
+      description: Paths (or globs) the fix is expected to touch.
+    validations:
+      required: true
