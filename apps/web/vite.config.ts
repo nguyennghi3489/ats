@@ -14,7 +14,12 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
-        '/api': { target: apiProxyTarget, changeOrigin: true },
+        // The API serves its routes at the root (`/health`), so `/api` is stripped on the way through.
+        '/api': {
+          target: apiProxyTarget,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api(?=\/|$)/, ''),
+        },
       },
     },
     test: {
