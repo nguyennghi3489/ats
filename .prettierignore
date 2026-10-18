@@ -6,3 +6,6 @@ docs
 .claude
 .github
 scripts
+playwright-report
+test-results
+blob-report
