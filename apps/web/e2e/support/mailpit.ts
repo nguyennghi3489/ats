@@ -24,8 +24,11 @@ interface Address {
 }
 
 interface SearchResponse {
-  messages: Array<{ ID: string }>;
+  messages: Array<{ ID: string; To: Address[] | null }>;
 }
+
+/** Search results to scan per poll. `to:` matches substrings, so longer addresses can crowd the page. */
+const SEARCH_PAGE_SIZE = 50;
 
 interface MessageResponse {
   ID: string;
@@ -57,10 +60,14 @@ export async function latestMessageTo(
 }
 
 async function newestMessageId(address: string): Promise<string | undefined> {
-  // Mailpit lists search results newest first.
-  const query = new URLSearchParams({ query: `to:"${address}"`, limit: '1' });
+  // Mailpit lists search results newest first. Its `to:` search matches substrings (asking for
+  // ann@x.test also finds joann@x.test), so keep only messages with this exact recipient.
+  const wanted = address.toLowerCase();
+  const query = new URLSearchParams({ query: `to:"${address}"`, limit: String(SEARCH_PAGE_SIZE) });
   const result = await getJson<SearchResponse>(`/api/v1/search?${query}`);
-  return result.messages[0]?.ID;
+  return result.messages.find((message) =>
+    (message.To ?? []).some((recipient) => recipient.Address.toLowerCase() === wanted),
+  )?.ID;
 }
 
 async function readMessage(id: string): Promise<MailpitMessage> {
