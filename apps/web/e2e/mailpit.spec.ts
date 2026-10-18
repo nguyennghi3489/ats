@@ -33,6 +33,27 @@ test.describe('Mailpit helper', () => {
     expect(message.subject).toBe('For me');
   });
 
+  test('ignores a newer message to an address that merely contains this one', async () => {
+    const to = uniqueAddress('exact');
+    await sendMail({ to, subject: 'Exact recipient', text: 'mine' });
+    // Same address with a prefix, sent last: a substring match would return this one.
+    await sendMail({ to: `x${to}`, subject: 'Longer address', text: 'not mine' });
+
+    const message = await latestMessageTo(to);
+
+    expect(message.subject).toBe('Exact recipient');
+    expect(message.to).toContain(to);
+  });
+
+  test('matches the address case-insensitively', async () => {
+    const to = uniqueAddress('case');
+    await sendMail({ to: to.toUpperCase(), subject: 'Upper-cased recipient', text: 'mine' });
+
+    const message = await latestMessageTo(to);
+
+    expect(message.subject).toBe('Upper-cased recipient');
+  });
+
   test('waits for a message that arrives after the call', async () => {
     const to = uniqueAddress('late');
     const pending = latestMessageTo(to, { timeoutMs: 5_000 });
