@@ -37,3 +37,18 @@ takes the text colour around it.
 - `spinner` rotates, and stops under `prefers-reduced-motion: reduce`.
 
 Path data lives in `icons/index.ts`, one entry per icon on its design grid.
+
+## Icon button
+
+`<AtsIconButton icon="trash" :label="t('…')" @click="remove" />` is the design's `ATS / Icon button`: a
+square outline button that shows one icon. It holds no text of its own.
+
+- `icon`: an `AtsIcon` name, drawn at 16 px and centred.
+- `label`: required accessible name, already translated. It becomes `aria-label` and the native
+  `title`; it is never rendered as text.
+- `type`: `button` (default) or `submit`.
+- `disabled`: the native attribute, so the button takes no focus and emits no `click`.
+- `pending`: swaps the icon for the spinner and sets `aria-busy="true"`. Clicks are swallowed (no
+  `click`, no form submit) while the button keeps focus.
+- 36 × 36 px on desktop, 44 × 44 px (`--touch-target-min`) below 768 px wide. The 3 px focus ring is
+  drawn inside the border, so the size never changes.
