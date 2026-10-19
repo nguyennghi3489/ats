@@ -35,9 +35,11 @@ export default defineConfig({
   webServer: [
     {
       name: 'api',
-      // Same env files as `pnpm --filter api dev`; API_PORT from the shell wins over them.
+      // Same env files as `pnpm --filter api dev`; API_PORT from the shell wins over them. Pending
+      // migrations are applied first (a no-op when there are none) so a fresh Compose database has
+      // the auth tables the session specs sign up into.
       command:
-        'pnpm build && node --env-file=.env.example --env-file-if-exists=../../.env --env-file-if-exists=.env dist/main.js',
+        'pnpm build && node --env-file=.env.example --env-file-if-exists=../../.env --env-file-if-exists=.env dist/database/migrate.js && node --env-file=.env.example --env-file-if-exists=../../.env --env-file-if-exists=.env dist/main.js',
       cwd: apiDir,
       url: `${apiURL}/health`,
       env: { API_PORT: portOf(apiURL), NODE_ENV: 'test', LOG_LEVEL: 'warn' },
