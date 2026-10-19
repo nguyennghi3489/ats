@@ -17,6 +17,14 @@ export function redisUrlSchema() {
   return z.url({ protocol: /^rediss?$/, error: 'must be a redis:// or rediss:// URL' });
 }
 
+/** `true` or `false` given as text, defaulting to `false`. */
+function booleanFlagSchema() {
+  return z
+    .enum(['true', 'false'], { error: 'must be true or false' })
+    .default('false')
+    .transform((value) => value === 'true');
+}
+
 /** An absolute http(s) URL. */
 function httpUrlSchema() {
   return z.url({ protocol: /^https?$/, error: 'must be an http:// or https:// URL' });
@@ -40,7 +48,8 @@ const envSchema = z.object({
   API_PORT: portSchema(),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('log'),
   DATABASE_URL: databaseUrlSchema(),
-  // Queues (the API enqueues email) and the verification-email resend limits.
+  // Queues (the API enqueues email), the verification-email resend limits and the failed sign-in
+  // counters (decisions §2).
   REDIS_URL: redisUrlSchema(),
   // Signs session cookies and tokens. Better Auth asks for at least 32 characters.
   BETTER_AUTH_SECRET: z.string().min(32, 'must be at least 32 characters'),
@@ -48,6 +57,9 @@ const envSchema = z.object({
   BETTER_AUTH_URL: httpUrlSchema(),
   // Origin of the recruiter web app; the only origin allowed to call the auth endpoints.
   WEB_ORIGIN: httpUrlSchema().transform((url) => new URL(url).origin),
+  // `true` behind the Caddy proxy in production: the client IP is read from the X-Forwarded-For
+  // entry Caddy adds (one trusted hop). Off locally, where the API is reached directly.
+  TRUST_PROXY: booleanFlagSchema(),
 });
 
 export interface AppConfig {
@@ -59,6 +71,8 @@ export interface AppConfig {
   betterAuthSecret: string;
   betterAuthUrl: string;
   webOrigin: string;
+  /** Trust one proxy hop (Caddy) for the client IP. */
+  trustProxy: boolean;
 }
 
 /** Thrown when the environment does not match the schema. The message names every bad variable. */
@@ -107,6 +121,7 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
     betterAuthSecret: data.BETTER_AUTH_SECRET,
     betterAuthUrl: data.BETTER_AUTH_URL,
     webOrigin: data.WEB_ORIGIN,
+    trustProxy: data.TRUST_PROXY,
   };
 }
 
@@ -124,10 +139,7 @@ function isSenderAddress(value: string): boolean {
 export const smtpEnvShape = {
   SMTP_HOST: z.string().trim().min(1),
   SMTP_PORT: portSchema(),
-  SMTP_SECURE: z
-    .enum(['true', 'false'], { error: 'must be true or false' })
-    .default('false')
-    .transform((value) => value === 'true'),
+  SMTP_SECURE: booleanFlagSchema(),
   SMTP_USER: z.string().optional(),
   SMTP_PASSWORD: z.string().optional(),
   EMAIL_FROM: z

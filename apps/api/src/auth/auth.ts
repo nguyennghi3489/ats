@@ -15,6 +15,12 @@ import type { DatabaseClient } from '../database/database.js';
 import type { EmailService } from '../email/email.service.js';
 import { authSchema } from './auth.schema.js';
 import {
+  CLIENT_IP_HEADER,
+  EMAIL_SIGN_IN_PATH,
+  type SignInLimiter,
+  signInLimitHooks,
+} from './sign-in-limit.js';
+import {
   VERIFICATION_LINK_EXPIRES_IN_SECONDS,
   type VerificationResend,
 } from './verification-resend.js';
@@ -33,10 +39,11 @@ export type AuthConfig = Pick<
   'nodeEnv' | 'betterAuthSecret' | 'betterAuthUrl' | 'webOrigin'
 >;
 
-/** What `createAuth` sends email and keeps resend limits with. */
+/** What `createAuth` sends email, keeps resend limits and limits failed sign-ins with. */
 export interface AuthDependencies {
   emails: Pick<EmailService, 'enqueue'>;
   resend: VerificationResend;
+  signInLimiter: SignInLimiter;
 }
 
 const logger = new Logger('BetterAuth');
@@ -70,16 +77,18 @@ async function isCurrentVerificationToken(
 /**
  * The Better Auth instance: email + password sign-in, sessions stored in Postgres and checked
  * against Postgres on every request (cookie cache off), so deleting a session row signs it out
- * immediately. Organizations (step 4) and Google/LinkedIn (step 16) are added here later.
+ * immediately. Failed email sign-ins are limited per client IP + email by `signInLimiter`
+ * (decisions §2). Organizations (step 4) and Google/LinkedIn (step 16) are added here later.
  */
 export function createAuth(
   config: AuthConfig,
   db: DatabaseClient,
-  { emails, resend }: AuthDependencies,
+  { emails, resend, signInLimiter }: AuthDependencies,
 ) {
   const secure = config.nodeEnv !== 'development';
   const verifiedUrl = `${config.webOrigin}${VERIFY_EMAIL_SUCCESS_PATH}`;
   const expiredUrl = `${config.webOrigin}${VERIFY_EMAIL_EXPIRED_PATH}`;
+  const signInLimit = signInLimitHooks(signInLimiter, logger);
   return betterAuth({
     appName: 'ATS',
     secret: config.betterAuthSecret,
@@ -133,6 +142,10 @@ export function createAuth(
       updateAge: SESSION_UPDATE_AGE_SECONDS,
       cookieCache: { enabled: false },
     },
+    // Better Auth's own limiter (per IP, in memory, on in production only) stays on its defaults
+    // except for email sign-in: that endpoint is limited by `signInLimiter` per IP + email in Redis,
+    // and Better Auth's stricter rule for it (3 per 10 s per IP) would answer 429 first.
+    rateLimit: { customRules: { [EMAIL_SIGN_IN_PATH]: false } },
     account: {
       // The same email never links a second sign-in method automatically (decisions §2).
       accountLinking: { disableImplicitLinking: true },
@@ -140,6 +153,9 @@ export function createAuth(
     advanced: {
       // Better Auth skips the origin check when NODE_ENV=test; keep it on so tests see production rules.
       disableOriginCheck: false,
+      // The client IP Nest resolved (honouring `trust proxy`); the auth middleware always sets it,
+      // so a client cannot pick its IP with X-Forwarded-For when no proxy is trusted.
+      ipAddress: { ipAddressHeaders: [CLIENT_IP_HEADER] },
       useSecureCookies: secure,
       defaultCookieAttributes: { httpOnly: true, sameSite: 'lax', secure },
     },
@@ -165,7 +181,12 @@ export function createAuth(
             typeof token === 'string' &&
             (await isCurrentVerificationToken(token, ctx.context.secret, resend));
           if (!current) throw ctx.redirect(expiredUrl);
+        } else {
+          await signInLimit.before(ctx);
         }
+      }),
+      after: createAuthMiddleware(async (ctx) => {
+        await signInLimit.after(ctx);
       }),
     },
     telemetry: { enabled: false },

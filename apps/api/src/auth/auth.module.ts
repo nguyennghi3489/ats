@@ -2,10 +2,12 @@ import {
   type DynamicModule,
   Inject,
   Injectable,
+  Logger,
   type MiddlewareConsumer,
   Module,
   type NestMiddleware,
   type NestModule,
+  type OnApplicationShutdown,
   type OnModuleDestroy,
   RequestMethod,
 } from '@nestjs/common';
@@ -21,6 +23,7 @@ import { EmailService } from '../email/email.service.js';
 import { type Auth, createAuth } from './auth.js';
 import { AUTH } from './auth.tokens.js';
 import { MeController } from './me.controller.js';
+import { CLIENT_IP_HEADER, SignInLimiter } from './sign-in-limit.js';
 import { VerificationResend } from './verification-resend.js';
 
 export { AUTH } from './auth.tokens.js';
@@ -35,12 +38,28 @@ class AuthHandlerMiddleware implements NestMiddleware {
   }
 
   async use(req: Request, res: Response): Promise<void> {
+    // Always overwritten: Better Auth and the sign-in limit read the client IP from this header.
+    // `req.ip` follows X-Forwarded-For only when `trust proxy` is on (TRUST_PROXY, behind Caddy).
+    req.headers[CLIENT_IP_HEADER] = req.ip ?? req.socket.remoteAddress ?? 'unknown';
     await this.handler(req, res);
   }
 }
 
 /** Redis connection for the verification-email resend limits and current links. */
 const AUTH_REDIS = Symbol('AUTH_REDIS');
+
+/** Redis connection holding the failed sign-in counters. */
+const SIGN_IN_LIMIT_REDIS = Symbol('SIGN_IN_LIMIT_REDIS');
+
+/** Closes the sign-in limit Redis connection when the app shuts down. */
+@Injectable()
+class SignInLimitRedisCloser implements OnApplicationShutdown {
+  constructor(@Inject(SIGN_IN_LIMIT_REDIS) private readonly redis: Redis) {}
+
+  async onApplicationShutdown(): Promise<void> {
+    await this.redis.quit().catch(() => this.redis.disconnect());
+  }
+}
 
 export interface AuthModuleOptions {
   /** First part of the auth Redis keys (tests isolate runs with it). */
@@ -49,7 +68,8 @@ export interface AuthModuleOptions {
 
 /**
  * Better Auth under `/api/auth/*` (sign-up with the verification email, verification, resend,
- * sign-in, sign-out, session) and `GET /api/me`. Needs `QueueModule.forRoot` at the root.
+ * sign-in with the failed sign-in limit, sign-out, session) and `GET /api/me`. Needs
+ * `QueueModule.forRoot` at the root.
  */
 @Module({})
 export class AuthModule implements NestModule, OnModuleDestroy {
@@ -65,6 +85,19 @@ export class AuthModule implements NestModule, OnModuleDestroy {
           useFactory: (config: AppConfig) => new Redis(config.redisUrl),
         },
         {
+          provide: SIGN_IN_LIMIT_REDIS,
+          inject: [APP_CONFIG],
+          useFactory: (config: AppConfig) => {
+            const logger = new Logger('SignInLimit');
+            // One retry per command: when Redis is down a sign-in waits briefly, then goes through
+            // unlimited (see `signInLimitHooks`) instead of hanging.
+            const redis = new Redis(config.redisUrl, { maxRetriesPerRequest: 1 });
+            redis.on('error', (error: Error) => logger.warn(`Redis error: ${error.message}`));
+            return redis;
+          },
+        },
+        SignInLimitRedisCloser,
+        {
           provide: VerificationResend,
           inject: [AUTH_REDIS, APP_CONFIG],
           useFactory: (redis: Redis, config: AppConfig) =>
@@ -74,14 +107,24 @@ export class AuthModule implements NestModule, OnModuleDestroy {
             }),
         },
         {
+          provide: SignInLimiter,
+          inject: [SIGN_IN_LIMIT_REDIS, APP_CONFIG],
+          useFactory: (redis: Redis, config: AppConfig) =>
+            new SignInLimiter(redis, {
+              secret: config.betterAuthSecret,
+              keyPrefix: `${options.redisKeyPrefix}:sign-in-limit:`,
+            }),
+        },
+        {
           provide: AUTH,
-          inject: [APP_CONFIG, DATABASE, EmailService, VerificationResend],
+          inject: [APP_CONFIG, DATABASE, EmailService, VerificationResend, SignInLimiter],
           useFactory: (
             config: AppConfig,
             database: Database,
             emails: EmailService,
             resend: VerificationResend,
-          ) => createAuth(config, database.db, { emails, resend }),
+            signInLimiter: SignInLimiter,
+          ) => createAuth(config, database.db, { emails, resend, signInLimiter }),
         },
         AuthHandlerMiddleware,
       ],

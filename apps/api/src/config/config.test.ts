@@ -26,21 +26,47 @@ describe('loadConfig', () => {
       logLevel: 'log',
       databaseUrl: DATABASE_URL,
       redisUrl: REDIS_URL,
+      trustProxy: false,
       ...AUTH_CONFIG,
     });
   });
 
   it('reads every value when all are set', () => {
     expect(
-      loadConfig({ API_PORT: '8080', NODE_ENV: 'production', LOG_LEVEL: 'warn', ...REQUIRED }),
+      loadConfig({
+        API_PORT: '8080',
+        NODE_ENV: 'production',
+        LOG_LEVEL: 'warn',
+        TRUST_PROXY: 'true',
+        ...REQUIRED,
+      }),
     ).toEqual({
       nodeEnv: 'production',
       port: 8080,
       logLevel: 'warn',
       databaseUrl: DATABASE_URL,
       redisUrl: REDIS_URL,
+      trustProxy: true,
       ...AUTH_CONFIG,
     });
+  });
+
+  it('names a missing or invalid REDIS_URL', () => {
+    expect(() => loadConfig({ API_PORT: '3000', ...without('REDIS_URL') })).toThrow(
+      /REDIS_URL is required/,
+    );
+    expect(() =>
+      loadConfig({ API_PORT: '3000', ...REQUIRED, REDIS_URL: 'http://127.0.0.1:6379' }),
+    ).toThrow(/REDIS_URL must be a redis:\/\/ or rediss:\/\/ URL/);
+  });
+
+  it('accepts only true or false for TRUST_PROXY', () => {
+    expect(loadConfig({ API_PORT: '3000', ...REQUIRED, TRUST_PROXY: 'false' }).trustProxy).toBe(
+      false,
+    );
+    expect(() => loadConfig({ API_PORT: '3000', ...REQUIRED, TRUST_PROXY: 'yes' })).toThrow(
+      /TRUST_PROXY must be true or false/,
+    );
   });
 
   it('accepts a postgresql:// connection string', () => {
@@ -55,15 +81,6 @@ describe('loadConfig', () => {
     expect(() =>
       loadConfig({ API_PORT: '3000', ...REQUIRED, DATABASE_URL: 'redis://127.0.0.1:6379' }),
     ).toThrow(/DATABASE_URL must be a postgres:\/\/ or postgresql:\/\/ URL/);
-  });
-
-  it('names a missing or invalid REDIS_URL', () => {
-    expect(() => loadConfig({ API_PORT: '3000', ...without('REDIS_URL') })).toThrow(
-      /REDIS_URL is required/,
-    );
-    expect(() =>
-      loadConfig({ API_PORT: '3000', ...REQUIRED, REDIS_URL: 'http://127.0.0.1:6379' }),
-    ).toThrow(/REDIS_URL must be a redis:\/\/ or rediss:\/\/ URL/);
   });
 
   it('names a missing required variable', () => {

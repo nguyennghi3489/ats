@@ -118,6 +118,7 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
+      # The API keeps its failed sign-in counters in Redis.
       redis:
         image: redis:8-alpine
         ports:

@@ -6,6 +6,8 @@ export {
   meUserSchema,
   RESEND_ERROR_CODES,
   resendErrorSchema,
+  SIGN_IN_RATE_LIMITED,
+  signInRateLimitedErrorSchema,
   VERIFY_EMAIL_EXPIRED_PATH,
   VERIFY_EMAIL_SUCCESS_PATH,
   type Locale,
@@ -13,5 +15,6 @@ export {
   type MeUser,
   type ResendError,
   type ResendErrorCode,
+  type SignInRateLimitedError,
 } from './auth.js';
 export { healthSchema, type Health } from './health.js';

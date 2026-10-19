@@ -27,6 +27,21 @@ export const meResponseSchema = z.object({ user: meUserSchema });
 export type MeResponse = z.infer<typeof meResponseSchema>;
 
 /**
+ * Error code of `POST /api/auth/sign-in/email` (429) after 10 failed sign-ins in 15 minutes for the
+ * same IP and email (decisions §2). The password is not checked while it applies.
+ */
+export const SIGN_IN_RATE_LIMITED = 'SIGN_IN_RATE_LIMITED';
+
+/** Body of the 429 `SIGN_IN_RATE_LIMITED` response; `retryAfterSeconds` is the time left in the window. */
+export const signInRateLimitedErrorSchema = z.object({
+  code: z.literal(SIGN_IN_RATE_LIMITED),
+  message: z.string(),
+  retryAfterSeconds: z.number().int().positive(),
+});
+
+export type SignInRateLimitedError = z.infer<typeof signInRateLimitedErrorSchema>;
+
+/**
  * Web app pages the email verification link lands on (decisions §2): the API checks the token,
  * then redirects to `WEB_ORIGIN` + one of these.
  */

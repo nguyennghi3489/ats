@@ -33,7 +33,7 @@ export interface TestAppOptions {
 /**
  * Boots the whole API (same module and HTTP setup as `main.ts`) against the test database and
  * the Compose Redis under a fresh key prefix. Pass `overrides` to change the config, e.g. an
- * unreachable `databaseUrl`. Call `close()` in `afterAll`.
+ * unreachable `databaseUrl` or `trustProxy: true`. Call `close()` in `afterAll`.
  */
 export async function startTestApp(
   overrides: Partial<AppConfig> = {},
@@ -48,6 +48,7 @@ export async function startTestApp(
     betterAuthSecret: 'test-only-better-auth-secret-0123456789abcdef',
     betterAuthUrl: 'http://127.0.0.1:3000',
     webOrigin: TEST_WEB_ORIGIN,
+    trustProxy: false,
     ...overrides,
   };
   const redisPrefix = `ats-test-${randomUUID()}`;

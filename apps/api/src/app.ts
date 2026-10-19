@@ -28,5 +28,10 @@ export async function createApp(
     bufferLogs: true,
   });
   app.disable('x-powered-by');
+  if (config.trustProxy) {
+    // Behind Caddy: `req.ip` is the address Caddy appended to X-Forwarded-For (one trusted hop),
+    // so a client cannot spoof it by sending its own header.
+    app.set('trust proxy', 1);
+  }
   return configureApp(app, logger);
 }
