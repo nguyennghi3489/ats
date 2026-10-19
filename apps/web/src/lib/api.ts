@@ -34,6 +34,26 @@ export class ApiError extends Error {
   }
 }
 
+/** The code the API answers with (401) when the request has no valid session (decisions §2). */
+export const UNAUTHENTICATED = 'UNAUTHENTICATED';
+
+export type UnauthenticatedListener = (error: ApiError) => void;
+
+const unauthenticatedListeners = new Set<UnauthenticatedListener>();
+
+/**
+ * Calls `listener` whenever any API client gets a 401 `UNAUTHENTICATED`, before the call rejects.
+ * The auth guard uses it to end an expired session; returns a function that removes the listener.
+ */
+export function onUnauthenticated(listener: UnauthenticatedListener): () => void {
+  unauthenticatedListeners.add(listener);
+  return () => unauthenticatedListeners.delete(listener);
+}
+
+function notifyUnauthenticated(error: ApiError): void {
+  for (const listener of unauthenticatedListeners) listener(error);
+}
+
 export interface ApiClientOptions {
   /** Prefix for every request path, e.g. `/api` or `https://api.example.com`. */
   baseUrl: string;
@@ -101,7 +121,11 @@ export function createApiClient(options: ApiClientOptions) {
     const data = await readJson(response);
 
     if (!response.ok) {
-      if (isErrorBody(data)) throw new ApiError(data.code, response.status, data.message);
+      if (isErrorBody(data)) {
+        const error = new ApiError(data.code, response.status, data.message);
+        if (error.status === 401 && error.code === UNAUTHENTICATED) notifyUnauthenticated(error);
+        throw error;
+      }
       throw new ApiError(CLIENT_ERROR_CODES.unknown, response.status);
     }
 
