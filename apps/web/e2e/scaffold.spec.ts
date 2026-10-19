@@ -1,9 +1,12 @@
 // Issue #28: the scaffolded web app serves a placeholder home page and a 404 route.
 // Runs against `pnpm --filter web dev` (or `preview` of the built bundle).
 import { expect, test } from '@playwright/test';
+import { signInAsNewUser, uniqueEmail } from './support/session';
 
 test.describe('web scaffold', () => {
-  test('serves the placeholder home page at /', async ({ page }) => {
+  test('serves the placeholder home page at /', async ({ page }, testInfo) => {
+    // `/` needs a session since #82.
+    await signInAsNewUser(page, uniqueEmail(testInfo, 'qa-scaffold'));
     const response = await page.goto('/');
     expect(response?.status()).toBe(200);
 
@@ -22,7 +25,8 @@ test.describe('web scaffold', () => {
     await page.screenshot({ path: test.info().outputPath('not-found.png'), fullPage: true });
   });
 
-  test('the 404 page links back to the home page', async ({ page }) => {
+  test('the 404 page links back to the home page', async ({ page }, testInfo) => {
+    await signInAsNewUser(page, uniqueEmail(testInfo, 'qa-scaffold'));
     await page.goto('/unknown');
     await page.getByTestId('not-found-home-link').click();
 

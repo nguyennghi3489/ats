@@ -3,6 +3,7 @@
 // Runs against the Vite dev server by default, and against the web image with
 // E2E_BASE_URL pointing at the container (e.g. `docker run -p 8080:8080 ats-web`).
 import { expect, test } from '@playwright/test';
+import { signInAsNewUser, uniqueEmail } from './support/session';
 
 const deepLink = '/jobs/123';
 
@@ -19,7 +20,9 @@ test.describe('deep links', () => {
     expect(body).toBe(await root.text());
   });
 
-  test('opening a deep link boots the app and keeps the URL', async ({ page }) => {
+  test('opening a deep link boots the app and keeps the URL', async ({ page }, testInfo) => {
+    // Signed out, the guard (#82) would move the deep link into `redirect`.
+    await signInAsNewUser(page, uniqueEmail(testInfo, 'qa-deeplink'));
     const response = await page.goto(deepLink);
     expect(response?.status()).toBe(200);
 
@@ -35,7 +38,10 @@ test.describe('deep links', () => {
     await expect(page.locator('#app main')).toBeVisible();
   });
 
-  test('client-side navigation from a deep link reaches the home page', async ({ page }) => {
+  test('client-side navigation from a deep link reaches the home page', async ({
+    page,
+  }, testInfo) => {
+    await signInAsNewUser(page, uniqueEmail(testInfo, 'qa-deeplink'));
     await page.goto(deepLink);
     await page.getByTestId('not-found-home-link').click();
 

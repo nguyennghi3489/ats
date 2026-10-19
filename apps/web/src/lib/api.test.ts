@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setLocale } from '../i18n';
 import en from '../i18n/locales/en.json';
 import viMessages from '../i18n/locales/vi.json';
-import { ApiError, createApiClient } from './api';
+import { ApiError, createApiClient, onUnauthenticated } from './api';
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
@@ -109,6 +109,66 @@ describe('createApiClient', () => {
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ code: 'NETWORK_ERROR', status: 0 });
+  });
+});
+
+describe('onUnauthenticated', () => {
+  let stop: (() => void) | undefined;
+
+  afterEach(() => {
+    stop?.();
+    stop = undefined;
+  });
+
+  it('tells listeners about a 401 UNAUTHENTICATED and still rejects the call', async () => {
+    const listener = vi.fn();
+    stop = onUnauthenticated(listener);
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        jsonResponse({ code: 'UNAUTHENTICATED', message: 'Session expired' }, 401),
+      );
+    const api = createApiClient({ baseUrl: '/api', fetch: fetchFn });
+
+    const error = await api.get('/jobs').catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ code: 'UNAUTHENTICATED', status: 401 });
+    expect(listener).toHaveBeenCalledOnce();
+    expect(listener).toHaveBeenCalledWith(error);
+  });
+
+  it.each([
+    ['another 401 code', jsonResponse({ code: 'INVALID_EMAIL_OR_PASSWORD' }, 401)],
+    ['a 403', jsonResponse({ code: 'UNAUTHENTICATED' }, 403)],
+    ['a 401 without a code', new Response('', { status: 401 })],
+    ['a success', jsonResponse({ ok: true }, 200)],
+  ])('stays quiet for %s', async (_label, response) => {
+    const listener = vi.fn();
+    stop = onUnauthenticated(listener);
+    const api = createApiClient({
+      baseUrl: '/api',
+      fetch: vi.fn<typeof fetch>().mockResolvedValue(response),
+    });
+
+    await api.get('/jobs').catch(() => undefined);
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('stops calling a listener once it is removed', async () => {
+    const listener = vi.fn();
+    onUnauthenticated(listener)();
+    const api = createApiClient({
+      baseUrl: '/api',
+      fetch: vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(jsonResponse({ code: 'UNAUTHENTICATED' }, 401)),
+    });
+
+    await api.get('/jobs').catch(() => undefined);
+
+    expect(listener).not.toHaveBeenCalled();
   });
 });
 

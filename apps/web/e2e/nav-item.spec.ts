@@ -244,7 +244,8 @@ test.describe('Navigation item (AtsNavItem)', () => {
     await expect(page).toHaveURL(/\/dev\/ui$/);
 
     await item(p, 'default').click();
-    await expect(page).toHaveURL(/\/$/);
+    // The item links to `/`, which sends a signed-out visitor on to sign-in (#82).
+    await expect(page).toHaveURL(/\/sign-in\?redirect=%2F$/);
     await expect(page.getByTestId('ui-gallery')).toHaveCount(0);
   });
 
