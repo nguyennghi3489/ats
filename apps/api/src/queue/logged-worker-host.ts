@@ -27,6 +27,7 @@ export abstract class LoggedWorkerHost extends WorkerHost {
     const record = {
       queue: this.worker.name,
       jobId: job.id,
+      jobName: job.name,
       attempt: job.attemptsMade,
       attempts,
       willRetry,

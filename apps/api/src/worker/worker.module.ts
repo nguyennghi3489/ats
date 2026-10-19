@@ -1,6 +1,9 @@
 import { type DynamicModule, Module } from '@nestjs/common';
+import { createSmtpTransport, EMAIL_TRANSPORT } from '../email/email-transport.js';
+import { EMAIL_QUEUE } from '../queue/email.queue.js';
 import { PING_QUEUE } from '../queue/ping.queue.js';
 import { QueueModule } from '../queue/queue.module.js';
+import { EmailProcessor } from './email.processor.js';
 import { PingProcessor } from './ping.processor.js';
 import type { WorkerConfig } from './worker-config.js';
 
@@ -17,9 +20,13 @@ export class WorkerModule {
       module: WorkerModule,
       imports: [
         QueueModule.forRoot({ redisUrl: config.redisUrl, prefix: options.queuePrefix }),
-        QueueModule.register(PING_QUEUE),
+        QueueModule.register(PING_QUEUE, EMAIL_QUEUE),
       ],
-      providers: [PingProcessor],
+      providers: [
+        PingProcessor,
+        EmailProcessor,
+        { provide: EMAIL_TRANSPORT, useFactory: () => createSmtpTransport(config.smtp) },
+      ],
     };
   }
 }
