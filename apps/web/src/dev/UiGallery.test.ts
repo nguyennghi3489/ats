@@ -1,10 +1,15 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
+import { createMemoryHistory } from 'vue-router';
 import { ICON_NAMES } from '../components/ui/icons';
+import { createAppRouter } from '../router';
 import UiGallery from './UiGallery.vue';
 
 describe('UI gallery', () => {
-  const wrapper = mount(UiGallery);
+  // Demos such as AtsNavItem render RouterLinks, as they do inside the app.
+  const wrapper = mount(UiGallery, {
+    global: { plugins: [createAppRouter(createMemoryHistory(), true)] },
+  });
   const demo = () => wrapper.get('[data-testid="ui-demo-AtsIcon"]');
 
   it('lists every *.demo.vue under components/ui', () => {
@@ -14,8 +19,10 @@ describe('UI gallery', () => {
       'ui-demo-AtsButton',
       'ui-demo-AtsIcon',
       'ui-demo-AtsIconButton',
+      'ui-demo-AtsNavItem',
       'ui-demo-AtsSelect',
       'ui-demo-AtsTabs',
+      'ui-demo-AtsTextarea',
       'ui-demo-AtsTextField',
     ]);
     expect(demo().get('h2').text()).toBe('AtsIcon');

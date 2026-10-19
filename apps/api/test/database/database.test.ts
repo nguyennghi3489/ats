@@ -1,11 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createDatabase, type Database } from './database.js';
+import { createDatabase, type Database } from '../../src/database/database.js';
+import { testDatabaseUrl as testDatabaseUrlFromEnv } from '../support/test-database.js';
 
-// Integration tests against the Compose Postgres test database (`docker compose up -d --wait postgres`).
-const testDatabaseUrl =
-  process.env.TEST_DATABASE_URL ?? 'postgres://ats:ats@127.0.0.1:5432/ats_test';
+const testDatabaseUrl = testDatabaseUrlFromEnv();
 // Nothing listens on port 1, so connecting fails at once: stands in for "Postgres stopped".
 const unreachableUrl = 'postgres://ats:ats@127.0.0.1:1/ats_test';
 
