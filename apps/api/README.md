@@ -6,8 +6,42 @@ NestJS API (decisions §1). ESM, TypeScript strict, Express.
 pnpm --filter api dev         # build, then rebuild and restart on change; http://localhost:3000/health
 pnpm --filter api build       # compile to dist/
 pnpm --filter api start       # run dist/main.js with the environment as-is (production)
-pnpm --filter api test        # unit and integration tests (Vitest; needs Compose Redis)
+pnpm --filter api test        # unit and integration tests (Vitest; needs Compose Postgres and Redis)
 ```
+
+## Database
+
+Postgres through Drizzle ORM (`drizzle-orm/node-postgres`), migrations by drizzle-kit (decisions §1).
+The API reads `DATABASE_URL`; tests use `TEST_DATABASE_URL` (default: the Compose `ats_test` database).
+
+```sh
+docker compose up -d --wait postgres
+pnpm --filter api db:migrate                      # apply pending migrations; no-op when up to date
+pnpm --filter api db:generate                     # write a migration from changes in *.schema.ts
+pnpm --filter api db:migrate:create --name=<name> # write an empty SQL migration to fill in by hand
+pnpm --filter api db:reset                        # development only: drop everything, migrate again
+```
+
+- `src/database` holds the client. Inject it with `@Inject(DATABASE) database: Database`, then query
+  with `database.db` (Drizzle query builder; `sql` for raw fragments such as `unaccent(lower(...))`).
+- `database.transaction(async (tx) => { ... })` commits when the callback resolves and rolls back
+  when it throws. Run every query of the transaction on `tx`, not `database.db`.
+- `GET /health` returns `{ status: "ok", db: "ok" }`, or 503 `{ status: "error", db: "down" }` when
+  Postgres does not answer. The API still starts without Postgres.
+
+### Adding a migration
+
+1. Declare or change tables in the feature's own file, `src/<feature>/<feature>.schema.ts` (picked
+   up by `drizzle.config.ts`).
+2. Run `pnpm --filter api db:generate`. It writes `drizzle/NNNN_<name>.sql` plus a snapshot in
+   `drizzle/meta`. For SQL drizzle-kit cannot express (extensions, functions, data fixes), run
+   `db:migrate:create --name=<name>` and write the SQL yourself.
+3. Read the generated SQL, then run `pnpm --filter api db:migrate` and the tests.
+4. Commit the SQL file and the `drizzle/meta` changes together. Never edit or delete a migration
+   that has reached `main`; add a new one instead. If two branches both added migration `NNNN`,
+   the later one deletes its own and generates it again on top of `main`.
+
+Applied migrations are recorded in `drizzle.__drizzle_migrations`; each one runs in a transaction.
 
 ## Worker mode
 

@@ -4,7 +4,12 @@ import { describe, expect, it } from 'vitest';
 import type { AppConfig } from './config.js';
 import { APP_CONFIG, ConfigModule } from './config.module.js';
 
-const config: AppConfig = { nodeEnv: 'test', port: 4321, logLevel: 'error' };
+const config: AppConfig = {
+  nodeEnv: 'test',
+  port: 4321,
+  logLevel: 'error',
+  databaseUrl: 'postgres://ats:ats@127.0.0.1:5432/ats_test',
+};
 
 @Injectable()
 class PortReader {
