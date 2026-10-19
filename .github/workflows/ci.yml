@@ -1,7 +1,7 @@
 # Lint, typecheck, unit tests and build on every PR and every push to main.
 # Playwright E2E against the Compose services in its own job.
 # Docker images are built (not pushed) and smoke-tested in the `images` job.
-# API integration tests against Postgres run in the `integration` job. Deploy comes with its own issue (decisions §14).
+# API integration tests against Postgres, Redis and Mailpit run in the `integration` job. Deploy comes with its own issue (decisions §14).
 name: CI
 
 on:
@@ -98,9 +98,10 @@ jobs:
 
   # API integration tests (apps/api/test) against a real Postgres: the suite resets the test database,
   # applies every Drizzle migration (which installs unaccent, shipped with the image) and truncates
-  # tables before each test.
+  # tables before each test. The test app also boots the BullMQ queues and the auth rate-limit store
+  # (Redis), and the sign-up verification tests read the delivered mail back through Mailpit.
   integration:
-    name: API integration (Postgres)
+    name: API integration (Postgres, Redis, Mailpit)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -117,8 +118,32 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      mailpit:
+        image: axllent/mailpit:v1.31
+        env:
+          MP_SMTP_AUTH_ACCEPT_ANY: 'true'
+          MP_SMTP_AUTH_ALLOW_INSECURE: 'true'
+        ports:
+          - 1025:1025
+          - 8025:8025
+        options: >-
+          --health-cmd "/mailpit readyz"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     env:
       TEST_DATABASE_URL: postgres://ats:ats@127.0.0.1:5432/ats_test
+      REDIS_URL: redis://127.0.0.1:6379
+      MAILPIT_URL: http://127.0.0.1:8025
     steps:
       - name: Checkout
         uses: actions/checkout@v7
