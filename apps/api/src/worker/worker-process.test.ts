@@ -119,7 +119,11 @@ describe('worker and API processes (issue #30)', () => {
 
   it('the HTTP API process serves requests but leaves ping jobs waiting', async () => {
     const port = await freePort();
-    const api = start('main.js', { API_PORT: String(port), REDIS_URL: redisUrl });
+    const api = start('main.js', {
+      API_PORT: String(port),
+      REDIS_URL: redisUrl,
+      DATABASE_URL: process.env.TEST_DATABASE_URL ?? 'postgres://ats:ats@127.0.0.1:5432/ats_test',
+    });
     running.push(api);
     await expect
       .poll(

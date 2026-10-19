@@ -13,6 +13,8 @@ describe('UI gallery', () => {
     ).toEqual([
       'ui-demo-AtsButton',
       'ui-demo-AtsIcon',
+      'ui-demo-AtsIconButton',
+      'ui-demo-AtsSelect',
       'ui-demo-AtsTextarea',
       'ui-demo-AtsTextField',
     ]);

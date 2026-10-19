@@ -12,6 +12,7 @@ left open, what changed, and what is out of v1. Where this file and the design d
   - `packages/shared` — Zod schemas and types shared by api and web.
   - `apps/careers` (Nuxt, server-rendered) — **deferred**, built with the careers site.
 - Database: PostgreSQL.
+- Data access: Drizzle ORM, with drizzle-kit for migrations (decided on #29).
 - Queue: BullMQ + Redis (CV processing, email, cleanup jobs).
 - Files: S3 API. versitygw locally and in production for v1; migrate to DO Spaces / S3 when customers arrive
   (`rclone sync` + env change).
@@ -301,7 +302,8 @@ Admin-only action on an **archived** profile, confirmed by typing the candidate'
   acceptance criteria) → PR "Closes #N".
 - Day: manual Claude Code workflow (machine must stay on). Night: scheduled cloud agent (verify it can run
   the QA stack first).
-- Agents never merge. A human reviews and merges every PR.
+- The coordinator merges a PR once review and QA pass, CI is green and it is mergeable. Anything that stops
+  short is labelled `needs-human`, and the owner reviews those.
 
 ## 16. Out of v1
 
