@@ -31,7 +31,8 @@ const switchGroup = (p: Locator, name: string) => p.getByRole('group', { name })
 
 async function open(page: Page): Promise<void> {
   await page.goto('/dev/ui');
-  await expect(demo(page)).toBeVisible();
+  // The gallery renders every component demo first, which can take a while on a busy machine.
+  await expect(demo(page)).toBeVisible({ timeout: 30_000 });
 }
 
 /** Checks that every visible word of a demo panel is in the given language. */
@@ -214,5 +215,120 @@ test.describe('Auth layout (AuthLayout + LanguageSwitch)', () => {
         maxDiffPixelRatio: 0.02,
       });
     }
+  });
+});
+
+// QA additions for #80: the default language follows the browser (decisions §12), the card sits in the
+// middle of the page like the 1440 px desktop example, and vi / en captures of the demo for comparing
+// with the design screens (03-authentication-onboarding, desktop-example-sign-in and AUTH-07).
+test.describe('Auth layout: QA checks against decisions §12 and the design', () => {
+  test.setTimeout(60_000);
+  test.use({ locale: 'vi-VN' });
+
+  // Shows only the light auth demo, without gallery padding, so it fills the viewport like a real page.
+  const ONLY_LIGHT_DEMO =
+    '[data-testid^="ui-demo-"], .ui-gallery__title, [data-testid="auth-layout-demo"] > h2,' +
+    ' [data-panel="dark"], [data-panel="mobile"], [data-panel="light"] > h3' +
+    ' { display: none !important; }' +
+    ' .ui-gallery, .ui-gallery__demo, .ui-gallery__panels { padding: 0 !important; margin: 0 !important;' +
+    ' border: 0 !important; gap: 0 !important; }';
+
+  const pickEn = (p: Locator) =>
+    switchGroup(p, vi.auth.layout.language)
+      .getByRole('button', { name: vi.auth.layout.enName })
+      .click();
+
+  for (const [browserLocale, expected] of [
+    ['en-US', 'en'],
+    ['vi-VN', 'vi'],
+    ['fr-FR', 'vi'],
+  ] as const) {
+    test(`a ${browserLocale} browser with nothing stored starts in ${expected}`, async ({
+      browser,
+      baseURL,
+    }) => {
+      const context = await browser.newContext({
+        locale: browserLocale,
+        baseURL,
+        viewport: { width: 1440, height: 900 },
+      });
+      const page = await context.newPage();
+      await open(page);
+      await expect(page.locator('html')).toHaveAttribute('lang', expected);
+      const p = panel(page, 'light');
+      await expectLanguage(p, expected);
+      const dict = expected === 'vi' ? vi : en;
+      const name = expected === 'vi' ? dict.auth.layout.viName : dict.auth.layout.enName;
+      await expect(p.getByRole('button', { name })).toHaveAttribute('aria-pressed', 'true');
+      await context.close();
+    });
+  }
+
+  test('1440 px: brand and switch share the header row; the card is centred both ways', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page);
+    await page.addStyleTag({ content: ONLY_LIGHT_DEMO });
+    const p = panel(page, 'light');
+    await expect(p.locator('.auth-layout__mark')).toHaveText('A');
+    await expect(p.locator('.auth-layout__brand-name')).toHaveText('ATS nhà tuyển dụng');
+
+    const brand = (await p.getByTestId('auth-brand').boundingBox())!;
+    const sw = (await switchGroup(p, vi.auth.layout.language).boundingBox())!;
+    const box = (await card(p).boundingBox())!;
+    // Switch on the brand row, right-aligned inside the card: 1 px border + 32 px inset (issue context).
+    expect(Math.abs(brand.y + brand.height / 2 - (sw.y + sw.height / 2))).toBeLessThanOrEqual(2);
+    expect(Math.round(box.x + box.width - (sw.x + sw.width))).toBe(33);
+    // Desktop example: 448 px card centred on the 1440 px page, vertically too.
+    expect(box.width).toBe(448);
+    expect(Math.abs(box.x + box.width / 2 - 720)).toBeLessThanOrEqual(1);
+    const outer = (await page_(p).boundingBox())!;
+    const top = box.y - outer.y;
+    const bottom = outer.y + outer.height - (box.y + box.height);
+    expect(Math.abs(top - bottom), 'vertically centred').toBeLessThanOrEqual(1);
+
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.screenshot({ path: test.info().outputPath('qa-auth-1440-vi.png') });
+    await pickEn(p);
+    await expectLanguage(p, 'en');
+    await page.screenshot({ path: test.info().outputPath('qa-auth-1440-en.png') });
+  });
+
+  test('360 px: vi and en captures with no horizontal scroll in either language', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await open(page);
+    await page.addStyleTag({ content: ONLY_LIGHT_DEMO });
+    const p = panel(page, 'light');
+    for (const lang of ['vi', 'en'] as const) {
+      if (lang === 'en') await pickEn(p);
+      await expectLanguage(p, lang);
+      const { scroll, client } = await page.evaluate(() => ({
+        scroll: document.documentElement.scrollWidth,
+        client: document.documentElement.clientWidth,
+      }));
+      expect(scroll, `${lang}: no horizontal scrolling`).toBeLessThanOrEqual(client);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.screenshot({
+        path: test.info().outputPath(`qa-auth-360-${lang}.png`),
+        fullPage: true,
+      });
+    }
+  });
+
+  test('dark theme: vi and en captures of the demo', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await open(page);
+    const p = panel(page, 'dark');
+    await p.scrollIntoViewIfNeeded();
+    await expectLanguage(p, 'vi');
+    await p.screenshot({ path: test.info().outputPath('qa-auth-dark-vi.png') });
+    await switchGroup(p, vi.auth.layout.language)
+      .getByRole('button', { name: vi.auth.layout.enName })
+      .click();
+    await expectLanguage(p, 'en');
+    await p.screenshot({ path: test.info().outputPath('qa-auth-dark-en.png') });
   });
 });
