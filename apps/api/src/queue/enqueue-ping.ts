@@ -1,7 +1,7 @@
 import { parseArgs } from 'node:util';
 import { Queue } from 'bullmq';
 import { ConfigError } from '../config/config.js';
-import { loadWorkerConfig } from '../worker/worker-config.js';
+import { loadRedisUrl } from '../worker/worker-config.js';
 import { PING_QUEUE, type PingJobData } from './ping.queue.js';
 import { registerQueueOptions } from './queue-definition.js';
 
@@ -31,7 +31,7 @@ const { values } = parseArgs({
 
 let redisUrl: string;
 try {
-  redisUrl = loadWorkerConfig(process.env).redisUrl;
+  redisUrl = loadRedisUrl(process.env);
 } catch (error) {
   if (error instanceof ConfigError) {
     process.stderr.write(`${error.message}\n`);

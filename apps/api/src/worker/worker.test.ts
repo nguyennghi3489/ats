@@ -4,6 +4,7 @@ import type { INestApplicationContext, LoggerService } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { type Job, Queue, QueueEvents } from 'bullmq';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { EMAIL_QUEUE } from '../queue/email.queue.js';
 import { PING_QUEUE, type PingJobData } from '../queue/ping.queue.js';
 import { stepBackoff } from '../queue/queue-definition.js';
 import { QueueModule } from '../queue/queue.module.js';
@@ -13,7 +14,13 @@ import type { WorkerConfig } from './worker-config.js';
 // Integration tests against the Compose Redis (`docker compose up -d --wait redis`).
 // Each test uses its own key prefix so runs never see each other's jobs.
 const redisUrl = process.env.REDIS_URL ?? 'redis://127.0.0.1:6379';
-const config: WorkerConfig = { nodeEnv: 'test', logLevel: 'log', redisUrl };
+const config: WorkerConfig = {
+  nodeEnv: 'test',
+  logLevel: 'log',
+  redisUrl,
+  // Compose Mailpit; no test here sends email, the worker only needs the settings to start.
+  smtp: { host: '127.0.0.1', port: 1025, secure: false, from: 'ATS <no-reply@example.test>' },
+};
 
 interface LogRecord {
   level: string;
@@ -95,8 +102,10 @@ describe('worker mode', () => {
     const app = await startWorker();
 
     expect('listen' in app).toBe(false);
-    await expect.poll(() => logger.find('worker ready').length).toBeGreaterThan(0);
-    expect(logger.find('worker ready')[0]?.params[0]).toEqual({ queue: PING_QUEUE.name });
+    await expect.poll(() => logger.find('worker ready').length).toBe(2);
+    expect(logger.find('worker ready').map((record) => record.params[0])).toEqual(
+      expect.arrayContaining([{ queue: PING_QUEUE.name }, { queue: EMAIL_QUEUE.name }]),
+    );
   });
 
   it('retries a throwing job with the queue default attempts', async () => {

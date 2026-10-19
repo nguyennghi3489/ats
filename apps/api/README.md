@@ -6,7 +6,7 @@ NestJS API (decisions §1). ESM, TypeScript strict, Express.
 pnpm --filter api dev         # build, then rebuild and restart on change; http://localhost:3000/health
 pnpm --filter api build       # compile to dist/
 pnpm --filter api start       # run dist/main.js with the environment as-is (production)
-pnpm --filter api test        # unit tests in src/ (Vitest; needs Compose Redis, no database)
+pnpm --filter api test        # unit tests in src/ (Vitest; needs Compose Redis and Mailpit, no database)
 pnpm --filter api test:integration  # API integration tests in test/ against the Compose test Postgres
 ```
 
@@ -52,10 +52,11 @@ Applied migrations are recorded in `drizzle.__drizzle_migrations`; each one runs
 ## Worker mode
 
 The same codebase runs the BullMQ worker (decisions §1): `src/main.worker.ts` starts a Nest
-application context with every processor and no HTTP listener. It needs `REDIS_URL`, not `API_PORT`.
+application context with every processor and no HTTP listener. It needs `REDIS_URL` and the SMTP settings (see Email), not
+`API_PORT`.
 
 ```sh
-docker compose up -d --wait redis
+docker compose up -d --wait redis mailpit
 pnpm --filter api worker:dev    # build, then rebuild and restart on change
 pnpm --filter api worker:start  # run dist/main.worker.js with the environment as-is (production)
 pnpm --filter api queue:ping [--fail N] [--duration MS] [--count N]   # enqueue sample ping jobs
@@ -70,6 +71,39 @@ pnpm --filter api queue:ping [--fail N] [--duration MS] [--count N]   # enqueue 
 - Processors extend `LoggedWorkerHost` and use `@Processor(QUEUE.name, workerOptions())`: every
   failed attempt is logged (`warn` with `retryInMs` while retrying, `error` when giving up).
 - SIGTERM/SIGINT: the worker takes no new job, lets the active one finish, then exits.
+
+## Email
+
+Transactional email goes through the BullMQ `email` queue (decisions §1). A module imports
+`EmailModule`, injects `EmailService` and calls:
+
+```ts
+await emails.enqueue({ to, locale: 'vi', template: 'test', data: { name, url } });
+```
+
+`enqueue` validates the address, the locale (`vi` | `en`, the recipient's language, decisions §12),
+the template name and its data, then adds a job; it throws `EmailError` (`EMAIL_INVALID_MESSAGE`,
+`EMAIL_UNKNOWN_TEMPLATE`, `EMAIL_INVALID_DATA`) otherwise. The worker renders the template and
+sends it with Nodemailer over SMTP: 5 attempts with exponential backoff from 10 s; sent jobs are
+removed, jobs that gave up stay in the failed set. Logs carry the job id, template and outcome,
+never the recipient address or the rendered body.
+
+The worker reads `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER` + `SMTP_PASSWORD` (both or
+neither) and `EMAIL_FROM`; it refuses to start without them. Locally they point at the Compose
+`mailpit` service (`docker compose up -d --wait mailpit`); read the mail at http://127.0.0.1:8025.
+
+### Adding a template
+
+1. Create `src/email/templates/<name>.template.ts` with `defineEmailTemplate({ data, vi, en })`:
+   `data` is the Zod schema of what callers pass (use `z.url({ protocol: /^https?$/ })` for links);
+   `vi` and `en` each have `subject(data)`, `html(data)` and `text(data)`.
+2. Build the body with `layoutHtml(locale, content)` and `layoutText(locale, content)` from
+   `layout.ts` (ATS header, greeting, paragraphs, one button, the link repeated as text, footer).
+   Content is plain text and is HTML-escaped by the layout. For custom markup use the `html` tag
+   from `html.ts`, which escapes every interpolated value; never build HTML by concatenating strings.
+3. Register it in `EMAIL_TEMPLATES` (`registry.ts`). Its key is the template name, stored in each
+   job: to rename one, add the new name and remove the old one a release later.
+4. Test both locales and the escaping in `templates.test.ts`. English copy needs human review.
 
 ## Configuration
 
