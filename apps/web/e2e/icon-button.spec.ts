@@ -162,6 +162,9 @@ test.describe('AtsIconButton in /dev/ui', () => {
     await page.emulateMedia({ colorScheme: 'light' });
     await page.goto('/dev/ui');
     const button = panel(page, 'light').getByTestId('icon-button-default');
+    // boundingBox() is relative to the viewport and hover() scrolls the button into view, so the
+    // baseline is taken once it is in view; otherwise the page scroll reads as a geometry change.
+    await button.scrollIntoViewIfNeeded();
     const before = await button.boundingBox();
     expect(await size(button)).toEqual({ width: 36, height: 36 });
 
