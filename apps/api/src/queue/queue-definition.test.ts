@@ -1,5 +1,6 @@
 import type { Job } from 'bullmq';
 import { describe, expect, it } from 'vitest';
+import { EMAIL_QUEUE } from './email.queue.js';
 import {
   DEFAULT_ATTEMPTS,
   DEFAULT_BACKOFF,
@@ -36,6 +37,40 @@ describe('registerQueueOptions', () => {
 
     expect(options.name).toBe('mail');
     expect(options.defaultJobOptions).toMatchObject({ attempts: 5, backoff: DEFAULT_BACKOFF });
+  });
+
+  it('keeps a bounded history of completed and failed jobs by default', () => {
+    const options = registerQueueOptions(defineQueue('mail'));
+
+    expect(options.defaultJobOptions).toMatchObject({
+      removeOnComplete: { count: 1_000 },
+      removeOnFail: { count: 5_000 },
+    });
+  });
+
+  it('lets a queue choose what happens to finished jobs', () => {
+    const options = registerQueueOptions(
+      defineQueue('mail', { removeOnComplete: true, removeOnFail: false }),
+    );
+
+    expect(options.defaultJobOptions).toMatchObject({
+      removeOnComplete: true,
+      removeOnFail: false,
+    });
+  });
+});
+
+describe('EMAIL_QUEUE', () => {
+  it('tries 5 times, backs off exponentially from 10 s, drops sent jobs and keeps failed ones', () => {
+    expect(registerQueueOptions(EMAIL_QUEUE)).toEqual({
+      name: 'email',
+      defaultJobOptions: {
+        attempts: 5,
+        backoff: { type: 'exponential', delay: 10_000 },
+        removeOnComplete: true,
+        removeOnFail: false,
+      },
+    });
   });
 });
 

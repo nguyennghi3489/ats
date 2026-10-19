@@ -1,5 +1,5 @@
 import type { Processor, RegisterQueueOptions } from '@nestjs/bullmq';
-import type { BackoffOptions, BackoffStrategy } from 'bullmq';
+import type { BackoffOptions, BackoffStrategy, KeepJobs } from 'bullmq';
 
 /** Worker options accepted by `@Processor(name, options)` (the type itself is not exported). */
 export type NestWorkerOptions = NonNullable<Parameters<typeof Processor>[1]>;
@@ -23,17 +23,29 @@ export interface QueueDefinition {
   readonly name: string;
   readonly attempts: number;
   readonly backoff: BackoffOptions;
+  /** `true` drops a job as soon as it completes; default keeps the last 1,000. */
+  readonly removeOnComplete?: boolean | KeepJobs;
+  /** `false` keeps every failed job for inspection; default keeps the last 5,000. */
+  readonly removeOnFail?: boolean | KeepJobs;
 }
 
 export function defineQueue(
   name: string,
-  options: { attempts?: number; backoff?: BackoffOptions } = {},
+  options: Omit<Partial<QueueDefinition>, 'name'> = {},
 ): QueueDefinition {
   const attempts = options.attempts ?? DEFAULT_ATTEMPTS;
   if (!Number.isInteger(attempts) || attempts < 1) {
     throw new Error(`Queue ${name}: attempts must be a whole number of at least 1`);
   }
-  return { name, attempts, backoff: options.backoff ?? DEFAULT_BACKOFF };
+  return {
+    name,
+    attempts,
+    backoff: options.backoff ?? DEFAULT_BACKOFF,
+    ...(options.removeOnComplete === undefined
+      ? {}
+      : { removeOnComplete: options.removeOnComplete }),
+    ...(options.removeOnFail === undefined ? {} : { removeOnFail: options.removeOnFail }),
+  };
 }
 
 /**
@@ -64,8 +76,8 @@ export function registerQueueOptions(definition: QueueDefinition): RegisterQueue
     defaultJobOptions: {
       attempts: definition.attempts,
       backoff: definition.backoff,
-      removeOnComplete: { count: KEEP_COMPLETED },
-      removeOnFail: { count: KEEP_FAILED },
+      removeOnComplete: definition.removeOnComplete ?? { count: KEEP_COMPLETED },
+      removeOnFail: definition.removeOnFail ?? { count: KEEP_FAILED },
     },
   };
 }

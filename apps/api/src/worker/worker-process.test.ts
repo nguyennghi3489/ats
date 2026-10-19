@@ -25,7 +25,16 @@ interface Running {
 function start(entry: string, env: Record<string, string>): Running {
   const child = spawn(process.execPath, [join(outDir, entry)], {
     cwd: apiRoot,
-    env: { PATH: process.env.PATH ?? '', NODE_ENV: 'test', LOG_LEVEL: 'log', ...env },
+    env: {
+      PATH: process.env.PATH ?? '',
+      NODE_ENV: 'test',
+      LOG_LEVEL: 'log',
+      // The worker needs SMTP settings to start; these tests send no email.
+      SMTP_HOST: '127.0.0.1',
+      SMTP_PORT: '1025',
+      EMAIL_FROM: 'ATS <no-reply@example.test>',
+      ...env,
+    },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let output = '';
@@ -110,9 +119,12 @@ describe('worker and API processes (issue #30)', () => {
     expect(stored?.finishedOn).toBeGreaterThan(termAt);
     expect(stored?.finishedOn).toBeLessThanOrEqual(exit.at);
 
-    const messages = records(worker.output()).map((r) => r.message);
-    const processed = messages.indexOf('ping processed');
-    const stopped = messages.indexOf('worker stopped');
+    // Each queue has its own worker; the ping one must stop only after its job is done.
+    const logged = records(worker.output());
+    const processed = logged.findIndex((r) => r.message === 'ping processed');
+    const stopped = logged.findIndex(
+      (r) => r.message === 'worker stopped' && r.queue === PING_QUEUE.name,
+    );
     expect(processed).toBeGreaterThanOrEqual(0);
     expect(stopped).toBeGreaterThan(processed);
   }, 30_000);
