@@ -169,6 +169,9 @@ test.describe('AtsButton', () => {
 
     for (const variant of VARIANTS) {
       const button = box.getByTestId(`button-${variant}-default`);
+      // boundingBox() is viewport-relative: bring the button into view first so the caption
+      // click below does not scroll the page between the two measurements.
+      await button.scrollIntoViewIfNeeded();
       const before = await button.boundingBox();
       expect((await look(button)).outlineStyle).toBe('none');
 
