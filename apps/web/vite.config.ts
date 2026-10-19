@@ -3,6 +3,9 @@ import { fileURLToPath, URL } from 'node:url';
 import vue from '@vitejs/plugin-vue';
 import { defineConfig, loadEnv } from 'vite';
 
+/** API routes served under `/api` itself (apps/api/src/auth). */
+const API_PREFIXED_ROUTES = /^\/api\/(auth|me)(?=[/?]|$)/;
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const apiProxyTarget = env.API_PROXY_TARGET || 'http://localhost:3000';
@@ -14,11 +17,13 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       proxy: {
-        // The API serves its routes at the root (`/health`), so `/api` is stripped on the way through.
+        // Most API routes live at the root (`/health`), so `/api` is stripped on the way through.
+        // Better Auth (`/api/auth/*`) and `GET /api/me` are served with the prefix, so they keep it.
         '/api': {
           target: apiProxyTarget,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api(?=\/|$)/, ''),
+          rewrite: (path) =>
+            API_PREFIXED_ROUTES.test(path) ? path : path.replace(/^\/api(?=[/?]|$)/, ''),
         },
       },
     },
