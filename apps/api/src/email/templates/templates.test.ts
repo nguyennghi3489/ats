@@ -93,9 +93,61 @@ describe('test template', () => {
   });
 });
 
+describe('verify-email template', () => {
+  const link =
+    'http://localhost:3000/api/auth/verify-email?token=a.b.c&callbackURL=http%3A%2F%2Flocalhost%3A5173%2Fverify-email%2Fsuccess';
+  const verifyData = { name: 'Minh Anh', url: link };
+
+  it('renders the English email with the name, the link and the 24-hour expiry', () => {
+    const email = renderEmail('verify-email', 'en', verifyData);
+
+    expect(email.subject).toBe('Verify your email for ATS');
+    expect(email.html).toContain('<html lang="en">');
+    expect(email.html).toContain('Hello Minh Anh,');
+    expect(email.html).toMatch(/>Verify email<\/a\s*>/);
+    expect(email.html).toContain(`href="${link.replace(/&/g, '&amp;')}"`);
+    expect(email.html).toContain('expires in 24 hours');
+    expect(email.html).toContain('This email was sent automatically by ATS.');
+
+    expect(email.text).toContain('Hello Minh Anh,');
+    expect(email.text).toContain(`Verify email: ${link}`);
+    expect(email.text).toContain('expires in 24 hours');
+    expect(email.text).not.toMatch(/<[a-z]/i);
+  });
+
+  it('renders the Vietnamese email', () => {
+    const email = renderEmail('verify-email', 'vi', verifyData);
+
+    expect(email.subject).toBe('Xác minh email của bạn trên ATS');
+    expect(email.html).toContain('<html lang="vi">');
+    expect(email.html).toContain('Xin chào Minh Anh,');
+    expect(email.html).toMatch(/>Xác minh email<\/a\s*>/);
+    expect(email.html).toContain('hết hạn sau 24 giờ');
+    expect(email.text).toContain(`Xác minh email: ${link}`);
+    expect(email.text).toContain('Email này được gửi tự động từ ATS.');
+  });
+
+  it('escapes the name in the HTML part', () => {
+    const email = renderEmail('verify-email', 'en', { ...verifyData, name: '<b>Minh</b>' });
+
+    expect(email.html).not.toContain('<b>Minh</b>');
+    expect(email.html).toContain('&lt;b&gt;Minh&lt;/b&gt;');
+  });
+
+  it('refuses a missing name or a link that is not http(s)', () => {
+    expect(() => renderEmail('verify-email', 'en', { url: link })).toThrow(
+      /EMAIL_INVALID_DATA: name/,
+    );
+    expect(() =>
+      renderEmail('verify-email', 'en', { name: 'A', url: 'javascript:alert(1)' }),
+    ).toThrow(/EMAIL_INVALID_DATA: url/);
+  });
+});
+
 describe('registry', () => {
   it('renders every template in every locale', () => {
     expect(isEmailTemplateName('test')).toBe(true);
+    expect(isEmailTemplateName('verify-email')).toBe(true);
     expect(isEmailTemplateName('toString')).toBe(false);
     for (const name of Object.keys(EMAIL_TEMPLATES)) {
       for (const locale of EMAIL_LOCALES) {

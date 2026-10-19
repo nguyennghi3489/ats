@@ -5,8 +5,9 @@ const DATABASE_URL = 'postgres://ats:ats@127.0.0.1:5432/ats';
 const BETTER_AUTH_SECRET = 'test-only-secret-0123456789abcdef0123456789';
 const BETTER_AUTH_URL = 'http://localhost:3000';
 const WEB_ORIGIN = 'http://localhost:5173';
+const REDIS_URL = 'redis://127.0.0.1:6379';
 /** Every required variable except `API_PORT`. */
-const REQUIRED = { DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, WEB_ORIGIN };
+const REQUIRED = { DATABASE_URL, REDIS_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, WEB_ORIGIN };
 /** `REQUIRED` without one variable. */
 function without(name: keyof typeof REQUIRED): Record<string, string> {
   return Object.fromEntries(Object.entries(REQUIRED).filter(([key]) => key !== name));
@@ -24,6 +25,7 @@ describe('loadConfig', () => {
       port: 3000,
       logLevel: 'log',
       databaseUrl: DATABASE_URL,
+      redisUrl: REDIS_URL,
       ...AUTH_CONFIG,
     });
   });
@@ -36,6 +38,7 @@ describe('loadConfig', () => {
       port: 8080,
       logLevel: 'warn',
       databaseUrl: DATABASE_URL,
+      redisUrl: REDIS_URL,
       ...AUTH_CONFIG,
     });
   });
@@ -52,6 +55,15 @@ describe('loadConfig', () => {
     expect(() =>
       loadConfig({ API_PORT: '3000', ...REQUIRED, DATABASE_URL: 'redis://127.0.0.1:6379' }),
     ).toThrow(/DATABASE_URL must be a postgres:\/\/ or postgresql:\/\/ URL/);
+  });
+
+  it('names a missing or invalid REDIS_URL', () => {
+    expect(() => loadConfig({ API_PORT: '3000', ...without('REDIS_URL') })).toThrow(
+      /REDIS_URL is required/,
+    );
+    expect(() =>
+      loadConfig({ API_PORT: '3000', ...REQUIRED, REDIS_URL: 'http://127.0.0.1:6379' }),
+    ).toThrow(/REDIS_URL must be a redis:\/\/ or rediss:\/\/ URL/);
   });
 
   it('names a missing required variable', () => {
@@ -83,6 +95,7 @@ describe('loadConfig', () => {
     expect(message).toMatch(/API_PORT is required/);
     expect(message).toMatch(/NODE_ENV/);
     expect(message).toMatch(/DATABASE_URL is required/);
+    expect(message).toMatch(/REDIS_URL is required/);
     expect(message).toMatch(/BETTER_AUTH_SECRET is required/);
     expect(message).toMatch(/BETTER_AUTH_URL is required/);
     expect(message).toMatch(/WEB_ORIGIN is required/);
