@@ -37,3 +37,18 @@ takes the text colour around it.
 - `spinner` rotates, and stops under `prefers-reduced-motion: reduce`.
 
 Path data lives in `icons/index.ts`, one entry per icon on its design grid.
+
+## Button
+
+`<AtsButton @click="save">{{ t('…') }}</AtsButton>` is the design's `ATS / Button`. The label is the
+default slot, already translated by the caller; the component holds no text of its own.
+
+- `variant`: `primary` (default, the main action) or `outline` (secondary actions).
+- `type`: `button` (default, so it never submits a form by accident) or `submit`.
+- `disabled`: the native attribute, so the button takes no focus and emits no `click`.
+- `pending`: shows the spinner before the label and sets `aria-busy="true"`. Clicks are swallowed (no
+  `click`, no form submit) while the button keeps focus. Pass a pending label yourself if it should
+  change (for example "Đang lưu").
+- `block`: full width of the parent.
+- Desktop 36 px high; below 768 px wide at least `--touch-target-min` (44 px), and long labels wrap
+  centred. The 3 px focus ring is drawn inside the border, so the size never changes.
