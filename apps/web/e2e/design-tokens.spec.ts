@@ -2,6 +2,7 @@
 // from docs/design/01-foundations ("ATS / Foundations", "Light specimen", "Dark specimen",
 // "Opacity token unit verification").
 import { expect, test, type Page } from '@playwright/test';
+import { signInAsNewUser, uniqueEmail } from './support/session';
 
 const LIGHT = {
   canvas: 'rgb(247, 247, 242)', // #F7F7F2
@@ -63,6 +64,8 @@ async function bodyColours(page: Page) {
 }
 
 async function openHome(page: Page) {
+  // `/` needs a session since #82.
+  await signInAsNewUser(page, uniqueEmail(test.info(), 'qa-tokens'));
   await page.goto('/');
   await expect(page.getByTestId('home-page')).toBeVisible();
 }
