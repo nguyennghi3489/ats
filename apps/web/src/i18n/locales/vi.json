@@ -15,6 +15,16 @@
     "description": "Trang bạn tìm không tồn tại hoặc bạn không có quyền xem.",
     "backHome": "Về trang chủ"
   },
+  "auth": {
+    "layout": {
+      "brand": "ATS nhà tuyển dụng",
+      "language": "Ngôn ngữ",
+      "vi": "VI",
+      "en": "EN",
+      "viName": "Tiếng Việt",
+      "enName": "English"
+    }
+  },
   "errors": {
     "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại.",
     "NETWORK_ERROR": "Không kết nối được máy chủ. Kiểm tra mạng và thử lại.",
