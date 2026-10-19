@@ -83,3 +83,18 @@ square outline button that shows one icon. It holds no text of its own.
   `click`, no form submit) while the button keeps focus.
 - 36 × 36 px on desktop, 44 × 44 px (`--touch-target-min`) below 768 px wide. The 3 px focus ring is
   drawn inside the border, so the size never changes.
+
+## Notice
+
+`<AtsNotice tone="error" :title="t('…')">{{ t('…') }}</AtsNotice>` is the design's `ATS/Notice`: inline
+feedback with an icon, an optional title and the message (default slot). Text comes from the caller,
+already translated (API error codes are translated by the caller, decisions §12).
+
+- `tone`: `info` (default), `success` or `error`. Each draws its own 16 px decorative icon, so the
+  meaning never rests on colour alone.
+- `title`: optional, bold. Without it only the message renders.
+- `error` is `role="alert"`; `info` and `success` are `role="status"`, so screen readers announce
+  them when they are inserted.
+- Inset 12 / 16 px, icon/copy gap 12 px, title/message gap 4 px. Text always wraps; nothing is clipped.
+- Light: each tone has its fill. Dark: info keeps a fill; success and error sit on the surface colour.
+  The whole error notice (icon, title, message) takes `--color-danger`.
