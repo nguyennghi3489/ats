@@ -285,6 +285,35 @@ test.describe('Radio option (AtsRadioGroup, AtsRadio)', () => {
     ).toBeChecked();
   });
 
+  test('keyboard: Tab enters a group on its checked option and Space selects a focused unselected option', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.goto('/dev/ui');
+    const p = panel(page, 'light');
+
+    // Space on a focused, unselected radio selects it (native behaviour kept by AtsRadio).
+    const unselected = state(p, 'unselected').getByRole('radio', { name: 'Toàn cầu' });
+    await unselected.focus();
+    await expect(unselected).not.toBeChecked();
+    await page.keyboard.press('Space');
+    await expect(unselected).toBeChecked();
+
+    // Tab from the error group's only option lands on the checked option of the next group,
+    // not on its first option, so a radio group is a single tab stop.
+    await state(p, 'error').getByRole('radio').focus();
+    await page.keyboard.press('Tab');
+    const remote = state(p, 'group').getByRole('group', { name: 'Remote eligibility' });
+    const countries = remote.getByRole('radio', { name: 'Các quốc gia được chọn' });
+    await expect(countries).toBeFocused();
+    await expect(countries).toBeChecked();
+
+    // Tab again leaves the group for the next group's checked option.
+    await page.keyboard.press('Tab');
+    const salary = state(p, 'disabled-option').getByRole('group', { name: 'Salary visibility' });
+    await expect(salary.getByRole('radio', { name: 'Thỏa thuận' })).toBeFocused();
+  });
+
   test('the hidden legend still names its group', async ({ page }) => {
     await page.goto('/dev/ui');
     const long = state(panel(page, 'light'), 'long');
