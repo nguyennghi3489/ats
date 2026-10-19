@@ -2,13 +2,16 @@ import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import pg from 'pg';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { createDatabase, type Database } from './database.js';
-import { resetDatabase, runMigrations } from './migrations.js';
+import { createDatabase, type Database } from '../../src/database/database.js';
+import { resetDatabase, runMigrations } from '../../src/database/migrations.js';
+import {
+  testDatabaseUrl as testDatabaseUrlFromEnv,
+  withDatabaseName,
+} from '../support/test-database.js';
 
-// Integration tests against the Compose Postgres. Each run creates its own empty database
-// (next to the test database) and drops it afterwards.
-const testDatabaseUrl =
-  process.env.TEST_DATABASE_URL ?? 'postgres://ats:ats@127.0.0.1:5432/ats_test';
+// Each run creates its own empty database next to the test database and drops it afterwards,
+// so these tests never touch the schema the rest of the suite migrated.
+const testDatabaseUrl = testDatabaseUrlFromEnv();
 
 async function admin<T>(fn: (client: pg.Client) => Promise<T>): Promise<T> {
   const client = new pg.Client({ connectionString: testDatabaseUrl });
@@ -22,7 +25,7 @@ async function admin<T>(fn: (client: pg.Client) => Promise<T>): Promise<T> {
 
 describe('migrations', () => {
   const name = `ats_migrate_${randomUUID().replaceAll('-', '')}`;
-  const url = Object.assign(new URL(testDatabaseUrl), { pathname: `/${name}` }).toString();
+  const url = withDatabaseName(testDatabaseUrl, name);
   let database: Database;
 
   async function appliedCount(): Promise<number> {
