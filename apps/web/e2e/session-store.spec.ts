@@ -157,3 +157,53 @@ test.describe('session store against the real API', () => {
     expect(reloaded).toEqual({ status: 'signed-out', user: null, error: undefined });
   });
 });
+
+// QA for #81: the failure paths of load() in the browser. The /api/me answer is replaced in flight so
+// the real store, API client and schema parsing run unchanged; the page must stay Vietnamese.
+test.describe('session store when GET /api/me misbehaves', () => {
+  test.use({ locale: 'vi-VN' });
+
+  test('a malformed /api/me response is an error, not signed in, and the page stays vi', async ({
+    page,
+  }) => {
+    await page.route('**/api/me', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ user: { id: 'u-qa81', email: 'not-an-email', locale: 'en' } }),
+      }),
+    );
+    await page.goto(missingPath);
+    await expect(page.getByTestId('not-found-title')).toHaveText(vi.notFound.title);
+
+    const result = await inPage(page, 'load');
+
+    expect(result.error).toEqual({ name: 'ApiError', code: 'UNKNOWN_ERROR', status: 200 });
+    expect(result.status).not.toBe('signed-in');
+    expect(result.user).toBeNull();
+    await expect(page.getByTestId('not-found-title')).toHaveText(vi.notFound.title);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
+    await page.screenshot({ path: test.info().outputPath('malformed-me-vi.png'), fullPage: true });
+  });
+
+  test('a server error from /api/me is rethrown as ApiError and leaves the status unknown', async ({
+    page,
+  }) => {
+    await page.route('**/api/me', (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 'INTERNAL_ERROR' }),
+      }),
+    );
+    await page.goto(missingPath);
+
+    const result = await inPage(page, 'load');
+
+    expect(result).toEqual({
+      status: 'unknown',
+      user: null,
+      error: { name: 'ApiError', code: 'INTERNAL_ERROR', status: 500 },
+    });
+  });
+});
