@@ -1,7 +1,7 @@
 # Lint, typecheck, unit tests and build on every PR and every push to main.
 # Playwright E2E against the Compose services in its own job.
 # Docker images are built (not pushed) and smoke-tested in the `images` job.
-# Integration jobs and deploy are added by their own issues (decisions §14).
+# API integration tests against Postgres run in the `integration` job. Deploy comes with its own issue (decisions §14).
 name: CI
 
 on:
@@ -80,6 +80,50 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+  # API integration tests (apps/api/test) against a real Postgres: the suite resets the test database,
+  # applies every Drizzle migration (which installs unaccent, shipped with the image) and truncates
+  # tables before each test.
+  integration:
+    name: API integration (Postgres)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: ats
+          POSTGRES_PASSWORD: ats
+          POSTGRES_DB: ats_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ats -d ats_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://ats:ats@127.0.0.1:5432/ats_test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Integration tests
+        run: pnpm test:integration
 
   e2e:
     name: E2E (Playwright)

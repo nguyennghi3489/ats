@@ -19,9 +19,10 @@
     "build": "pnpm deps:build && tsc -p tsconfig.build.json",
     "start": "node dist/main.js",
     "worker:start": "node dist/main.worker.js",
-    "typecheck": "pnpm deps:build && tsc -p tsconfig.json --noEmit",
+    "typecheck": "pnpm deps:build && tsc -p tsconfig.json --noEmit && tsc -p test/tsconfig.json",
     "lint": "eslint .",
-    "test": "pnpm deps:build && vitest run"
+    "test": "pnpm deps:build && vitest run --dir src",
+    "test:integration": "pnpm deps:build && vitest run --config vitest.integration.config.ts"
   },
   "dependencies": {
     "@ats/shared": "workspace:*",
