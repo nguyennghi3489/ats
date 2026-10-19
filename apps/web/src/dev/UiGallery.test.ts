@@ -24,6 +24,7 @@ describe('UI gallery', () => {
       'ui-demo-AtsNotice',
       'ui-demo-AtsRadioGroup',
       'ui-demo-AtsSelect',
+      'ui-demo-AtsTable',
       'ui-demo-AtsTabs',
       'ui-demo-AtsTextarea',
       'ui-demo-AtsTextField',
