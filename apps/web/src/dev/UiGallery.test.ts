@@ -18,6 +18,7 @@ describe('UI gallery', () => {
     ).toEqual([
       'ui-demo-AtsBadge',
       'ui-demo-AtsButton',
+      'ui-demo-AtsEmptyState',
       'ui-demo-AtsIcon',
       'ui-demo-AtsIconButton',
       'ui-demo-AtsNavItem',
