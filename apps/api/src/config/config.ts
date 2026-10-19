@@ -12,6 +12,11 @@ export function databaseUrlSchema() {
   });
 }
 
+/** An absolute http(s) URL. */
+function httpUrlSchema() {
+  return z.url({ protocol: /^https?$/, error: 'must be an http:// or https:// URL' });
+}
+
 /** A TCP port given as text (`API_PORT`, `SMTP_PORT`). */
 function portSchema() {
   return z
@@ -30,6 +35,12 @@ const envSchema = z.object({
   API_PORT: portSchema(),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('log'),
   DATABASE_URL: databaseUrlSchema(),
+  // Signs session cookies and tokens. Better Auth asks for at least 32 characters.
+  BETTER_AUTH_SECRET: z.string().min(32, 'must be at least 32 characters'),
+  // Public URL the API is reached at (Better Auth builds links and cookie settings from it).
+  BETTER_AUTH_URL: httpUrlSchema(),
+  // Origin of the recruiter web app; the only origin allowed to call the auth endpoints.
+  WEB_ORIGIN: httpUrlSchema().transform((url) => new URL(url).origin),
 });
 
 export interface AppConfig {
@@ -37,6 +48,9 @@ export interface AppConfig {
   port: number;
   logLevel: AppLogLevel;
   databaseUrl: string;
+  betterAuthSecret: string;
+  betterAuthUrl: string;
+  webOrigin: string;
 }
 
 /** Thrown when the environment does not match the schema. The message names every bad variable. */
@@ -75,8 +89,16 @@ export function parseEnv<T extends z.ZodType>(
 
 /** Validates the environment once at startup and returns typed config, or throws `ConfigError`. */
 export function loadConfig(env: Record<string, string | undefined>): AppConfig {
-  const { NODE_ENV, API_PORT, LOG_LEVEL, DATABASE_URL } = parseEnv(envSchema, env);
-  return { nodeEnv: NODE_ENV, port: API_PORT, logLevel: LOG_LEVEL, databaseUrl: DATABASE_URL };
+  const data = parseEnv(envSchema, env);
+  return {
+    nodeEnv: data.NODE_ENV,
+    port: data.API_PORT,
+    logLevel: data.LOG_LEVEL,
+    databaseUrl: data.DATABASE_URL,
+    betterAuthSecret: data.BETTER_AUTH_SECRET,
+    betterAuthUrl: data.BETTER_AUTH_URL,
+    webOrigin: data.WEB_ORIGIN,
+  };
 }
 
 /** `no-reply@example.test` or `ATS <no-reply@example.test>`. */

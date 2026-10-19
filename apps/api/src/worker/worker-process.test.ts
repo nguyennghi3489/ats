@@ -135,6 +135,9 @@ describe('worker and API processes (issue #30)', () => {
       API_PORT: String(port),
       REDIS_URL: redisUrl,
       DATABASE_URL: process.env.TEST_DATABASE_URL ?? 'postgres://ats:ats@127.0.0.1:5432/ats_test',
+      BETTER_AUTH_SECRET: 'test-only-better-auth-secret-0123456789abcdef',
+      BETTER_AUTH_URL: `http://127.0.0.1:${port}`,
+      WEB_ORIGIN: 'http://localhost:5173',
     });
     running.push(api);
     await expect
