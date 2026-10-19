@@ -4,6 +4,9 @@ import type { AppConfig } from '../../src/config/config.js';
 import { JsonLogger } from '../../src/logging/json-logger.js';
 import { testDatabaseUrl } from './test-database.js';
 
+/** `webOrigin` of the test app: send it as `Origin` on auth requests, as the browser would. */
+export const TEST_WEB_ORIGIN = 'http://localhost:5173';
+
 /** The API booted in-process, listening on a random local port. */
 export interface TestApp {
   readonly app: INestApplication;
@@ -24,6 +27,9 @@ export async function startTestApp(overrides: Partial<AppConfig> = {}): Promise<
     port: 0,
     logLevel: 'error',
     databaseUrl: overrides.databaseUrl ?? testDatabaseUrl(),
+    betterAuthSecret: 'test-only-better-auth-secret-0123456789abcdef',
+    betterAuthUrl: 'http://127.0.0.1:3000',
+    webOrigin: TEST_WEB_ORIGIN,
     ...overrides,
   };
   const app = await createApp(config, new JsonLogger({ logLevels: [] }));

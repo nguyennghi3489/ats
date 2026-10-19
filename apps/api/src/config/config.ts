@@ -12,6 +12,11 @@ export function databaseUrlSchema() {
   });
 }
 
+/** An absolute http(s) URL. */
+function httpUrlSchema() {
+  return z.url({ protocol: /^https?$/, error: 'must be an http:// or https:// URL' });
+}
+
 /**
  * Environment variables the API reads. Names match `.env.example` (root and `apps/api`).
  * Feature modules add their variables here so a misconfigured deploy fails at startup.
@@ -25,6 +30,12 @@ const envSchema = z.object({
     .pipe(z.number().int().min(1, 'must be 1-65535').max(65535, 'must be 1-65535')),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('log'),
   DATABASE_URL: databaseUrlSchema(),
+  // Signs session cookies and tokens. Better Auth asks for at least 32 characters.
+  BETTER_AUTH_SECRET: z.string().min(32, 'must be at least 32 characters'),
+  // Public URL the API is reached at (Better Auth builds links and cookie settings from it).
+  BETTER_AUTH_URL: httpUrlSchema(),
+  // Origin of the recruiter web app; the only origin allowed to call the auth endpoints.
+  WEB_ORIGIN: httpUrlSchema().transform((url) => new URL(url).origin),
 });
 
 export interface AppConfig {
@@ -32,6 +43,9 @@ export interface AppConfig {
   port: number;
   logLevel: AppLogLevel;
   databaseUrl: string;
+  betterAuthSecret: string;
+  betterAuthUrl: string;
+  webOrigin: string;
 }
 
 /** Thrown when the environment does not match the schema. The message names every bad variable. */
@@ -55,6 +69,14 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
       `Invalid environment configuration:\n${problems.map((problem) => `  - ${problem}`).join('\n')}`,
     );
   }
-  const { NODE_ENV, API_PORT, LOG_LEVEL, DATABASE_URL } = result.data;
-  return { nodeEnv: NODE_ENV, port: API_PORT, logLevel: LOG_LEVEL, databaseUrl: DATABASE_URL };
+  const data = result.data;
+  return {
+    nodeEnv: data.NODE_ENV,
+    port: data.API_PORT,
+    logLevel: data.LOG_LEVEL,
+    databaseUrl: data.DATABASE_URL,
+    betterAuthSecret: data.BETTER_AUTH_SECRET,
+    betterAuthUrl: data.BETTER_AUTH_URL,
+    webOrigin: data.WEB_ORIGIN,
+  };
 }
