@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { defineComponent, h, nextTick, ref } from 'vue';
 import AtsRadio from './AtsRadio.vue';
 import AtsRadioGroup from './AtsRadioGroup.vue';
+import AtsRadioGroupDemo from './AtsRadioGroup.demo.vue';
 
 const LEGEND = 'Phạm vi làm việc từ xa';
 const ERROR = 'Chọn một phạm vi áp dụng trước khi tiếp tục.';
@@ -218,6 +219,46 @@ describe('AtsRadioGroup', () => {
     expect(css).toContain('@media (max-width: 767px)');
     expect(mobile).toMatch(/min-height:\s*var\(--touch-target-min\)/);
     expect(css).toMatch(/overflow-wrap:\s*(anywhere|break-word)/);
+  });
+
+  it('keeps each gallery panel independent when the demo is mounted several times in one document', async () => {
+    const wrapper = mount(
+      defineComponent({
+        setup: () => () =>
+          h('div', [h(AtsRadioGroupDemo), h(AtsRadioGroupDemo), h(AtsRadioGroupDemo)]),
+      }),
+      { attachTo: document.body },
+    );
+    mounted.push(wrapper);
+    const panelRadios = (state: string, value: string) => [
+      ...document.querySelectorAll<HTMLInputElement>(
+        `[data-state="${state}"] input[type="radio"][value="${value}"]`,
+      ),
+    ];
+
+    for (const state of ['unselected', 'selected', 'focus', 'disabled', 'error', 'group', 'long']) {
+      const names = [
+        ...document.querySelectorAll<HTMLInputElement>(
+          `[data-state="${state}"] input[type="radio"]`,
+        ),
+      ].map((radio) => radio.name);
+      expect(new Set(names).size).toBe(3);
+    }
+
+    const [, , last] = panelRadios('group', 'global');
+    last?.click();
+    await nextTick();
+
+    expect(panelRadios('group', 'countries').map((radio) => radio.checked)).toEqual([
+      true,
+      true,
+      false,
+    ]);
+    expect(panelRadios('selected', 'global').map((radio) => radio.checked)).toEqual([
+      true,
+      true,
+      true,
+    ]);
   });
 
   it('uses tokens only, no raw hex colours', () => {
