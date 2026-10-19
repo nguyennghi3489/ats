@@ -5,8 +5,9 @@ const DATABASE_URL = 'postgres://ats:ats@127.0.0.1:5432/ats';
 const BETTER_AUTH_SECRET = 'test-only-secret-0123456789abcdef0123456789';
 const BETTER_AUTH_URL = 'http://localhost:3000';
 const WEB_ORIGIN = 'http://localhost:5173';
+const REDIS_URL = 'redis://127.0.0.1:6379';
 /** Every required variable except `API_PORT`. */
-const REQUIRED = { DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, WEB_ORIGIN };
+const REQUIRED = { DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, WEB_ORIGIN, REDIS_URL };
 /** `REQUIRED` without one variable. */
 function without(name: keyof typeof REQUIRED): Record<string, string> {
   return Object.fromEntries(Object.entries(REQUIRED).filter(([key]) => key !== name));
@@ -24,20 +25,48 @@ describe('loadConfig', () => {
       port: 3000,
       logLevel: 'log',
       databaseUrl: DATABASE_URL,
+      redisUrl: REDIS_URL,
+      trustProxy: false,
       ...AUTH_CONFIG,
     });
   });
 
   it('reads every value when all are set', () => {
     expect(
-      loadConfig({ API_PORT: '8080', NODE_ENV: 'production', LOG_LEVEL: 'warn', ...REQUIRED }),
+      loadConfig({
+        API_PORT: '8080',
+        NODE_ENV: 'production',
+        LOG_LEVEL: 'warn',
+        TRUST_PROXY: 'true',
+        ...REQUIRED,
+      }),
     ).toEqual({
       nodeEnv: 'production',
       port: 8080,
       logLevel: 'warn',
       databaseUrl: DATABASE_URL,
+      redisUrl: REDIS_URL,
+      trustProxy: true,
       ...AUTH_CONFIG,
     });
+  });
+
+  it('names a missing or invalid REDIS_URL', () => {
+    expect(() => loadConfig({ API_PORT: '3000', ...without('REDIS_URL') })).toThrow(
+      /REDIS_URL is required/,
+    );
+    expect(() =>
+      loadConfig({ API_PORT: '3000', ...REQUIRED, REDIS_URL: 'http://127.0.0.1:6379' }),
+    ).toThrow(/REDIS_URL must be a redis:\/\/ or rediss:\/\/ URL/);
+  });
+
+  it('accepts only true or false for TRUST_PROXY', () => {
+    expect(loadConfig({ API_PORT: '3000', ...REQUIRED, TRUST_PROXY: 'false' }).trustProxy).toBe(
+      false,
+    );
+    expect(() => loadConfig({ API_PORT: '3000', ...REQUIRED, TRUST_PROXY: 'yes' })).toThrow(
+      /TRUST_PROXY must be true or false/,
+    );
   });
 
   it('accepts a postgresql:// connection string', () => {
@@ -86,6 +115,7 @@ describe('loadConfig', () => {
     expect(message).toMatch(/BETTER_AUTH_SECRET is required/);
     expect(message).toMatch(/BETTER_AUTH_URL is required/);
     expect(message).toMatch(/WEB_ORIGIN is required/);
+    expect(message).toMatch(/REDIS_URL is required/);
   });
 
   describe('authentication settings', () => {

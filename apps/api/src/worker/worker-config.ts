@@ -4,15 +4,13 @@ import {
   checkSmtpCredentials,
   LOG_LEVELS,
   parseEnv,
+  redisUrlSchema as redisUrl,
   type SmtpConfig,
   smtpConfigFrom,
   smtpEnvShape,
 } from '../config/config.js';
 
-const redisUrlSchema = z.url({
-  protocol: /^rediss?$/,
-  error: 'must be a redis:// or rediss:// URL',
-});
+const redisUrlSchema = redisUrl();
 
 /**
  * Environment variables the worker reads. The worker opens no HTTP port, so `API_PORT` is not

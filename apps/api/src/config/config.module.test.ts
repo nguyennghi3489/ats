@@ -12,6 +12,8 @@ const config: AppConfig = {
   betterAuthSecret: 'test-only-better-auth-secret-0123456789abcdef',
   betterAuthUrl: 'http://localhost:3000',
   webOrigin: 'http://localhost:5173',
+  redisUrl: 'redis://127.0.0.1:6379',
+  trustProxy: false,
 };
 
 @Injectable()
