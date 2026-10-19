@@ -12,6 +12,6 @@ test.describe('smoke', () => {
   test('the API health check is reachable through the web proxy', async ({ page }) => {
     const response = await page.request.get('/api/health');
     expect(response.status()).toBe(200);
-    expect(await response.json()).toEqual({ status: 'ok' });
+    expect(await response.json()).toEqual({ status: 'ok', db: 'ok' });
   });
 });
