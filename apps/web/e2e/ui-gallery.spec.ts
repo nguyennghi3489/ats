@@ -103,6 +103,8 @@ test.describe('UI gallery', () => {
 
     const demo = page.getByTestId('ui-demo-AtsIcon');
     await expect(demo.locator('svg.ats-icon')).toHaveCount(ICONS.length * 3);
+    // Other demos (AtsButton) come first, so bring the icon panel up before checking it fits.
+    await demo.locator('[data-panel="light"]').scrollIntoViewIfNeeded();
     for (const icon of await demo.locator('[data-panel="light"] svg.ats-icon').all()) {
       await expect(icon).toBeInViewport();
     }
@@ -139,7 +141,8 @@ test.describe('UI gallery', () => {
     expect(still.running).toBe(0);
     expect(still.moved, 'spinner transform stays the same').toBe(false);
 
-    // Only the spinner spins (other demos, such as a pending AtsIconButton, nest spinners of their own).
+    // Only the spinner spins (other demos, such as a pending AtsButton or AtsIconButton, nest spinners
+    // of their own).
     await expect(page.getByTestId('ui-demo-AtsIcon').locator('svg.ats-icon--spin')).toHaveCount(3);
   });
 });
