@@ -102,6 +102,9 @@ importers:
       '@fontsource/be-vietnam-pro':
         specifier: ^5.3.0
         version: 5.3.0
+      better-auth:
+        specifier: ^1.7.11
+        version: 1.7.11(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@types/pg@8.23.1)(kysely@0.29.7)(pg@8.23.1))(pg@8.23.1)(vitest@5.0.5(@types/node@24.19.2)(happy-dom@21.0.3)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(tsx@4.23.15)))(vue@3.5.44(typescript@6.0.3))
       pinia:
         specifier: ^4.1.0
         version: 4.1.0(@vue/devtools-api@8.2.1)(typescript@6.0.3)(vue@3.5.44(typescript@6.0.3))
