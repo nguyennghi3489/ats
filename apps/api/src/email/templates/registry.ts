@@ -2,6 +2,7 @@ import type { z } from 'zod';
 import { EmailError, failedFields } from '../email-error.js';
 import { testTemplate } from './test.template.js';
 import type { EmailLocale, EmailTemplate, RenderedEmail } from './types.js';
+import { verifyEmailTemplate } from './verify-email.template.js';
 
 /**
  * Every email the API can send, by name. The name travels in the job, so renaming a template
@@ -9,6 +10,7 @@ import type { EmailLocale, EmailTemplate, RenderedEmail } from './types.js';
  */
 export const EMAIL_TEMPLATES = {
   test: testTemplate,
+  'verify-email': verifyEmailTemplate,
 } as const satisfies Record<string, EmailTemplate>;
 
 export type EmailTemplateName = keyof typeof EMAIL_TEMPLATES;
