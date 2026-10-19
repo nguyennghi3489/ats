@@ -68,3 +68,18 @@ stay as they are); the components hold no text of their own.
 - Selected: bold label and a 2 px underline; the underline space is reserved in every state, so the
   row never shifts. The label box is 72 px wide and long labels wrap. Desktop 38 px for one line
   (minimum 36); below 768 px 46 px (minimum 44). The 3 px focus ring is drawn outside the tab.
+
+## Icon button
+
+`<AtsIconButton icon="trash" :label="t('…')" @click="remove" />` is the design's `ATS / Icon button`: a
+square outline button that shows one icon. It holds no text of its own.
+
+- `icon`: an `AtsIcon` name, drawn at 16 px and centred.
+- `label`: required accessible name, already translated. It becomes `aria-label` and the native
+  `title`; it is never rendered as text.
+- `type`: `button` (default) or `submit`.
+- `disabled`: the native attribute, so the button takes no focus and emits no `click`.
+- `pending`: swaps the icon for the spinner and sets `aria-busy="true"`. Clicks are swallowed (no
+  `click`, no form submit) while the button keeps focus.
+- 36 × 36 px on desktop, 44 × 44 px (`--touch-target-min`) below 768 px wide. The 3 px focus ring is
+  drawn inside the border, so the size never changes.

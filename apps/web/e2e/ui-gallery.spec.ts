@@ -141,7 +141,8 @@ test.describe('UI gallery', () => {
     expect(still.running).toBe(0);
     expect(still.moved, 'spinner transform stays the same').toBe(false);
 
-    // Only the spinner spins (other demos, such as a pending AtsButton, nest spinners of their own).
+    // Only the spinner spins (other demos, such as a pending AtsButton or AtsIconButton, nest spinners
+    // of their own).
     await expect(page.getByTestId('ui-demo-AtsIcon').locator('svg.ats-icon--spin')).toHaveCount(3);
   });
 });

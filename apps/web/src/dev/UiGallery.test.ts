@@ -10,7 +10,14 @@ describe('UI gallery', () => {
   it('lists every *.demo.vue under components/ui', () => {
     expect(
       wrapper.findAll('[data-testid^="ui-demo-"]').map((d) => d.attributes('data-testid')),
-    ).toEqual(['ui-demo-AtsButton', 'ui-demo-AtsIcon', 'ui-demo-AtsTabs', 'ui-demo-AtsTextField']);
+    ).toEqual([
+      'ui-demo-AtsButton',
+      'ui-demo-AtsIcon',
+      'ui-demo-AtsIconButton',
+      'ui-demo-AtsSelect',
+      'ui-demo-AtsTabs',
+      'ui-demo-AtsTextField',
+    ]);
     expect(demo().get('h2').text()).toBe('AtsIcon');
   });
 
