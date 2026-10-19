@@ -3,7 +3,12 @@ import { sql } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createDatabase, type Database } from '../../src/database/database.js';
-import { startTestApp, TEST_WEB_ORIGIN, testRedisUrl, type TestApp } from '../support/test-app.js';
+import {
+  startTestApp,
+  TEST_WEB_ORIGIN,
+  TEST_REDIS_URL,
+  type TestApp,
+} from '../support/test-app.js';
 import { testDatabaseUrl } from '../support/test-database.js';
 
 // Issue #83 (decisions §2): failed sign-ins are limited to 10 per 15 minutes per IP + email. The
@@ -23,8 +28,8 @@ describe('failed sign-in limit under concurrent attempts', () => {
   beforeAll(async () => {
     api = await startTestApp({ trustProxy: true });
     database = createDatabase({ url: testDatabaseUrl(), max: 1 });
-    redis = new Redis(testRedisUrl());
-    const keys = await redis.keys('sign-in-limit:*');
+    redis = new Redis(TEST_REDIS_URL);
+    const keys = await redis.keys(`${api.redisPrefix}:sign-in-limit:*`);
     if (keys.length > 0) {
       await redis.del(...keys);
     }

@@ -5,7 +5,12 @@ import { sql } from 'drizzle-orm';
 import { Redis } from 'ioredis';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDatabase, type Database } from '../../src/database/database.js';
-import { startTestApp, TEST_WEB_ORIGIN, testRedisUrl, type TestApp } from '../support/test-app.js';
+import {
+  startTestApp,
+  TEST_WEB_ORIGIN,
+  TEST_REDIS_URL,
+  type TestApp,
+} from '../support/test-app.js';
 import { testDatabaseUrl } from '../support/test-database.js';
 
 // Issue #83: after 10 failed email sign-ins in 15 minutes for the same IP + email, further attempts
@@ -51,9 +56,9 @@ describe('failed sign-in limit per IP and email', () => {
 
   beforeAll(async () => {
     // Behind Caddy in production: the client IP comes from X-Forwarded-For.
-    api = await startTestApp({ trustProxy: true }, logger);
+    api = await startTestApp({ trustProxy: true }, { logger });
     database = createDatabase({ url: testDatabaseUrl(), max: 1 });
-    redis = new Redis(testRedisUrl());
+    redis = new Redis(TEST_REDIS_URL);
   });
 
   afterAll(async () => {
@@ -75,7 +80,7 @@ describe('failed sign-in limit per IP and email', () => {
   });
 
   function limitKeys(): Promise<string[]> {
-    return redis.keys('sign-in-limit:*');
+    return redis.keys(`${api.redisPrefix}:sign-in-limit:*`);
   }
 
   function post(path: string, body: unknown, ip: string) {

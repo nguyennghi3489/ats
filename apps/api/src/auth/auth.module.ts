@@ -1,4 +1,5 @@
 import {
+  type DynamicModule,
   Inject,
   Injectable,
   Logger,
@@ -7,6 +8,7 @@ import {
   type NestMiddleware,
   type NestModule,
   type OnApplicationShutdown,
+  type OnModuleDestroy,
   RequestMethod,
 } from '@nestjs/common';
 import { toNodeHandler } from 'better-auth/node';
@@ -16,15 +18,15 @@ import type { AppConfig } from '../config/config.js';
 import { APP_CONFIG } from '../config/config.module.js';
 import type { Database } from '../database/database.js';
 import { DATABASE } from '../database/database.module.js';
+import { EmailModule } from '../email/email.module.js';
+import { EmailService } from '../email/email.service.js';
 import { type Auth, createAuth } from './auth.js';
 import { AUTH } from './auth.tokens.js';
 import { MeController } from './me.controller.js';
 import { CLIENT_IP_HEADER, SignInLimiter } from './sign-in-limit.js';
+import { VerificationResend } from './verification-resend.js';
 
 export { AUTH } from './auth.tokens.js';
-
-/** Redis connection holding the failed sign-in counters. */
-const SIGN_IN_LIMIT_REDIS = Symbol('SIGN_IN_LIMIT_REDIS');
 
 /** Hands every `/api/auth/*` request to Better Auth, which writes the whole response. */
 @Injectable()
@@ -43,6 +45,12 @@ class AuthHandlerMiddleware implements NestMiddleware {
   }
 }
 
+/** Redis connection for the verification-email resend limits and current links. */
+const AUTH_REDIS = Symbol('AUTH_REDIS');
+
+/** Redis connection holding the failed sign-in counters. */
+const SIGN_IN_LIMIT_REDIS = Symbol('SIGN_IN_LIMIT_REDIS');
+
 /** Closes the sign-in limit Redis connection when the app shuts down. */
 @Injectable()
 class SignInLimitRedisCloser implements OnApplicationShutdown {
@@ -53,38 +61,83 @@ class SignInLimitRedisCloser implements OnApplicationShutdown {
   }
 }
 
-/** Better Auth under `/api/auth/*` (sign-up, sign-in, sign-out, session) and `GET /api/me`. */
-@Module({
-  controllers: [MeController],
-  providers: [
-    {
-      provide: SIGN_IN_LIMIT_REDIS,
-      inject: [APP_CONFIG],
-      useFactory: (config: AppConfig) => {
-        const logger = new Logger('SignInLimit');
-        // One retry per command: when Redis is down a sign-in waits briefly, then goes through
-        // unlimited (see `signInLimitHooks`) instead of hanging.
-        const redis = new Redis(config.redisUrl, { maxRetriesPerRequest: 1 });
-        redis.on('error', (error: Error) => logger.warn(`Redis error: ${error.message}`));
-        return redis;
-      },
-    },
-    SignInLimitRedisCloser,
-    {
-      provide: AUTH,
-      inject: [APP_CONFIG, DATABASE, SIGN_IN_LIMIT_REDIS],
-      useFactory: (config: AppConfig, database: Database, redis: Redis) =>
-        createAuth(
-          config,
-          database.db,
-          new SignInLimiter(redis, { secret: config.betterAuthSecret }),
-        ),
-    },
-    AuthHandlerMiddleware,
-  ],
-  exports: [AUTH],
-})
-export class AuthModule implements NestModule {
+export interface AuthModuleOptions {
+  /** First part of the auth Redis keys (tests isolate runs with it). */
+  redisKeyPrefix: string;
+}
+
+/**
+ * Better Auth under `/api/auth/*` (sign-up with the verification email, verification, resend,
+ * sign-in with the failed sign-in limit, sign-out, session) and `GET /api/me`. Needs
+ * `QueueModule.forRoot` at the root.
+ */
+@Module({})
+export class AuthModule implements NestModule, OnModuleDestroy {
+  static forRoot(options: AuthModuleOptions): DynamicModule {
+    return {
+      module: AuthModule,
+      imports: [EmailModule],
+      controllers: [MeController],
+      providers: [
+        {
+          provide: AUTH_REDIS,
+          inject: [APP_CONFIG],
+          useFactory: (config: AppConfig) => new Redis(config.redisUrl),
+        },
+        {
+          provide: SIGN_IN_LIMIT_REDIS,
+          inject: [APP_CONFIG],
+          useFactory: (config: AppConfig) => {
+            const logger = new Logger('SignInLimit');
+            // One retry per command: when Redis is down a sign-in waits briefly, then goes through
+            // unlimited (see `signInLimitHooks`) instead of hanging.
+            const redis = new Redis(config.redisUrl, { maxRetriesPerRequest: 1 });
+            redis.on('error', (error: Error) => logger.warn(`Redis error: ${error.message}`));
+            return redis;
+          },
+        },
+        SignInLimitRedisCloser,
+        {
+          provide: VerificationResend,
+          inject: [AUTH_REDIS, APP_CONFIG],
+          useFactory: (redis: Redis, config: AppConfig) =>
+            new VerificationResend(redis, {
+              secret: config.betterAuthSecret,
+              keyPrefix: options.redisKeyPrefix,
+            }),
+        },
+        {
+          provide: SignInLimiter,
+          inject: [SIGN_IN_LIMIT_REDIS, APP_CONFIG],
+          useFactory: (redis: Redis, config: AppConfig) =>
+            new SignInLimiter(redis, {
+              secret: config.betterAuthSecret,
+              keyPrefix: `${options.redisKeyPrefix}:sign-in-limit:`,
+            }),
+        },
+        {
+          provide: AUTH,
+          inject: [APP_CONFIG, DATABASE, EmailService, VerificationResend, SignInLimiter],
+          useFactory: (
+            config: AppConfig,
+            database: Database,
+            emails: EmailService,
+            resend: VerificationResend,
+            signInLimiter: SignInLimiter,
+          ) => createAuth(config, database.db, { emails, resend, signInLimiter }),
+        },
+        AuthHandlerMiddleware,
+      ],
+      exports: [AUTH],
+    };
+  }
+
+  constructor(@Inject(AUTH_REDIS) private readonly redis: Redis) {}
+
+  async onModuleDestroy(): Promise<void> {
+    await this.redis.quit();
+  }
+
   configure(consumer: MiddlewareConsumer): void {
     consumer
       .apply(AuthHandlerMiddleware)

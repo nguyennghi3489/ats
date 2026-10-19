@@ -9,10 +9,10 @@ const config: AppConfig = {
   port: 4321,
   logLevel: 'error',
   databaseUrl: 'postgres://ats:ats@127.0.0.1:5432/ats_test',
+  redisUrl: 'redis://127.0.0.1:6379',
   betterAuthSecret: 'test-only-better-auth-secret-0123456789abcdef',
   betterAuthUrl: 'http://localhost:3000',
   webOrigin: 'http://localhost:5173',
-  redisUrl: 'redis://127.0.0.1:6379',
   trustProxy: false,
 };
 

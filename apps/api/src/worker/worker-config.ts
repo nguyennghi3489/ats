@@ -4,13 +4,11 @@ import {
   checkSmtpCredentials,
   LOG_LEVELS,
   parseEnv,
-  redisUrlSchema as redisUrl,
+  redisUrlSchema,
   type SmtpConfig,
   smtpConfigFrom,
   smtpEnvShape,
 } from '../config/config.js';
-
-const redisUrlSchema = redisUrl();
 
 /**
  * Environment variables the worker reads. The worker opens no HTTP port, so `API_PORT` is not
@@ -21,7 +19,7 @@ const workerEnvSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     LOG_LEVEL: z.enum(LOG_LEVELS).default('log'),
-    REDIS_URL: redisUrlSchema,
+    REDIS_URL: redisUrlSchema(),
     ...smtpEnvShape,
   })
   .superRefine(checkSmtpCredentials);
@@ -46,5 +44,5 @@ export function loadWorkerConfig(env: Record<string, string | undefined>): Worke
 
 /** Only `REDIS_URL`, for scripts that enqueue jobs without running a worker (`queue:ping`). */
 export function loadRedisUrl(env: Record<string, string | undefined>): string {
-  return parseEnv(z.object({ REDIS_URL: redisUrlSchema }), env).REDIS_URL;
+  return parseEnv(z.object({ REDIS_URL: redisUrlSchema() }), env).REDIS_URL;
 }

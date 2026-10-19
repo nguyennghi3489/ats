@@ -133,7 +133,7 @@ interface SignInAttempt {
   email: string;
 }
 
-type AuthHookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
+export type AuthHookContext = Parameters<Parameters<typeof createAuthMiddleware>[0]>[0];
 
 /**
  * The (client IP, email) of an HTTP email sign-in, or `undefined` for any other endpoint and for
@@ -154,7 +154,8 @@ function signInAttempt(ctx: AuthHookContext): SignInAttempt | undefined {
 }
 
 /**
- * Better Auth `hooks` applying the limit to `POST /sign-in/email`:
+ * Better Auth hook handlers applying the limit to `POST /sign-in/email`; `createAuth` runs them
+ * inside its `before` and `after` hooks, next to the other auth rules:
  * - before: reserves an attempt for the (IP, email) atomically, so parallel attempts cannot get
  *   past the maximum. A blocked pair gets 429 `SIGN_IN_RATE_LIMITED` with `retryAfterSeconds` and a
  *   `Retry-After` header; the password is never checked.
@@ -172,7 +173,7 @@ export function signInLimitHooks(limiter: SignInLimiter, logger: LoggerService) 
   };
 
   return {
-    before: createAuthMiddleware(async (ctx) => {
+    async before(ctx: AuthHookContext): Promise<void> {
       const attempt = signInAttempt(ctx);
       if (!attempt) {
         return;
@@ -193,8 +194,8 @@ export function signInLimitHooks(limiter: SignInLimiter, logger: LoggerService) 
           'Retry-After': String(status.retryAfterSeconds),
         });
       }
-    }),
-    after: createAuthMiddleware(async (ctx) => {
+    },
+    async after(ctx: AuthHookContext): Promise<void> {
       const attempt = signInAttempt(ctx);
       const returned = ctx.context.returned;
       if (!attempt || returned === undefined) {
@@ -209,6 +210,6 @@ export function signInLimitHooks(limiter: SignInLimiter, logger: LoggerService) 
       } catch (error) {
         warn('update', error);
       }
-    }),
+    },
   };
 }

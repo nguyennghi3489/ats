@@ -7,7 +7,7 @@ const BETTER_AUTH_URL = 'http://localhost:3000';
 const WEB_ORIGIN = 'http://localhost:5173';
 const REDIS_URL = 'redis://127.0.0.1:6379';
 /** Every required variable except `API_PORT`. */
-const REQUIRED = { DATABASE_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, WEB_ORIGIN, REDIS_URL };
+const REQUIRED = { DATABASE_URL, REDIS_URL, BETTER_AUTH_SECRET, BETTER_AUTH_URL, WEB_ORIGIN };
 /** `REQUIRED` without one variable. */
 function without(name: keyof typeof REQUIRED): Record<string, string> {
   return Object.fromEntries(Object.entries(REQUIRED).filter(([key]) => key !== name));
@@ -112,10 +112,10 @@ describe('loadConfig', () => {
     expect(message).toMatch(/API_PORT is required/);
     expect(message).toMatch(/NODE_ENV/);
     expect(message).toMatch(/DATABASE_URL is required/);
+    expect(message).toMatch(/REDIS_URL is required/);
     expect(message).toMatch(/BETTER_AUTH_SECRET is required/);
     expect(message).toMatch(/BETTER_AUTH_URL is required/);
     expect(message).toMatch(/WEB_ORIGIN is required/);
-    expect(message).toMatch(/REDIS_URL is required/);
   });
 
   describe('authentication settings', () => {

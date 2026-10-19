@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import type { INestApplication, LoggerService } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { AppModule } from './app.module.js';
+import { AppModule, type AppModuleOptions } from './app.module.js';
 import type { AppConfig } from './config/config.js';
 import { AllExceptionsFilter } from './http/all-exceptions.filter.js';
 import { requestIdMiddleware } from './http/request-id.middleware.js';
@@ -21,8 +21,9 @@ export function configureApp(app: INestApplication, logger: LoggerService): INes
 export async function createApp(
   config: AppConfig,
   logger: LoggerService = new JsonLogger({ logLevels: logLevelsFrom(config.logLevel) }),
+  options: AppModuleOptions = {},
 ): Promise<INestApplication> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(config), {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(config, options), {
     logger,
     bufferLogs: true,
   });

@@ -92,6 +92,16 @@ The worker reads `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER` + `SMTP_PA
 neither) and `EMAIL_FROM`; it refuses to start without them. Locally they point at the Compose
 `mailpit` service (`docker compose up -d --wait mailpit`); read the mail at http://127.0.0.1:8025.
 
+### Email verification
+
+Sign-up enqueues the `verify-email` template in the user's `locale`. The link opens
+`GET /api/auth/verify-email` and is valid 24 h; it redirects to `WEB_ORIGIN/verify-email/success`, or
+to `/verify-email/expired` when the link is expired, tampered with or replaced by a newer one.
+`POST /api/auth/send-verification-email` sends a new link: 429 `RESEND_TOO_SOON` within 60 s of the
+last send, 429 `RESEND_LIMIT` after 5 sends in a rolling hour (both with `retryAfterSeconds`), and
+the usual `{ status: true }` for unknown or verified addresses, which get no email. The counters and
+the current link live in Redis (`src/auth/verification-resend.ts`), keyed by an HMAC of the address.
+
 ### Adding a template
 
 1. Create `src/email/templates/<name>.template.ts` with `defineEmailTemplate({ data, vi, en })`:

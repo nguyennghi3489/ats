@@ -12,7 +12,7 @@ export function databaseUrlSchema() {
   });
 }
 
-/** A Redis connection string (`REDIS_URL`). Shared with the worker config. */
+/** A Redis connection string (`REDIS_URL`): BullMQ queues and short-lived counters. */
 export function redisUrlSchema() {
   return z.url({ protocol: /^rediss?$/, error: 'must be a redis:// or rediss:// URL' });
 }
@@ -48,14 +48,15 @@ const envSchema = z.object({
   API_PORT: portSchema(),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('log'),
   DATABASE_URL: databaseUrlSchema(),
+  // Queues (the API enqueues email), the verification-email resend limits and the failed sign-in
+  // counters (decisions §2).
+  REDIS_URL: redisUrlSchema(),
   // Signs session cookies and tokens. Better Auth asks for at least 32 characters.
   BETTER_AUTH_SECRET: z.string().min(32, 'must be at least 32 characters'),
   // Public URL the API is reached at (Better Auth builds links and cookie settings from it).
   BETTER_AUTH_URL: httpUrlSchema(),
   // Origin of the recruiter web app; the only origin allowed to call the auth endpoints.
   WEB_ORIGIN: httpUrlSchema().transform((url) => new URL(url).origin),
-  // Redis for the failed sign-in counters (decisions §2) and, later, the queues.
-  REDIS_URL: redisUrlSchema(),
   // `true` behind the Caddy proxy in production: the client IP is read from the X-Forwarded-For
   // entry Caddy adds (one trusted hop). Off locally, where the API is reached directly.
   TRUST_PROXY: booleanFlagSchema(),
@@ -66,10 +67,10 @@ export interface AppConfig {
   port: number;
   logLevel: AppLogLevel;
   databaseUrl: string;
+  redisUrl: string;
   betterAuthSecret: string;
   betterAuthUrl: string;
   webOrigin: string;
-  redisUrl: string;
   /** Trust one proxy hop (Caddy) for the client IP. */
   trustProxy: boolean;
 }
@@ -116,10 +117,10 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
     port: data.API_PORT,
     logLevel: data.LOG_LEVEL,
     databaseUrl: data.DATABASE_URL,
+    redisUrl: data.REDIS_URL,
     betterAuthSecret: data.BETTER_AUTH_SECRET,
     betterAuthUrl: data.BETTER_AUTH_URL,
     webOrigin: data.WEB_ORIGIN,
-    redisUrl: data.REDIS_URL,
     trustProxy: data.TRUST_PROXY,
   };
 }
