@@ -6,8 +6,14 @@ NestJS API (decisions §1). ESM, TypeScript strict, Express.
 pnpm --filter api dev         # build, then rebuild and restart on change; http://localhost:3000/health
 pnpm --filter api build       # compile to dist/
 pnpm --filter api start       # run dist/main.js with the environment as-is (production)
-pnpm --filter api test        # unit and integration tests (Vitest; needs Compose Postgres and Redis)
+pnpm --filter api test        # unit tests in src/ (Vitest; needs Compose Redis, no database)
+pnpm --filter api test:integration  # API integration tests in test/ against the Compose test Postgres
 ```
+
+Integration tests (`test/**/*.test.ts`, `vitest.integration.config.ts`) reset `TEST_DATABASE_URL`
+(must name a `*_test` database other than `DATABASE_URL`'s) and apply every migration once per run,
+then truncate every table before each test. Boot the API with `startTestApp()` from
+`test/support/test-app.ts` and call it with `api.request('/path')`.
 
 ## Database
 
