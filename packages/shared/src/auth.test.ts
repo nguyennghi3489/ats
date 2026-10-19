@@ -3,7 +3,12 @@ import {
   DEFAULT_LOCALE,
   localeSchema,
   meResponseSchema,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  passwordSchema,
   RESEND_ERROR_CODES,
+  RESET_PASSWORD_INVALID_PATH,
+  RESET_PASSWORD_PATH,
   resendErrorSchema,
   VERIFY_EMAIL_EXPIRED_PATH,
   VERIFY_EMAIL_SUCCESS_PATH,
@@ -70,5 +75,29 @@ describe('verification email contract', () => {
     expect(
       resendErrorSchema.safeParse({ code: 'RESEND_LIMIT', retryAfterSeconds: 0 }).success,
     ).toBe(false);
+  });
+});
+
+describe('passwordSchema', () => {
+  it('accepts 8 to 128 characters (decisions §2, Better Auth limits)', () => {
+    expect(PASSWORD_MIN_LENGTH).toBe(8);
+    expect(PASSWORD_MAX_LENGTH).toBe(128);
+    expect(passwordSchema.safeParse('12345678').success).toBe(true);
+    expect(passwordSchema.safeParse('x'.repeat(128)).success).toBe(true);
+  });
+
+  it('rejects a 7-character or a too long password with an error code', () => {
+    const short = passwordSchema.safeParse('1234567');
+    expect(short.success).toBe(false);
+    expect(short.error?.issues[0]?.message).toBe('PASSWORD_TOO_SHORT');
+    const long = passwordSchema.safeParse('x'.repeat(129));
+    expect(long.error?.issues[0]?.message).toBe('PASSWORD_TOO_LONG');
+  });
+});
+
+describe('password reset contract', () => {
+  it('names the web pages the reset link lands on', () => {
+    expect(RESET_PASSWORD_PATH).toBe('/reset-password');
+    expect(RESET_PASSWORD_INVALID_PATH).toBe('/reset-password/invalid');
   });
 });

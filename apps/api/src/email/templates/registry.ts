@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import { EmailError, failedFields } from '../email-error.js';
+import { resetPasswordTemplate } from './reset-password.template.js';
 import { testTemplate } from './test.template.js';
 import type { EmailLocale, EmailTemplate, RenderedEmail } from './types.js';
 import { verifyEmailTemplate } from './verify-email.template.js';
@@ -11,6 +12,7 @@ import { verifyEmailTemplate } from './verify-email.template.js';
 export const EMAIL_TEMPLATES = {
   test: testTemplate,
   'verify-email': verifyEmailTemplate,
+  'reset-password': resetPasswordTemplate,
 } as const satisfies Record<string, EmailTemplate>;
 
 export type EmailTemplateName = keyof typeof EMAIL_TEMPLATES;

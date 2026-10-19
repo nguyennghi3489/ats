@@ -144,10 +144,64 @@ describe('verify-email template', () => {
   });
 });
 
+describe('reset-password template', () => {
+  const link =
+    'http://localhost:3000/api/auth/reset-password/abc123?callbackURL=http%3A%2F%2Flocalhost%3A5173%2Freset-password';
+  const resetData = { name: 'Minh Anh', url: link };
+
+  it('renders the English email with the link, the 1-hour expiry and the ignore hint', () => {
+    const email = renderEmail('reset-password', 'en', resetData);
+
+    expect(email.subject).toBe('Reset your ATS password');
+    expect(email.html).toContain('<html lang="en">');
+    expect(email.html).toContain('Hello Minh Anh,');
+    expect(email.html).toMatch(/>Reset password<\/a\s*>/);
+    expect(email.html).toContain(`href="${link}"`);
+    expect(email.html).toContain('expires in 1 hour');
+    expect(email.html).toContain('This email was sent automatically by ATS.');
+
+    expect(email.text).toContain('Hello Minh Anh,');
+    expect(email.text).toContain(`Reset password: ${link}`);
+    expect(email.text).toContain('expires in 1 hour');
+    expect(email.text).toContain("If you didn't ask to reset your password, you can ignore");
+    expect(email.text).not.toMatch(/<[a-z]/i);
+  });
+
+  it('renders the Vietnamese email', () => {
+    const email = renderEmail('reset-password', 'vi', resetData);
+
+    expect(email.subject).toBe('Đặt lại mật khẩu ATS của bạn');
+    expect(email.html).toContain('<html lang="vi">');
+    expect(email.html).toContain('Xin chào Minh Anh,');
+    expect(email.html).toMatch(/>Đặt lại mật khẩu<\/a\s*>/);
+    expect(email.html).toContain('hết hạn sau 1 giờ');
+    expect(email.text).toContain(`Đặt lại mật khẩu: ${link}`);
+    expect(email.text).toContain('hãy bỏ qua email này');
+    expect(email.text).toContain('Email này được gửi tự động từ ATS.');
+  });
+
+  it('escapes the name in the HTML part', () => {
+    const email = renderEmail('reset-password', 'en', { ...resetData, name: '<b>Minh</b>' });
+
+    expect(email.html).not.toContain('<b>Minh</b>');
+    expect(email.html).toContain('&lt;b&gt;Minh&lt;/b&gt;');
+  });
+
+  it('refuses a missing name or a link that is not http(s)', () => {
+    expect(() => renderEmail('reset-password', 'en', { url: link })).toThrow(
+      /EMAIL_INVALID_DATA: name/,
+    );
+    expect(() =>
+      renderEmail('reset-password', 'en', { name: 'A', url: 'javascript:alert(1)' }),
+    ).toThrow(/EMAIL_INVALID_DATA: url/);
+  });
+});
+
 describe('registry', () => {
   it('renders every template in every locale', () => {
     expect(isEmailTemplateName('test')).toBe(true);
     expect(isEmailTemplateName('verify-email')).toBe(true);
+    expect(isEmailTemplateName('reset-password')).toBe(true);
     expect(isEmailTemplateName('toString')).toBe(false);
     for (const name of Object.keys(EMAIL_TEMPLATES)) {
       for (const locale of EMAIL_LOCALES) {
