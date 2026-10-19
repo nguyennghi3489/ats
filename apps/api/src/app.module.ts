@@ -4,17 +4,27 @@ import type { AppConfig } from './config/config.js';
 import { ConfigModule } from './config/config.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './health/health.module.js';
+import { QueueModule } from './queue/queue.module.js';
+
+export interface AppModuleOptions {
+  /**
+   * Prefix of every Redis key the API writes (queues and auth counters). Tests use a unique one;
+   * otherwise queues keep BullMQ's default and auth keys start with `ats`.
+   */
+  redisPrefix?: string;
+}
 
 @Module({})
 export class AppModule {
-  static forRoot(config: AppConfig): DynamicModule {
+  static forRoot(config: AppConfig, options: AppModuleOptions = {}): DynamicModule {
     return {
       module: AppModule,
       imports: [
         ConfigModule.forRoot(config),
         DatabaseModule.forRoot({ url: config.databaseUrl }),
+        QueueModule.forRoot({ redisUrl: config.redisUrl, prefix: options.redisPrefix }),
         HealthModule,
-        AuthModule,
+        AuthModule.forRoot({ redisKeyPrefix: options.redisPrefix ?? 'ats' }),
       ],
     };
   }

@@ -12,6 +12,11 @@ export function databaseUrlSchema() {
   });
 }
 
+/** A Redis connection string (`REDIS_URL`): BullMQ queues and short-lived counters. */
+export function redisUrlSchema() {
+  return z.url({ protocol: /^rediss?$/, error: 'must be a redis:// or rediss:// URL' });
+}
+
 /** An absolute http(s) URL. */
 function httpUrlSchema() {
   return z.url({ protocol: /^https?$/, error: 'must be an http:// or https:// URL' });
@@ -35,6 +40,8 @@ const envSchema = z.object({
   API_PORT: portSchema(),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('log'),
   DATABASE_URL: databaseUrlSchema(),
+  // Queues (the API enqueues email) and the verification-email resend limits.
+  REDIS_URL: redisUrlSchema(),
   // Signs session cookies and tokens. Better Auth asks for at least 32 characters.
   BETTER_AUTH_SECRET: z.string().min(32, 'must be at least 32 characters'),
   // Public URL the API is reached at (Better Auth builds links and cookie settings from it).
@@ -48,6 +55,7 @@ export interface AppConfig {
   port: number;
   logLevel: AppLogLevel;
   databaseUrl: string;
+  redisUrl: string;
   betterAuthSecret: string;
   betterAuthUrl: string;
   webOrigin: string;
@@ -95,6 +103,7 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
     port: data.API_PORT,
     logLevel: data.LOG_LEVEL,
     databaseUrl: data.DATABASE_URL,
+    redisUrl: data.REDIS_URL,
     betterAuthSecret: data.BETTER_AUTH_SECRET,
     betterAuthUrl: data.BETTER_AUTH_URL,
     webOrigin: data.WEB_ORIGIN,
