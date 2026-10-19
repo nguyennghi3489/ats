@@ -15,6 +15,7 @@ describe('UI gallery', () => {
       'ui-demo-AtsIcon',
       'ui-demo-AtsIconButton',
       'ui-demo-AtsSelect',
+      'ui-demo-AtsTextarea',
       'ui-demo-AtsTextField',
     ]);
     expect(demo().get('h2').text()).toBe('AtsIcon');
