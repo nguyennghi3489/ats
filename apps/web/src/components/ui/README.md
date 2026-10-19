@@ -53,6 +53,22 @@ default slot, already translated by the caller; the component holds no text of i
 - Desktop 36 px high; below 768 px wide at least `--touch-target-min` (44 px), and long labels wrap
   centred. The 3 px focus ring is drawn inside the border, so the size never changes.
 
+## Tabs
+
+`<AtsTabs v-model="section" :label="t('…')"><AtsTab value="plan" :label="t('…')" /></AtsTabs>` is the
+design's `ATS / Tab` row. Labels come from the caller, already translated (stage names are data and
+stay as they are); the components hold no text of their own.
+
+- `AtsTabs`: `role="tablist"`; `v-model` is the selected tab's `value`; `label` is the row's
+  accessible name. Arrow Left/Right move focus and selection to the previous/next enabled tab
+  (wrapping), Home/End to the first/last; disabled tabs are skipped.
+- `AtsTab`: `value`, `label`, `disabled`. Renders `role="tab"` with `aria-selected`; only the selected
+  tab (or the first enabled one when nothing is selected) has `tabindex="0"`. Pass `aria-controls` to
+  point at the panel. Disabled is `aria-disabled`, so a disabled selected tab keeps the Tab stop.
+- Selected: bold label and a 2 px underline; the underline space is reserved in every state, so the
+  row never shifts. The label box is 72 px wide and long labels wrap. Desktop 38 px for one line
+  (minimum 36); below 768 px 46 px (minimum 44). The 3 px focus ring is drawn outside the tab.
+
 ## Icon button
 
 `<AtsIconButton icon="trash" :label="t('…')" @click="remove" />` is the design's `ATS / Icon button`: a

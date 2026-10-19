@@ -21,6 +21,7 @@ describe('UI gallery', () => {
       'ui-demo-AtsIconButton',
       'ui-demo-AtsNavItem',
       'ui-demo-AtsSelect',
+      'ui-demo-AtsTabs',
       'ui-demo-AtsTextarea',
       'ui-demo-AtsTextField',
     ]);
