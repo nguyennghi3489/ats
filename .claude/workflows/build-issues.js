@@ -1,9 +1,10 @@
 export const meta = {
   name: 'build-issues',
   description: 'Coordinator: triage fills the review queue (max 10), then agent:ready issues go implementer → code review → QA → PR',
-  whenToUse: 'Plan and build GitHub issues of nguyennghi3489/ats. args: { plan?: boolean (default true), build?: boolean (default true), max?: number (default 3), issues?: number[] (only these), parallel?: number (default 1) }',
+  whenToUse: 'Plan and build GitHub issues of nguyennghi3489/ats. args: { plan?: boolean (default true), build?: boolean (default true), max?: number (default 3), issues?: number[] (only these), parallel?: number (default 1), merge?: boolean (default true) }',
   phases: [
     { title: 'Track', detail: 'mirror issues and agent progress onto the ATS Agent Runs dashboard' },
+    { title: 'Refresh', detail: 'merge main into agent PRs that conflict with it' },
     { title: 'Plan', detail: 'triage tops up needs-review issues to 10 from docs/roadmap.md' },
     { title: 'Pick', detail: 'list agent:ready issues with closed blockers and lock them' },
     { title: 'Triage', detail: 'confirm each issue is still buildable' },
@@ -56,10 +57,15 @@ const QA = {
   },
   required: ['passed', 'results'],
 }
+const CONFLICTS = {
+  type: 'object',
+  properties: { prs: { type: 'array', items: { type: 'object', properties: { number: { type: 'number' }, branch: { type: 'string' }, issue: { type: 'number' } }, required: ['number', 'branch', 'issue'] } } },
+  required: ['prs'],
+}
 const SHIP = {
   type: 'object',
-  properties: { url: { type: 'string' } },
-  required: ['url'],
+  properties: { url: { type: 'string' }, merged: { type: 'boolean' }, why: { type: 'string' } },
+  required: ['url', 'merged'],
 }
 
 const md = (o) => '```json\n' + JSON.stringify(o, null, 2) + '\n```'
@@ -168,12 +174,24 @@ async function build(issue) {
       `Body: a short summary of the change, "Closes #${n}", then a "QA" section with this per-criterion table and a "Review" section listing remaining nits.\n\n` +
       `QA:\n${md(qa.results)}\n\nReview nits:\n${md(review.findings)}\n\n` +
       `End the body with: 🤖 Generated with [Claude Code](https://claude.com/claude-code)\n` +
-      `Then run \`gh issue edit ${n} -R ${REPO} --remove-label in-progress --add-label pr-open\`. Never merge. Return the PR URL.`,
+      `Then run \`gh issue edit ${n} -R ${REPO} --remove-label in-progress --add-label pr-open\`.\n` +
+      // The owner auto-merges PRs that passed review and QA (docs/decisions.md §15); needs-human issues wait for them.
+      (opts.merge === false
+        ? `Never merge. Return the PR URL and merged false.`
+        : `Then merge it: wait for checks with \`gh pr checks <PR> -R ${REPO} --watch\` (if it says no checks are reported, go on). ` +
+          `If every check passed and \`gh pr view <PR> -R ${REPO} --json mergeable\` is MERGEABLE, run \`gh pr merge <PR> -R ${REPO} --merge\` ` +
+          `and \`gh issue edit ${n} -R ${REPO} --remove-label pr-open\`. Otherwise leave the PR open. ` +
+          `Return the PR URL, merged true/false, and why when not merged.`),
     { label: `pr #${n}`, phase: 'Ship', effort: 'low', schema: SHIP },
   )
   if (!pr) return handBack(n, 'Ship', 'Opening the PR failed.')
-  await card(n, { state: 'pr-open', stage: { __delete__: true }, pr: pr.url })
-  return { number: n, status: 'pr-open', pr: pr.url }
+  if (!pr.merged && opts.merge === false) {
+    await card(n, { state: 'pr-open', stage: { __delete__: true }, pr: pr.url })
+    return { number: n, status: 'pr-open', pr: pr.url }
+  }
+  if (!pr.merged) return handBack(n, 'Ship', `PR ${pr.url} is open but was not merged: ${pr.why || 'no reason given'}.`)
+  await card(n, { state: 'done', stage: { __delete__: true }, pr: pr.url })
+  return { number: n, status: 'merged', pr: pr.url }
 }
 
 const mode =opts.plan === false ? 'build' : opts.build === false ? 'plan' : 'plan+build'
@@ -199,6 +217,26 @@ async function finish(built) {
 
 phase('Track')
 await sync()
+
+// Open agent PRs go stale when a sibling merges first (shared README.md, pnpm-lock.yaml).
+// ponytail: merge, never rebase, so nobody's checkout of the branch is rewritten.
+phase('Refresh')
+const stale = await agent(
+  `In ${REPO}: list open PRs whose head branch starts with "issue-" and whose \`gh pr view N -R ${REPO} --json mergeable\` is CONFLICTING ` +
+    `(if UNKNOWN, wait 5 seconds and ask once more). For each return the PR number, head branch and the issue number from "Closes #N" in its body.`,
+  { label: 'find conflicting PRs', phase: 'Refresh', effort: 'low', schema: CONFLICTS },
+)
+for (const p of stale ? stale.prs : []) {
+  const fix = await agent(
+    `PR #${p.number} (branch \`${p.branch}\`, ${REPO}#${p.issue}) conflicts with main. Merge origin/main into the branch (never rebase or force-push). ` +
+      `Resolve pnpm-lock.yaml by taking main's version and running \`pnpm install\`; in text files keep both sides. ` +
+      `Run lint, typecheck, test and build; all must pass. Commit the merge and push. Follow .claude/agents/implementer.md. ` +
+      `If a conflict cannot be resolved without guessing what either side meant, push nothing and say which files and why.`,
+    { label: `refresh PR #${p.number}`, phase: 'Refresh', agentType: 'implementer', isolation: 'worktree', schema: IMPL },
+  )
+  if (!fix || !fix.ok) await handBack(p.issue, 'Refresh', `PR #${p.number} conflicts with main. ${fix ? fix.summary : 'The implementer did not return.'}`)
+  else log(`PR #${p.number} merged with main and pushed.`)
+}
 
 if (opts.plan !== false) {
   phase('Plan')
