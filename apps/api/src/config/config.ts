@@ -4,6 +4,14 @@ import { z } from 'zod';
 export const LOG_LEVELS = ['verbose', 'debug', 'log', 'warn', 'error', 'fatal'] as const;
 export type AppLogLevel = (typeof LOG_LEVELS)[number];
 
+/** A Postgres connection string (`DATABASE_URL`). Shared with the migration scripts. */
+export function databaseUrlSchema() {
+  return z.url({
+    protocol: /^postgres(ql)?$/,
+    error: 'must be a postgres:// or postgresql:// URL',
+  });
+}
+
 /**
  * Environment variables the API reads. Names match `.env.example` (root and `apps/api`).
  * Feature modules add their variables here so a misconfigured deploy fails at startup.
@@ -16,12 +24,14 @@ const envSchema = z.object({
     .transform(Number)
     .pipe(z.number().int().min(1, 'must be 1-65535').max(65535, 'must be 1-65535')),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('log'),
+  DATABASE_URL: databaseUrlSchema(),
 });
 
 export interface AppConfig {
   nodeEnv: 'development' | 'test' | 'production';
   port: number;
   logLevel: AppLogLevel;
+  databaseUrl: string;
 }
 
 /** Thrown when the environment does not match the schema. The message names every bad variable. */
@@ -45,6 +55,6 @@ export function loadConfig(env: Record<string, string | undefined>): AppConfig {
       `Invalid environment configuration:\n${problems.map((problem) => `  - ${problem}`).join('\n')}`,
     );
   }
-  const { NODE_ENV, API_PORT, LOG_LEVEL } = result.data;
-  return { nodeEnv: NODE_ENV, port: API_PORT, logLevel: LOG_LEVEL };
+  const { NODE_ENV, API_PORT, LOG_LEVEL, DATABASE_URL } = result.data;
+  return { nodeEnv: NODE_ENV, port: API_PORT, logLevel: LOG_LEVEL, databaseUrl: DATABASE_URL };
 }
