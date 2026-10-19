@@ -36,27 +36,47 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-// Adds one failure: starts a new window (count 1) when there is none or the last one has passed,
-// otherwise increments it. The key expires when its window ends, so Redis cleans up after itself.
-// KEYS[1] counter; ARGV[1] now (ms); ARGV[2] window (ms).
-const RECORD_FAILURE_SCRIPT = `
+// Reserves one attempt, atomically, before the password is checked: starts a new window (count 1)
+// when there is none or the last one has passed; refuses when the window already holds the maximum;
+// otherwise increments it. Doing check and count in one step means attempts that arrive together
+// cannot all see a count below the maximum. The key expires when its window ends.
+// KEYS[1] counter; ARGV[1] now (ms); ARGV[2] window (ms); ARGV[3] maximum.
+// Returns 0 when the attempt is allowed, otherwise the ms left in the window.
+const ACQUIRE_SCRIPT = `
 local now = tonumber(ARGV[1])
 local window = tonumber(ARGV[2])
+local max = tonumber(ARGV[3])
 local start = tonumber(redis.call('HGET', KEYS[1], 'start'))
 if start == nil or now - start >= window or now < start then
   start = now
   redis.call('HSET', KEYS[1], 'start', start, 'count', 1)
 else
+  local count = tonumber(redis.call('HGET', KEYS[1], 'count')) or 0
+  if count >= max then
+    return math.max(1, start + window - now)
+  end
   redis.call('HINCRBY', KEYS[1], 'count', 1)
 end
 redis.call('PEXPIRE', KEYS[1], math.max(1, start + window - now))
+return 0
+`;
+
+// Gives back a reserved attempt whose outcome was not a wrong password. Never goes below zero and
+// never recreates an expired counter. KEYS[1] counter.
+const RELEASE_SCRIPT = `
+local count = tonumber(redis.call('HGET', KEYS[1], 'count'))
+if count ~= nil and count > 0 then
+  redis.call('HINCRBY', KEYS[1], 'count', -1)
+end
 return 1
 `;
 
 /**
- * Counts failed email + password sign-ins in Redis per (client IP, normalized email) in a fixed
- * window that starts at the first failure. Once the count reaches the maximum, `check` reports the
- * pair blocked until the window ends. A successful sign-in calls `reset` for its own pair only.
+ * Counts email + password sign-in attempts in Redis per (client IP, normalized email) in a fixed
+ * window that starts at the first attempt. `acquire` reserves an attempt before the password is
+ * checked, or reports the pair blocked until the window ends once it holds the maximum. A wrong
+ * password keeps its reservation as a failure; any other refusal calls `release`; a successful
+ * sign-in calls `reset` for its own pair only.
  */
 export class SignInLimiter {
   private readonly maxFailures: number;
@@ -74,22 +94,25 @@ export class SignInLimiter {
     this.now = options.now ?? (() => Date.now());
   }
 
-  async check(ip: string, email: string): Promise<SignInLimitStatus> {
-    const [start, count] = await this.redis.hmget(this.key(ip, email), 'start', 'count');
-    if (start === null || count === null) {
+  async acquire(ip: string, email: string): Promise<SignInLimitStatus> {
+    const msLeft = Number(
+      await this.redis.eval(
+        ACQUIRE_SCRIPT,
+        1,
+        this.key(ip, email),
+        this.now(),
+        this.windowMs,
+        this.maxFailures,
+      ),
+    );
+    if (msLeft <= 0) {
       return { blocked: false };
     }
-    const startedAt = Number(start);
-    const endsAt = startedAt + this.windowMs;
-    const now = this.now();
-    if (now >= endsAt || now < startedAt || Number(count) < this.maxFailures) {
-      return { blocked: false };
-    }
-    return { blocked: true, retryAfterSeconds: Math.max(1, Math.ceil((endsAt - now) / 1000)) };
+    return { blocked: true, retryAfterSeconds: Math.max(1, Math.ceil(msLeft / 1000)) };
   }
 
-  async recordFailure(ip: string, email: string): Promise<void> {
-    await this.redis.eval(RECORD_FAILURE_SCRIPT, 1, this.key(ip, email), this.now(), this.windowMs);
+  async release(ip: string, email: string): Promise<void> {
+    await this.redis.eval(RELEASE_SCRIPT, 1, this.key(ip, email));
   }
 
   async reset(ip: string, email: string): Promise<void> {
@@ -132,11 +155,12 @@ function signInAttempt(ctx: AuthHookContext): SignInAttempt | undefined {
 
 /**
  * Better Auth `hooks` applying the limit to `POST /sign-in/email`:
- * - before: a blocked (IP, email) gets 429 `SIGN_IN_RATE_LIMITED` with `retryAfterSeconds` and a
+ * - before: reserves an attempt for the (IP, email) atomically, so parallel attempts cannot get
+ *   past the maximum. A blocked pair gets 429 `SIGN_IN_RATE_LIMITED` with `retryAfterSeconds` and a
  *   `Retry-After` header; the password is never checked.
- * - after: a 401 (wrong email or password) counts as a failure; a successful sign-in resets the
- *   counter of its own (IP, email). Other refusals (unverified email, bad input) do not count.
- * Both run before the response is sent, so the next request always sees the new count.
+ * - after: a 401 (wrong email or password) keeps its reservation as a failure; a successful sign-in
+ *   resets the counter of its own (IP, email); other refusals (unverified email, bad input) give
+ *   the reservation back.
  *
  * If Redis cannot be reached the attempt goes through unlimited and a warning is logged: the limit
  * slows guessing down, it must not lock everyone out. Log lines never include the email address.
@@ -155,7 +179,7 @@ export function signInLimitHooks(limiter: SignInLimiter, logger: LoggerService) 
       }
       let status: SignInLimitStatus = { blocked: false };
       try {
-        status = await limiter.check(attempt.ip, attempt.email);
+        status = await limiter.acquire(attempt.ip, attempt.email);
       } catch (error) {
         warn('check', error);
       }
@@ -179,8 +203,8 @@ export function signInLimitHooks(limiter: SignInLimiter, logger: LoggerService) 
       try {
         if (!isAPIError(returned)) {
           await limiter.reset(attempt.ip, attempt.email);
-        } else if (returned.statusCode === 401) {
-          await limiter.recordFailure(attempt.ip, attempt.email);
+        } else if (returned.statusCode !== 401 && returned.statusCode !== 429) {
+          await limiter.release(attempt.ip, attempt.email);
         }
       } catch (error) {
         warn('update', error);

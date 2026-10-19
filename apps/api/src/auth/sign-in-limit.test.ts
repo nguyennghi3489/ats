@@ -65,59 +65,83 @@ describe('SignInLimiter', () => {
     expect(SIGN_IN_LIMIT_WINDOW_MS).toBe(15 * 60 * 1000);
   });
 
-  it('does not block an address with no failures', async () => {
-    expect(await limiter().check(IP, EMAIL)).toEqual({ blocked: false });
+  it('lets an address with no failures through and counts the attempt', async () => {
+    const subject = limiter({ maxFailures: 1 });
+    expect(await subject.acquire(IP, EMAIL)).toEqual({ blocked: false });
+    expect(await subject.acquire(IP, EMAIL)).toMatchObject({ blocked: true });
   });
 
-  it('blocks after the maximum number of failures, for the rest of the window', async () => {
+  it('blocks once the maximum number of attempts is counted, for the rest of the window', async () => {
     const subject = limiter({ maxFailures: 3, windowMs: 60_000 });
-    for (let i = 0; i < 2; i++) {
-      await subject.recordFailure(IP, EMAIL);
+    for (let i = 0; i < 3; i++) {
+      expect(await subject.acquire(IP, EMAIL)).toEqual({ blocked: false });
     }
-    expect(await subject.check(IP, EMAIL)).toEqual({ blocked: false });
-
-    await subject.recordFailure(IP, EMAIL);
     now += 20_500;
 
-    expect(await subject.check(IP, EMAIL)).toEqual({ blocked: true, retryAfterSeconds: 40 });
+    expect(await subject.acquire(IP, EMAIL)).toEqual({ blocked: true, retryAfterSeconds: 40 });
+    // A refused attempt is not counted: the window still ends at the same time.
+    expect(await subject.acquire(IP, EMAIL)).toEqual({ blocked: true, retryAfterSeconds: 40 });
   });
 
-  it('counts the window from the first failure and starts over once it has passed', async () => {
+  it('lets through at most the maximum when attempts arrive at the same time', async () => {
+    const subject = limiter({ maxFailures: 10 });
+    const results = await Promise.all(Array.from({ length: 30 }, () => subject.acquire(IP, EMAIL)));
+    expect(results.filter((result) => !result.blocked)).toHaveLength(10);
+  });
+
+  it('gives the slot back when an attempt is released', async () => {
+    const subject = limiter({ maxFailures: 1 });
+    await subject.acquire(IP, EMAIL);
+    await subject.release(IP, EMAIL);
+
+    expect(await subject.acquire(IP, EMAIL)).toEqual({ blocked: false });
+    expect(await subject.acquire(IP, EMAIL)).toMatchObject({ blocked: true });
+  });
+
+  it('does nothing when releasing an attempt that holds no slot', async () => {
+    const subject = limiter({ maxFailures: 1 });
+    await subject.release(IP, EMAIL);
+
+    expect(await keys()).toHaveLength(0);
+    expect(await subject.acquire(IP, EMAIL)).toEqual({ blocked: false });
+    expect(await subject.acquire(IP, EMAIL)).toMatchObject({ blocked: true });
+  });
+
+  it('counts the window from the first attempt and starts over once it has passed', async () => {
     const subject = limiter({ maxFailures: 2, windowMs: 60_000 });
-    await subject.recordFailure(IP, EMAIL);
+    await subject.acquire(IP, EMAIL);
     now += 59_000;
-    await subject.recordFailure(IP, EMAIL);
-    expect(await subject.check(IP, EMAIL)).toEqual({ blocked: true, retryAfterSeconds: 1 });
+    await subject.acquire(IP, EMAIL);
+    expect(await subject.acquire(IP, EMAIL)).toEqual({ blocked: true, retryAfterSeconds: 1 });
 
     now += 1_000;
-    expect(await subject.check(IP, EMAIL)).toEqual({ blocked: false });
-
-    await subject.recordFailure(IP, EMAIL);
-    expect(await subject.check(IP, EMAIL)).toEqual({ blocked: false });
+    expect(await subject.acquire(IP, EMAIL)).toEqual({ blocked: false });
+    expect(await subject.acquire(IP, EMAIL)).toEqual({ blocked: false });
+    expect(await subject.acquire(IP, EMAIL)).toMatchObject({ blocked: true });
   });
 
   it('keeps separate counters per IP and per email, whatever the email case', async () => {
     const subject = limiter({ maxFailures: 1 });
-    await subject.recordFailure(IP, 'SomeOne@Example.test');
+    await subject.acquire(IP, 'SomeOne@Example.test');
 
-    expect(await subject.check(IP, EMAIL)).toMatchObject({ blocked: true });
-    expect(await subject.check(OTHER_IP, EMAIL)).toEqual({ blocked: false });
-    expect(await subject.check(IP, 'other@example.test')).toEqual({ blocked: false });
+    expect(await subject.acquire(IP, EMAIL)).toMatchObject({ blocked: true });
+    expect(await subject.acquire(OTHER_IP, EMAIL)).toEqual({ blocked: false });
+    expect(await subject.acquire(IP, 'other@example.test')).toEqual({ blocked: false });
   });
 
   it('resets only the counter of that IP and email', async () => {
     const subject = limiter({ maxFailures: 1 });
-    await subject.recordFailure(IP, EMAIL);
-    await subject.recordFailure(OTHER_IP, EMAIL);
+    await subject.acquire(IP, EMAIL);
+    await subject.acquire(OTHER_IP, EMAIL);
 
     await subject.reset(IP, EMAIL);
 
-    expect(await subject.check(IP, EMAIL)).toEqual({ blocked: false });
-    expect(await subject.check(OTHER_IP, EMAIL)).toMatchObject({ blocked: true });
+    expect(await subject.acquire(IP, EMAIL)).toEqual({ blocked: false });
+    expect(await subject.acquire(OTHER_IP, EMAIL)).toMatchObject({ blocked: true });
   });
 
   it('stores no plain email address or IP in Redis and expires the counter with the window', async () => {
-    await limiter().recordFailure(IP, EMAIL);
+    await limiter().acquire(IP, EMAIL);
 
     const stored = await keys();
     expect(stored).toHaveLength(1);
