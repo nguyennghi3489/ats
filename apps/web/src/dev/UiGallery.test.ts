@@ -18,7 +18,9 @@ describe('UI gallery', () => {
     ).toEqual([
       'ui-demo-AtsButton',
       'ui-demo-AtsIcon',
+      'ui-demo-AtsIconButton',
       'ui-demo-AtsNavItem',
+      'ui-demo-AtsSelect',
       'ui-demo-AtsTextField',
     ]);
     expect(demo().get('h2').text()).toBe('AtsIcon');

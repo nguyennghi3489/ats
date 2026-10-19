@@ -9,3 +9,5 @@ scripts
 playwright-report
 test-results
 blob-report
+# Written by drizzle-kit
+apps/api/drizzle/meta
