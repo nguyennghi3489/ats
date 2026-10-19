@@ -20,6 +20,7 @@ describe('UI gallery', () => {
       'ui-demo-AtsButton',
       'ui-demo-AtsIcon',
       'ui-demo-AtsIconButton',
+      'ui-demo-AtsMenu',
       'ui-demo-AtsNavItem',
       'ui-demo-AtsNotice',
       'ui-demo-AtsRadioGroup',

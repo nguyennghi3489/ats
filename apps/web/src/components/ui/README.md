@@ -98,3 +98,26 @@ already translated (API error codes are translated by the caller, decisions §12
 - Inset 12 / 16 px, icon/copy gap 12 px, title/message gap 4 px. Text always wraps; nothing is clipped.
 - Light: each tone has its fill. Dark: info keeps a fill; success and error sit on the surface colour.
   The whole error notice (icon, title, message) takes `--color-danger`.
+
+## Menu
+
+`<AtsMenu :heading="t('…')"><template #trigger="{ props }"><AtsIconButton v-bind="props" icon="edit"
+:label="t('…')" /></template><AtsMenuItem :label="t('…')" icon="profile" @select="open" /></AtsMenu>` is
+the design's `ATS/Menu` with `ATS/Menu item`. Labels and the heading come from the caller, already
+translated; pass only the actions the user may perform (decisions §3).
+
+- `AtsMenu`: bind the `trigger` slot's `props` to a Button or Icon button; they carry the id,
+  `aria-haspopup="menu"`, `aria-expanded`, `aria-controls` and the open handlers. `heading` is an
+  optional uppercase group heading that also names the menu (otherwise the trigger names it).
+  `placement`: `bottom-start` (default) or `bottom-end`.
+- The panel (`role="menu"`) opens in a teleport layer on `<body>`, under the trigger, flipped above
+  it when there is no room below and kept 8 px inside the viewport. It copies the trigger's nearest
+  `data-theme`, so a dark area keeps a dark menu.
+- Keyboard: Enter, Space or Arrow Down on the trigger open it on the first item, Arrow Up on the last.
+  Arrow Up/Down (wrapping) and Home/End move between enabled items; a letter jumps to the next enabled
+  item starting with it; Enter/Space select; Escape closes and refocuses the trigger; Tab closes and
+  moves on. Clicking outside closes it.
+- `AtsMenuItem`: `label`, `icon` (an `AtsIcon` name, decorative), `disabled` (`aria-disabled`, skipped
+  by the keys, emits nothing), `danger` (label in `--color-danger`), `to` (a vue-router location; the
+  item is then a link). Selecting closes the menu, returns focus to the trigger, then emits `select`.
+- Items are 40 px on desktop and 44 px (`--touch-target-min`) below 768 px, inset 8/12, icon/text gap 8. Hover and focus take the highlighted fill; keyboard focus adds the 3 px ring outside.
