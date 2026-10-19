@@ -15,6 +15,16 @@
     "description": "The page you are looking for does not exist or you do not have access to it.",
     "backHome": "Back to home"
   },
+  "auth": {
+    "layout": {
+      "brand": "ATS for employers",
+      "language": "Language",
+      "vi": "VI",
+      "en": "EN",
+      "viName": "Tiếng Việt",
+      "enName": "English"
+    }
+  },
   "errors": {
     "unknown": "Something went wrong. Please try again.",
     "NETWORK_ERROR": "Could not reach the server. Check your connection and try again.",
