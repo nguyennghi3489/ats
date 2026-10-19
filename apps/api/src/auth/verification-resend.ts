@@ -16,6 +16,11 @@ export interface VerificationResendOptions {
   secret: string;
   /** First part of every Redis key (tests isolate runs with it). */
   keyPrefix: string;
+  /**
+   * Which emails the limits count, as the second part of every key (default `verify-email`).
+   * Each namespace has its own limits: password reset requests use `reset-password`.
+   */
+  namespace?: string;
 }
 
 /** The form of an address the limits are counted for: `New.User@X.test` = `new.user@x.test`. */
@@ -106,11 +111,15 @@ export class VerificationResend {
   }
 
   private sendsKey(email: string): string {
-    return `${this.options.keyPrefix}:verify-email:sends:${this.emailHash(email)}`;
+    return `${this.keyStart()}:sends:${this.emailHash(email)}`;
   }
 
   private linkKey(email: string): string {
-    return `${this.options.keyPrefix}:verify-email:link:${this.emailHash(email)}`;
+    return `${this.keyStart()}:link:${this.emailHash(email)}`;
+  }
+
+  private keyStart(): string {
+    return `${this.options.keyPrefix}:${this.options.namespace ?? 'verify-email'}`;
   }
 
   private emailHash(email: string): string {

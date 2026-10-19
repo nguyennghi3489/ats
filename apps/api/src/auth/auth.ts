@@ -2,6 +2,10 @@ import {
   DEFAULT_LOCALE,
   LOCALES,
   localeSchema,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  RESET_PASSWORD_INVALID_PATH,
+  RESET_PASSWORD_PATH,
   VERIFY_EMAIL_EXPIRED_PATH,
   VERIFY_EMAIL_SUCCESS_PATH,
 } from '@ats/shared';
@@ -15,12 +19,22 @@ import type { DatabaseClient } from '../database/database.js';
 import type { EmailService } from '../email/email.service.js';
 import { authSchema } from './auth.schema.js';
 import {
+  invalidateEarlierResetLinks,
+  isUsableResetLink,
+  REQUEST_PASSWORD_RESET_PATH,
+  RESET_PASSWORD_CALLBACK_PATH,
+  RESET_PASSWORD_LINK_EXPIRES_IN_SECONDS,
+  resetPasswordIdentifier,
+  webResetPageUrl,
+} from './password-reset.js';
+import {
   CLIENT_IP_HEADER,
   EMAIL_SIGN_IN_PATH,
   type SignInLimiter,
   signInLimitHooks,
 } from './sign-in-limit.js';
 import {
+  type ResendDecision,
   VERIFICATION_LINK_EXPIRES_IN_SECONDS,
   type VerificationResend,
 } from './verification-resend.js';
@@ -43,6 +57,8 @@ export type AuthConfig = Pick<
 export interface AuthDependencies {
   emails: Pick<EmailService, 'enqueue'>;
   resend: VerificationResend;
+  /** Limits on password reset requests (`createPasswordResetLimits`). */
+  resetLimits: Pick<VerificationResend, 'take'>;
   signInLimiter: SignInLimiter;
 }
 
@@ -74,20 +90,45 @@ async function isCurrentVerificationToken(
   return resend.isCurrentLink(payload.email, token);
 }
 
+/** The recipient as emails greet them: their name, else the local part of the address. */
+function displayName(user: { name: string; email: string }): string {
+  return user.name.trim() || user.email.split('@')[0] || user.email;
+}
+
+/** The user's saved language, for emails (decisions §12). */
+function userLocale(user: object) {
+  const locale = localeSchema.safeParse((user as { locale?: unknown }).locale);
+  return locale.success ? locale.data : DEFAULT_LOCALE;
+}
+
+/** 429 for a refused resend or reset request, with the seconds to wait (body and header). */
+function refuseIfLimited(decision: ResendDecision): void {
+  if (decision.allowed) return;
+  const { code, retryAfterSeconds } = decision;
+  throw new APIError(
+    'TOO_MANY_REQUESTS',
+    { code, message: code, retryAfterSeconds },
+    { 'Retry-After': String(retryAfterSeconds) },
+  );
+}
+
 /**
  * The Better Auth instance: email + password sign-in, sessions stored in Postgres and checked
  * against Postgres on every request (cookie cache off), so deleting a session row signs it out
  * immediately. Failed email sign-ins are limited per client IP + email by `signInLimiter`
- * (decisions §2). Organizations (step 4) and Google/LinkedIn (step 16) are added here later.
+ * (decisions §2). Password reset: 1 h single-use links, the newest one only, requests limited
+ * like the verification resend, all sessions signed out on reset. Organizations (step 4) and Google/LinkedIn (step 16) are added here later.
  */
 export function createAuth(
   config: AuthConfig,
   db: DatabaseClient,
-  { emails, resend, signInLimiter }: AuthDependencies,
+  { emails, resend, resetLimits, signInLimiter }: AuthDependencies,
 ) {
   const secure = config.nodeEnv !== 'development';
   const verifiedUrl = `${config.webOrigin}${VERIFY_EMAIL_SUCCESS_PATH}`;
   const expiredUrl = `${config.webOrigin}${VERIFY_EMAIL_EXPIRED_PATH}`;
+  const resetPageUrl = `${config.webOrigin}${RESET_PASSWORD_PATH}`;
+  const resetInvalidUrl = `${config.webOrigin}${RESET_PASSWORD_INVALID_PATH}`;
   const signInLimit = signInLimitHooks(signInLimiter, logger);
   return betterAuth({
     appName: 'ATS',
@@ -99,6 +140,28 @@ export function createAuth(
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: true,
+      // Same bounds as the shared `passwordSchema` the web forms use (sign-up and reset).
+      minPasswordLength: PASSWORD_MIN_LENGTH,
+      maxPasswordLength: PASSWORD_MAX_LENGTH,
+      resetPasswordTokenExpiresIn: RESET_PASSWORD_LINK_EXPIRES_IN_SECONDS,
+      // Password reset signs out all sessions of the user (decisions §2).
+      revokeSessionsOnPasswordReset: true,
+      /**
+       * Only for known users (Better Auth answers unknown emails the same way and sends nothing).
+       * Makes this link the only valid one for the user and enqueues the email in their language.
+       */
+      sendResetPassword: async ({ user, url, token }) => {
+        await invalidateEarlierResetLinks(db, user.id, token);
+        // Whatever the client asked for, the link lands on the web app's reset page.
+        const link = new URL(url);
+        link.searchParams.set('callbackURL', resetPageUrl);
+        await emails.enqueue({
+          to: user.email,
+          locale: userLocale(user),
+          template: 'reset-password',
+          data: { name: displayName(user), url: link.href },
+        });
+      },
     },
     emailVerification: {
       sendOnSignUp: true,
@@ -114,15 +177,11 @@ export function createAuth(
         // Whatever the client asked for, the link lands on the web app's verified page.
         const link = new URL(url);
         link.searchParams.set('callbackURL', verifiedUrl);
-        const locale = localeSchema.safeParse((user as { locale?: unknown }).locale);
         await emails.enqueue({
           to: user.email,
-          locale: locale.success ? locale.data : DEFAULT_LOCALE,
+          locale: userLocale(user),
           template: 'verify-email',
-          data: {
-            name: user.name.trim() || user.email.split('@')[0] || user.email,
-            url: link.href,
-          },
+          data: { name: displayName(user), url: link.href },
         });
       },
     },
@@ -165,15 +224,26 @@ export function createAuth(
           // Counted for every address, known or not, so a 429 reveals nothing about accounts.
           const email: unknown = ctx.body?.email;
           if (typeof email !== 'string') return;
-          const decision = await resend.take(email);
-          if (!decision.allowed) {
-            const { code, retryAfterSeconds } = decision;
-            throw new APIError(
-              'TOO_MANY_REQUESTS',
-              { code, message: code, retryAfterSeconds },
-              { 'Retry-After': String(retryAfterSeconds) },
-            );
+          refuseIfLimited(await resend.take(email));
+        } else if (ctx.path === REQUEST_PASSWORD_RESET_PATH) {
+          // Same as the resend: counted for every address, so a 429 reveals nothing either.
+          const email: unknown = ctx.body?.email;
+          if (typeof email !== 'string') return;
+          refuseIfLimited(await resetLimits.take(email));
+        } else if (ctx.path === RESET_PASSWORD_CALLBACK_PATH) {
+          // The emailed link: valid → the web reset page with the token; expired, used, replaced
+          // by a newer link or unknown → the invalid page. The client's callbackURL is ignored.
+          const token: unknown = ctx.params?.token;
+          const stored =
+            typeof token === 'string' && token !== ''
+              ? await ctx.context.internalAdapter.findVerificationValue(
+                  resetPasswordIdentifier(token),
+                )
+              : null;
+          if (typeof token !== 'string' || !isUsableResetLink(stored)) {
+            throw ctx.redirect(resetInvalidUrl);
           }
+          throw ctx.redirect(webResetPageUrl(config.webOrigin, token));
         } else if (ctx.path === '/verify-email') {
           // Expired, tampered or replaced by a newer link: the web app offers a new one.
           const token: unknown = ctx.query?.token;

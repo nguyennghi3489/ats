@@ -23,6 +23,7 @@ import { EmailService } from '../email/email.service.js';
 import { type Auth, createAuth } from './auth.js';
 import { AUTH } from './auth.tokens.js';
 import { MeController } from './me.controller.js';
+import { createPasswordResetLimits } from './password-reset.js';
 import { CLIENT_IP_HEADER, SignInLimiter } from './sign-in-limit.js';
 import { VerificationResend } from './verification-resend.js';
 
@@ -48,6 +49,9 @@ class AuthHandlerMiddleware implements NestMiddleware {
 /** Redis connection for the verification-email resend limits and current links. */
 const AUTH_REDIS = Symbol('AUTH_REDIS');
 
+/** Password reset request limits (60 s / 5 per hour per email), on the auth Redis connection. */
+const PASSWORD_RESET_LIMITS = Symbol('PASSWORD_RESET_LIMITS');
+
 /** Redis connection holding the failed sign-in counters. */
 const SIGN_IN_LIMIT_REDIS = Symbol('SIGN_IN_LIMIT_REDIS');
 
@@ -68,7 +72,7 @@ export interface AuthModuleOptions {
 
 /**
  * Better Auth under `/api/auth/*` (sign-up with the verification email, verification, resend,
- * sign-in with the failed sign-in limit, sign-out, session) and `GET /api/me`. Needs
+ * sign-in with the failed sign-in limit, sign-out, session, password reset) and `GET /api/me`. Needs
  * `QueueModule.forRoot` at the root.
  */
 @Module({})
@@ -107,6 +111,15 @@ export class AuthModule implements NestModule, OnModuleDestroy {
             }),
         },
         {
+          provide: PASSWORD_RESET_LIMITS,
+          inject: [AUTH_REDIS, APP_CONFIG],
+          useFactory: (redis: Redis, config: AppConfig) =>
+            createPasswordResetLimits(redis, {
+              secret: config.betterAuthSecret,
+              keyPrefix: options.redisKeyPrefix,
+            }),
+        },
+        {
           provide: SignInLimiter,
           inject: [SIGN_IN_LIMIT_REDIS, APP_CONFIG],
           useFactory: (redis: Redis, config: AppConfig) =>
@@ -117,14 +130,22 @@ export class AuthModule implements NestModule, OnModuleDestroy {
         },
         {
           provide: AUTH,
-          inject: [APP_CONFIG, DATABASE, EmailService, VerificationResend, SignInLimiter],
+          inject: [
+            APP_CONFIG,
+            DATABASE,
+            EmailService,
+            VerificationResend,
+            PASSWORD_RESET_LIMITS,
+            SignInLimiter,
+          ],
           useFactory: (
             config: AppConfig,
             database: Database,
             emails: EmailService,
             resend: VerificationResend,
+            resetLimits: VerificationResend,
             signInLimiter: SignInLimiter,
-          ) => createAuth(config, database.db, { emails, resend, signInLimiter }),
+          ) => createAuth(config, database.db, { emails, resend, resetLimits, signInLimiter }),
         },
         AuthHandlerMiddleware,
       ],
