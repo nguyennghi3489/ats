@@ -16,6 +16,7 @@ describe('UI gallery', () => {
     expect(
       wrapper.findAll('[data-testid^="ui-demo-"]').map((d) => d.attributes('data-testid')),
     ).toEqual([
+      'ui-demo-AtsBadge',
       'ui-demo-AtsButton',
       'ui-demo-AtsIcon',
       'ui-demo-AtsIconButton',
