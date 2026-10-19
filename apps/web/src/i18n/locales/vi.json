@@ -23,6 +23,30 @@
       "en": "EN",
       "viName": "Tiếng Việt",
       "enName": "English"
+    },
+    "signUp": {
+      "title": "Tạo tài khoản",
+      "subtitle": "Bắt đầu bằng email hoặc phương thức được hỗ trợ.",
+      "subtitleInvalid": "Sửa các trường được đánh dấu rồi thử lại.",
+      "name": "Họ và tên",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "passwordHelper": "Ít nhất 8 ký tự",
+      "show": "Hiện",
+      "hide": "Ẩn",
+      "showPassword": "Hiện mật khẩu",
+      "hidePassword": "Ẩn mật khẩu",
+      "submit": "Tạo tài khoản",
+      "invalidNotice": "Chưa thể tạo tài khoản. Kiểm tra thông tin phía trên.",
+      "haveAccount": "Đã có tài khoản?",
+      "signIn": "Đăng nhập",
+      "errors": {
+        "NAME_REQUIRED": "Nhập họ và tên",
+        "NAME_TOO_LONG": "Họ và tên tối đa 100 ký tự",
+        "EMAIL_INVALID": "Nhập địa chỉ email hợp lệ",
+        "PASSWORD_TOO_SHORT": "Mật khẩu cần ít nhất 8 ký tự",
+        "PASSWORD_TOO_LONG": "Mật khẩu tối đa 128 ký tự"
+      }
     }
   },
   "errors": {

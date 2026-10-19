@@ -64,3 +64,46 @@ export const resendErrorSchema = z.object({
 });
 
 export type ResendError = z.infer<typeof resendErrorSchema>;
+
+/** Password length rules; the same as Better Auth's defaults on the API. */
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 128;
+
+/** Longest user name accepted at sign-up, after trimming. */
+export const USER_NAME_MAX_LENGTH = 100;
+
+/**
+ * The sign-up form (design AUTH-01): full name, email and password. Name and email are trimmed;
+ * the password is kept exactly as typed.
+ */
+export const signUpFormSchema = z.object({
+  name: z.string().trim().min(1).max(USER_NAME_MAX_LENGTH),
+  email: z.string().trim().pipe(z.email()),
+  password: z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH),
+});
+
+export type SignUpForm = z.infer<typeof signUpFormSchema>;
+
+export type SignUpField = keyof SignUpForm;
+
+/** Why a sign-up field is refused. The web app shows `auth.signUp.errors.<code>`. */
+export type SignUpFieldError =
+  'NAME_REQUIRED' | 'NAME_TOO_LONG' | 'EMAIL_INVALID' | 'PASSWORD_TOO_SHORT' | 'PASSWORD_TOO_LONG';
+
+/** The first problem with each field of the sign-up form; an empty object when it is valid. */
+export function signUpFieldErrors(
+  input: Record<SignUpField, string>,
+): Partial<Record<SignUpField, SignUpFieldError>> {
+  const result = signUpFormSchema.safeParse(input);
+  if (result.success) return {};
+  const errors: Partial<Record<SignUpField, SignUpFieldError>> = {};
+  for (const issue of result.error.issues) {
+    const field = issue.path[0] as SignUpField;
+    if (errors[field]) continue;
+    const tooBig = issue.code === 'too_big';
+    if (field === 'name') errors.name = tooBig ? 'NAME_TOO_LONG' : 'NAME_REQUIRED';
+    else if (field === 'email') errors.email = 'EMAIL_INVALID';
+    else errors.password = tooBig ? 'PASSWORD_TOO_LONG' : 'PASSWORD_TOO_SHORT';
+  }
+  return errors;
+}

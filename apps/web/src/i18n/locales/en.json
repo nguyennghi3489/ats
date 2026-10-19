@@ -23,6 +23,30 @@
       "en": "EN",
       "viName": "Tiếng Việt",
       "enName": "English"
+    },
+    "signUp": {
+      "title": "Create account",
+      "subtitle": "Start with your email or a supported method.",
+      "subtitleInvalid": "Fix the marked fields and try again.",
+      "name": "Full name",
+      "email": "Email",
+      "password": "Password",
+      "passwordHelper": "At least 8 characters",
+      "show": "Show",
+      "hide": "Hide",
+      "showPassword": "Show password",
+      "hidePassword": "Hide password",
+      "submit": "Create account",
+      "invalidNotice": "We couldn't create your account. Check the details above.",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "errors": {
+        "NAME_REQUIRED": "Enter your full name",
+        "NAME_TOO_LONG": "Full name can be at most 100 characters",
+        "EMAIL_INVALID": "Enter a valid email address",
+        "PASSWORD_TOO_SHORT": "Password needs at least 8 characters",
+        "PASSWORD_TOO_LONG": "Password can be at most 128 characters"
+      }
     }
   },
   "errors": {
