@@ -37,13 +37,12 @@ interface WorkspaceList {
 }
 
 /**
- * `GET /api/workspaces` with the page's session cookie, or `null` while the API has no such route
- * (it arrives with #101).
+ * `GET /api/workspaces` with the page's session cookie. The route comes with #101; this issue's
+ * criterion checks the new workspace there, so a missing route fails the test.
  */
-async function listWorkspaces(page: Page): Promise<WorkspaceList | null> {
+async function listWorkspaces(page: Page): Promise<WorkspaceList> {
   const response = await page.request.get('/api/workspaces');
-  if (response.status() === 404) return null;
-  expect(response.status()).toBe(200);
+  expect(response.status(), 'GET /api/workspaces').toBe(200);
   return (await response.json()) as WorkspaceList;
 }
 
@@ -85,7 +84,7 @@ test.describe('create workspace', () => {
       await expect(page).toHaveURL(/\/workspaces\/new$/);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.title);
       await expect(page.getByTestId('create-workspace-invite-notice')).toHaveText(copy.inviteOnly);
-      expect((await listWorkspaces(page))?.workspaces ?? []).toEqual([]);
+      expect((await listWorkspaces(page)).workspaces).toEqual([]);
     });
 
     let createdId = '';
@@ -108,13 +107,6 @@ test.describe('create workspace', () => {
     await test.step('it is the active workspace', async () => {
       expect(await sessionActiveWorkspaceId(page)).toBe(createdId);
       const list = await listWorkspaces(page);
-      if (list === null) {
-        testInfo.annotations.push({
-          type: 'note',
-          description: 'GET /api/workspaces is not served yet (#101); checked on the session only.',
-        });
-        return;
-      }
       expect(list.workspaces).toEqual([
         expect.objectContaining({ id: createdId, name: workspaceName, role: 'admin' }),
       ]);
