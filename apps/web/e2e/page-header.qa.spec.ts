@@ -156,6 +156,32 @@ test.describe('page header QA (#114)', () => {
       ).toBeLessThanOrEqual(2);
     });
 
+    // ATS/Page wrapper and Example · Desktop list: the flush table's column text ("VỊ TRÍ", "Product
+    // Designer") starts on the same 40 px line as the page title, so the header and the list line up.
+    test('the flush list example lines the table text up with the page title', async ({ page }) => {
+      await page.goto('/dev/ui');
+      for (const panel of ['light', 'dark'] as const) {
+        const node = example(page, panel, 'list');
+        const lefts = await node.evaluate((el) => {
+          const textLeft = (sel: string) => {
+            const cell = el.querySelector(sel)!;
+            const range = document.createRange();
+            range.selectNodeContents(cell);
+            return range.getBoundingClientRect().left;
+          };
+          return {
+            title: textLeft('.ats-page-header__title'),
+            columnHeader: textLeft('thead th'),
+            firstCell: textLeft('tbody tr td'),
+          };
+        });
+        expect(Math.abs(lefts.columnHeader - lefts.title), `${panel}: column header`).toBeLessThan(
+          2,
+        );
+        expect(Math.abs(lefts.firstCell - lefts.title), `${panel}: first cell`).toBeLessThan(2);
+      }
+    });
+
     test('screenshots of every example, light and dark', async ({ page }) => {
       await page.goto('/dev/ui');
       for (const panel of ['light', 'dark'] as const) {
