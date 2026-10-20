@@ -6,7 +6,11 @@ import { expect, type Page, test } from '@playwright/test';
 import en from '../src/i18n/locales/en.json' with { type: 'json' };
 import vi from '../src/i18n/locales/vi.json' with { type: 'json' };
 
-const missingPath = '/khong-ton-tai';
+// A page a signed-out visitor can open: since #88 any unknown or private URL sends them to the
+// sign-in screen, so the language checks run there.
+const signedOutPath = '/sign-in';
+
+const title = (page: Page) => page.getByRole('heading', { level: 1 });
 
 interface I18nModule {
   setLocale: (locale: 'vi' | 'en') => void;
@@ -26,42 +30,42 @@ async function setLocaleInPage(page: Page, locale: 'vi' | 'en'): Promise<void> {
 test.describe('language from an English browser', () => {
   test.use({ locale: 'en-US' });
 
-  test('the 404 page shows English and <html lang="en"> when nothing is stored', async ({
+  test('the sign-in page shows English and <html lang="en"> when nothing is stored', async ({
     page,
   }) => {
-    await page.goto(missingPath);
+    await page.goto(signedOutPath);
 
-    const notFound = page.getByTestId('not-found-page');
-    await expect(page.getByTestId('not-found-title')).toHaveText(en.notFound.title);
-    await expect(notFound).toContainText(en.notFound.description);
-    await expect(page.getByTestId('not-found-home-link')).toHaveText(en.notFound.backHome);
-    await expect(notFound).not.toContainText(vi.notFound.title);
+    const form = page.getByTestId('sign-in-form');
+    await expect(title(page)).toHaveText(en.auth.signIn.title);
+    await expect(page.getByTestId('sign-in-submit')).toHaveText(en.auth.signIn.submit);
+    await expect(page.getByTestId('sign-in-forgot-link')).toHaveText(en.auth.signIn.forgotPassword);
+    await expect(form).not.toContainText(vi.auth.signIn.submit);
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     expect(await page.evaluate(() => localStorage.getItem('ats.locale'))).toBeNull();
 
-    await page.screenshot({ path: test.info().outputPath('404-en.png'), fullPage: true });
+    await page.screenshot({ path: test.info().outputPath('sign-in-en.png'), fullPage: true });
   });
 
   test('after setLocale("vi") the page switches and a reload keeps Vietnamese', async ({
     page,
   }) => {
-    await page.goto(missingPath);
-    await expect(page.getByTestId('not-found-title')).toHaveText(en.notFound.title);
+    await page.goto(signedOutPath);
+    await expect(title(page)).toHaveText(en.auth.signIn.title);
 
     await setLocaleInPage(page, 'vi');
 
     // Live switch, without a reload.
-    await expect(page.getByTestId('not-found-title')).toHaveText(vi.notFound.title);
+    await expect(title(page)).toHaveText(vi.auth.signIn.title);
     await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
     expect(await page.evaluate(() => localStorage.getItem('ats.locale'))).toBe('vi');
 
     await page.reload();
 
-    await expect(page.getByTestId('not-found-title')).toHaveText(vi.notFound.title);
-    await expect(page.getByTestId('not-found-home-link')).toHaveText(vi.notFound.backHome);
+    await expect(title(page)).toHaveText(vi.auth.signIn.title);
+    await expect(page.getByTestId('sign-in-forgot-link')).toHaveText(vi.auth.signIn.forgotPassword);
     await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
     await page.screenshot({
-      path: test.info().outputPath('404-vi-after-reload.png'),
+      path: test.info().outputPath('sign-in-vi-after-reload.png'),
       fullPage: true,
     });
   });
@@ -73,15 +77,17 @@ test.describe('language from a French browser', () => {
   test('the app shows Vietnamese when the browser language is neither vi nor en', async ({
     page,
   }) => {
-    await page.goto(missingPath);
+    await page.goto(signedOutPath);
 
-    const notFound = page.getByTestId('not-found-page');
-    await expect(page.getByTestId('not-found-title')).toHaveText(vi.notFound.title);
-    await expect(notFound).toContainText(vi.notFound.description);
-    await expect(page.getByTestId('not-found-home-link')).toHaveText(vi.notFound.backHome);
+    await expect(title(page)).toHaveText(vi.auth.signIn.title);
+    await expect(page.getByTestId('sign-in-submit')).toHaveText(vi.auth.signIn.submit);
+    await expect(page.getByTestId('sign-in-forgot-link')).toHaveText(vi.auth.signIn.forgotPassword);
     await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
 
-    await page.screenshot({ path: test.info().outputPath('404-fr-browser.png'), fullPage: true });
+    await page.screenshot({
+      path: test.info().outputPath('sign-in-fr-browser.png'),
+      fullPage: true,
+    });
   });
 });
 
@@ -89,7 +95,7 @@ test.describe('formatters and error codes in the browser', () => {
   test.use({ locale: 'en-US' });
 
   test('formatDate and formatMoney give the same output in both locales', async ({ page }) => {
-    await page.goto(missingPath);
+    await page.goto(signedOutPath);
 
     const results = await page.evaluate(
       async ([indexPath, formatPath]) => {
@@ -128,7 +134,7 @@ test.describe('formatters and error codes in the browser', () => {
         body: JSON.stringify({ code: 'QA_CODE_NOBODY_DEFINED', message: 'Developer hint' }),
       }),
     );
-    await page.goto(missingPath);
+    await page.goto(signedOutPath);
 
     const results = await page.evaluate(
       async ([indexPath, apiPath]) => {
