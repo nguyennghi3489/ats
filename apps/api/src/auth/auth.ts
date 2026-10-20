@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import {
   DEFAULT_LOCALE,
   LOCALES,
@@ -13,7 +14,7 @@ import { Logger } from '@nestjs/common';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
-import { verifyJWT } from 'better-auth/crypto';
+import { signJWT, verifyJWT } from 'better-auth/crypto';
 import type { AppConfig } from '../config/config.js';
 import type { DatabaseClient } from '../database/database.js';
 import type { EmailService } from '../email/email.service.js';
@@ -88,6 +89,20 @@ async function isCurrentVerificationToken(
     return false;
   }
   return resend.isCurrentLink(payload.email, token);
+}
+
+/**
+ * A verification token like Better Auth's own (an HS256 JWT of the lower-cased email, valid for
+ * `VERIFICATION_LINK_EXPIRES_IN_SECONDS`) plus a random `jti`. Better Auth's token carries only the
+ * email and whole-second times, so two links sent within the same second would be identical and
+ * the "replaced" one would keep working; the `jti` makes every link distinct.
+ */
+function newVerificationToken(email: string, secret: string): Promise<string> {
+  return signJWT(
+    { email: email.toLowerCase(), jti: randomUUID() },
+    secret,
+    VERIFICATION_LINK_EXPIRES_IN_SECONDS,
+  );
 }
 
 /** The recipient as emails greet them: their name, else the local part of the address. */
@@ -171,11 +186,14 @@ export function createAuth(
        * send towards the limits (resends are counted in the `before` hook) and enqueues the email
        * in the user's language. The worker delivers it; nothing is sent over SMTP here.
        */
-      sendVerificationEmail: async ({ user, url, token }, request) => {
+      sendVerificationEmail: async ({ user, url }, request) => {
+        const token = await newVerificationToken(user.email, config.betterAuthSecret);
         await resend.setCurrentLink(user.email, token);
         if (!isResendRequest(request)) await resend.record(user.email);
-        // Whatever the client asked for, the link lands on the web app's verified page.
+        // Our own unique token replaces Better Auth's; whatever the client asked for, the link
+        // lands on the web app's verified page.
         const link = new URL(url);
+        link.searchParams.set('token', token);
         link.searchParams.set('callbackURL', verifiedUrl);
         await emails.enqueue({
           to: user.email,

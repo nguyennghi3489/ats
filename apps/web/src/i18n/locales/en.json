@@ -47,6 +47,26 @@
         "PASSWORD_TOO_SHORT": "Password needs at least 8 characters",
         "PASSWORD_TOO_LONG": "Password can be at most 128 characters"
       }
+    },
+    "verified": {
+      "title": "Email verified",
+      "subtitle": "Your account is ready.",
+      "notice": "Verification complete.",
+      "signIn": "Sign in"
+    },
+    "linkExpired": {
+      "title": "Link expired",
+      "subtitle": "Request a new link to finish verifying.",
+      "notice": "This verification link no longer works.",
+      "email": "Recipient",
+      "emailPlaceholder": "minh.anh{'@'}example.com",
+      "submit": "Send new link",
+      "backToSignIn": "Back to sign in",
+      "errors": {
+        "EMAIL_INVALID": "Enter a valid email address",
+        "RESEND_TOO_SOON": "A link was just sent. Wait 60 seconds and try again.",
+        "RESEND_LIMIT": "5 links were sent in the last hour. Please try again later."
+      }
     }
   },
   "errors": {
