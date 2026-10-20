@@ -23,6 +23,23 @@
       "en": "EN",
       "viName": "Tiếng Việt",
       "enName": "English"
+    },
+    "checkEmail": {
+      "title": "Check your email",
+      "subtitle": "We sent a verification link to:",
+      "recipient": "Recipient",
+      "notice": "Open the link in the email to verify your account.",
+      "resend": "Resend verification email",
+      "resendIn": "Resend in {seconds} s",
+      "wrongEmail": "Wrong email?",
+      "backToSignUp": "Back to sign-up",
+      "resentTitle": "Email sent again",
+      "resentSubtitle": "A new verification email has been sent.",
+      "resentNotice": "A new verification email has been sent.",
+      "resendAgain": "Resend",
+      "resentFooter": "You can resend it if needed.",
+      "waitAnnouncement": "You can resend the email in {seconds} seconds.",
+      "readyAnnouncement": "You can resend the verification email now."
     }
   },
   "errors": {
@@ -30,6 +47,8 @@
     "NETWORK_ERROR": "Could not reach the server. Check your connection and try again.",
     "INTERNAL_ERROR": "The server ran into a problem. Please try again later.",
     "NOT_FOUND": "Not found.",
-    "WORKSPACE_ACCESS_REVOKED": "You no longer have access to this workspace."
+    "WORKSPACE_ACCESS_REVOKED": "You no longer have access to this workspace.",
+    "RESEND_TOO_SOON": "An email was just sent. Please wait a moment and try again.",
+    "RESEND_LIMIT": "Too many resend attempts. Please try again in an hour."
   }
 }

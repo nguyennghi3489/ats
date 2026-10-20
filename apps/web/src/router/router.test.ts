@@ -124,7 +124,8 @@ describe('router', () => {
     expect(publicPaths).toEqual([
       '/sign-in',
       '/sign-up',
-      '/verify-email/:rest(.*)*',
+      '/verify-email',
+      '/verify-email/:rest(.*)+',
       '/forgot-password',
       '/reset-password/:rest(.*)*',
       '/dev/ui',

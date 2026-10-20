@@ -23,6 +23,23 @@
       "en": "EN",
       "viName": "Tiếng Việt",
       "enName": "English"
+    },
+    "checkEmail": {
+      "title": "Kiểm tra email",
+      "subtitle": "Chúng tôi đã gửi liên kết xác minh tới:",
+      "recipient": "Người nhận",
+      "notice": "Hãy mở liên kết trong email để xác minh tài khoản.",
+      "resend": "Gửi lại email xác minh",
+      "resendIn": "Gửi lại sau {seconds} giây",
+      "wrongEmail": "Sai email?",
+      "backToSignUp": "Quay lại đăng ký",
+      "resentTitle": "Đã gửi lại email",
+      "resentSubtitle": "Một email xác minh mới đã được gửi.",
+      "resentNotice": "Email xác minh mới đã được gửi.",
+      "resendAgain": "Gửi lại",
+      "resentFooter": "Bạn có thể gửi lại nếu cần.",
+      "waitAnnouncement": "Bạn có thể gửi lại email sau {seconds} giây.",
+      "readyAnnouncement": "Bạn có thể gửi lại email xác minh ngay bây giờ."
     }
   },
   "errors": {
@@ -30,6 +47,8 @@
     "NETWORK_ERROR": "Không kết nối được máy chủ. Kiểm tra mạng và thử lại.",
     "INTERNAL_ERROR": "Máy chủ gặp sự cố. Vui lòng thử lại sau.",
     "NOT_FOUND": "Không tìm thấy dữ liệu.",
-    "WORKSPACE_ACCESS_REVOKED": "Bạn không còn quyền truy cập không gian làm việc này."
+    "WORKSPACE_ACCESS_REVOKED": "Bạn không còn quyền truy cập không gian làm việc này.",
+    "RESEND_TOO_SOON": "Bạn vừa gửi email. Vui lòng đợi một chút rồi thử lại.",
+    "RESEND_LIMIT": "Bạn đã gửi lại quá nhiều lần. Vui lòng thử lại sau một giờ."
   }
 }
