@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import type { INestApplication, LoggerService } from '@nestjs/common';
+import { type INestApplication, type LoggerService, Module, type Type } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Redis } from 'ioredis';
-import { createApp } from '../../src/app.js';
+import { configureApp, createApp } from '../../src/app.js';
+import { AppModule } from '../../src/app.module.js';
 import type { AppConfig } from '../../src/config/config.js';
 import { JsonLogger } from '../../src/logging/json-logger.js';
 import { testDatabaseUrl } from './test-database.js';
@@ -28,6 +31,11 @@ export interface TestApp {
 export interface TestAppOptions {
   /** Receives the app's logs; by default they are dropped. */
   logger?: LoggerService;
+  /**
+   * Test-only controllers mounted next to the real ones (in a module wrapping `AppModule`), e.g.
+   * a probe route without decorators to exercise the global access guard.
+   */
+  controllers?: Type[];
 }
 
 /**
@@ -52,9 +60,10 @@ export async function startTestApp(
     ...overrides,
   };
   const redisPrefix = `ats-test-${randomUUID()}`;
-  const app = await createApp(config, options.logger ?? new JsonLogger({ logLevels: [] }), {
-    redisPrefix,
-  });
+  const logger = options.logger ?? new JsonLogger({ logLevels: [] });
+  const app = options.controllers
+    ? await createAppWithControllers(config, logger, redisPrefix, options.controllers)
+    : await createApp(config, logger, { redisPrefix });
   await app.listen(0, '127.0.0.1');
   const baseUrl = await app.getUrl();
   return {
@@ -73,4 +82,22 @@ export async function startTestApp(
       }
     },
   };
+}
+
+/** `createApp`, with `controllers` declared by a test module that imports `AppModule`. */
+async function createAppWithControllers(
+  config: AppConfig,
+  logger: LoggerService,
+  redisPrefix: string,
+  controllers: Type[],
+): Promise<INestApplication> {
+  @Module({ imports: [AppModule.forRoot(config, { redisPrefix })], controllers })
+  class TestRootModule {}
+
+  const app = await NestFactory.create<NestExpressApplication>(TestRootModule, {
+    logger,
+    bufferLogs: true,
+  });
+  app.disable('x-powered-by');
+  return configureApp(app, logger);
 }
