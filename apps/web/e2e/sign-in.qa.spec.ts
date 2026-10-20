@@ -172,3 +172,129 @@ test.describe('sign-in QA (rate-limit rounding)', () => {
     await expect(page.getByRole('alert')).toHaveText(en.errors.SIGN_IN_RATE_LIMITED);
   });
 });
+
+// QA round 2 for #88: the real failed sign-in limit (#83) end to end, the EN layout at 1440 and
+// 360 px, the "Hiện" toggle and Enter from the email field.
+test.describe('sign-in QA (real limit, EN layout, toggle)', () => {
+  test.use({ locale: 'vi-VN' });
+
+  test('after 10 real failures the 11th attempt shows the blocked wait in minutes, vi then en', async ({
+    page,
+  }, testInfo) => {
+    const email = await newUser(page, testInfo);
+    await page.goto('/sign-in');
+    const statuses = await page.evaluate(async (address) => {
+      const codes: number[] = [];
+      for (let i = 0; i < 10; i += 1) {
+        const response = await fetch('/api/auth/sign-in/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: address, password: 'wrong-Password-1' }),
+        });
+        codes.push(response.status);
+      }
+      return codes;
+    }, email);
+    expect(statuses.every((status) => status === 401)).toBe(true);
+
+    // Even the right password is refused while the window lasts (15 minutes, decisions §2).
+    await fill(page, email);
+    await submit(page).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'Bạn đã đăng nhập sai quá nhiều lần. Thử lại sau 15 phút.',
+    );
+    await expect(heading(page)).toHaveText(vi.auth.signIn.title);
+    await expect(page).toHaveURL(/\/sign-in$/);
+
+    await page.getByRole('button', { name: 'English' }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'Too many failed sign-ins. Try again in 15 minutes.',
+    );
+  });
+
+  test('Enter in the email field submits; "Hiện" shows and hides the password without submitting', async ({
+    page,
+  }, testInfo) => {
+    const email = await newUser(page, testInfo);
+    let requests = 0;
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === '/api/auth/sign-in/email') requests += 1;
+    });
+    await page.goto('/sign-in');
+    await fill(page, email);
+
+    const toggle = page.getByTestId('sign-in-password-toggle');
+    await expect(toggle).toHaveText(vi.auth.signIn.show);
+    await toggle.click();
+    await expect(page.getByTestId('sign-in-password')).toHaveAttribute('type', 'text');
+    await expect(toggle).toHaveText(vi.auth.signIn.hide);
+    await expect(toggle).toHaveAccessibleName(vi.auth.signIn.hidePassword);
+    await toggle.click();
+    await expect(page.getByTestId('sign-in-password')).toHaveAttribute('type', 'password');
+    expect(requests).toBe(0);
+
+    await page.getByTestId('sign-in-email').press('Enter');
+    await expect(page).toHaveURL(/\/$/);
+    expect(requests).toBe(1);
+  });
+
+  for (const scheme of ['light', 'dark'] as const) {
+    test(`EN: SIGN-01/03 at 1440 px and SIGN-04 at 360 px (${scheme})`, async ({
+      page,
+    }, testInfo) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto('/sign-in');
+      await expect(heading(page)).toHaveText(vi.auth.signIn.title);
+      await page.getByRole('button', { name: 'English' }).click();
+      await expect(heading(page)).toHaveText(en.auth.signIn.title);
+      await expect(page.getByTestId('auth-subtitle')).toHaveText(en.auth.signIn.subtitle);
+      await expect(page.getByTestId('sign-in-password-toggle')).toHaveText(en.auth.signIn.show);
+      await expect(submit(page)).toHaveText(en.auth.signIn.submit);
+      await expect(page.getByTestId('sign-in-forgot-link')).toHaveText(
+        en.auth.signIn.forgotPassword,
+      );
+      await expect(page.getByTestId('sign-in-sign-up-link')).toHaveText(en.auth.signIn.signUp);
+      await expect(page.getByText(/Google|Microsoft|passkey/i)).toHaveCount(0);
+      await page.screenshot({
+        path: testInfo.outputPath(`en-sign-01-${scheme}.png`),
+        fullPage: true,
+      });
+
+      await page.route('**/api/auth/sign-in/email', (route) =>
+        route.fulfill({
+          status: 401,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: 'INVALID_EMAIL_OR_PASSWORD', message: 'Invalid' }),
+        }),
+      );
+      await fill(page, 'minh.anh@example.test', 'wrong-Password-1');
+      await submit(page).click();
+      await expect(heading(page)).toHaveText(en.auth.signIn.failedTitle);
+      await expect(page.getByRole('alert')).toHaveText(en.errors.INVALID_CREDENTIALS);
+      await expect(submit(page)).toHaveText(en.auth.signIn.retry);
+      await page.screenshot({
+        path: testInfo.outputPath(`en-sign-03-${scheme}.png`),
+        fullPage: true,
+      });
+
+      // The language choice is kept, so the reload at 360 px opens in English.
+      await page.setViewportSize({ width: 360, height: 800 });
+      await page.goto('/sign-in');
+      await expect(heading(page)).toHaveText(en.auth.signIn.title);
+      await expect(page.getByTestId('auth-subtitle')).toBeHidden();
+      const forgot = await page.getByTestId('sign-in-forgot-link').boundingBox();
+      const signUp = await page.getByTestId('sign-in-sign-up-link').boundingBox();
+      expect(forgot && signUp && forgot.y === signUp.y).toBe(true);
+      expect(signUp!.height).toBeGreaterThanOrEqual(44);
+      const toggle = await page.getByTestId('sign-in-password-toggle').boundingBox();
+      expect(toggle!.height).toBeGreaterThanOrEqual(44);
+      const width = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(width).toBeLessThanOrEqual(360);
+      await page.screenshot({
+        path: testInfo.outputPath(`en-sign-04-${scheme}.png`),
+        fullPage: true,
+      });
+    });
+  }
+});
