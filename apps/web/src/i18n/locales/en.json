@@ -95,6 +95,23 @@
         "RESEND_TOO_SOON": "A link was just sent. Wait 60 seconds and try again.",
         "RESEND_LIMIT": "5 links were sent in the last hour. Please try again later."
       }
+    },
+    "forgotPassword": {
+      "title": "Reset your password",
+      "subtitle": "Enter your email to get instructions.",
+      "email": "Email",
+      "submit": "Send instructions",
+      "backToSignIn": "Back to sign in",
+      "sentTitle": "Check your email",
+      "sentSubtitle": "If an account matches, you will get instructions to reset your password.",
+      "sentNotice": "You can go back to sign in or close this page.",
+      "resend": "Send again",
+      "resendIn": "Send again in {count} second | Send again in {count} seconds",
+      "errors": {
+        "EMAIL_INVALID": "Enter a valid email address",
+        "RESEND_TOO_SOON": "Instructions were just sent. Wait 60 seconds and try again.",
+        "RESEND_LIMIT": "Instructions were sent 5 times in the last hour. Please try again later."
+      }
     }
   },
   "errors": {

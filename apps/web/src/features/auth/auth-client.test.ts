@@ -98,6 +98,33 @@ describe('createAuthApi', () => {
     expect(call.credentials).toBe('include');
   });
 
+  it('requests a password reset email with POST /api/auth/request-password-reset', async () => {
+    const { auth, fetchFn } = setup(jsonResponse({ status: true }));
+
+    await auth.requestPasswordReset({ email: 'an.nguyen@example.test' });
+
+    expect(fetchFn).toHaveBeenCalledOnce();
+    const call = await callAt(fetchFn);
+    expect(call.url).toBe('https://api.example.test/api/auth/request-password-reset');
+    expect(call.method).toBe('POST');
+    expect(call.credentials).toBe('include');
+    expect(call.body).toEqual({ email: 'an.nguyen@example.test' });
+  });
+
+  it('surfaces a refused reset request with its code and retryAfterSeconds', async () => {
+    const { auth } = setup(
+      jsonResponse({ code: 'RESEND_LIMIT', message: 'RESEND_LIMIT', retryAfterSeconds: 1800 }, 429),
+    );
+
+    const error = await auth
+      .requestPasswordReset({ email: 'an.nguyen@example.test' })
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error).toMatchObject({ code: 'RESEND_LIMIT', status: 429 });
+    expect((error as ApiError).cause).toMatchObject({ retryAfterSeconds: 1800 });
+  });
+
   it('surfaces a Better Auth error response as ApiError with the API code and status', async () => {
     const { auth } = setup(
       jsonResponse(
