@@ -99,6 +99,25 @@ test.describe('page header QA (#114)', () => {
       expect(style).toEqual({ size: '18px', lineHeight: '24px' });
     });
 
+    // Example · Mobile navigation closed: the full-width "Tạo vị trí" ends about 20 px above the first
+    // list item. On mobile the header drops its bottom inset and line, so a flush body (a table with
+    // its own row padding) must still leave that space instead of starting right under the button.
+    test('the flush list example leaves space between the full-width action and the table', async ({
+      page,
+    }) => {
+      await page.goto('/dev/ui');
+      for (const panel of ['light', 'dark'] as const) {
+        const node = example(page, panel, 'list');
+        await node.scrollIntoViewIfNeeded();
+        const gap = await node.evaluate((el) => {
+          const button = el.querySelector('.ats-page-header__actions button')!;
+          const content = el.querySelector('.ats-page-body')!.firstElementChild!;
+          return content.getBoundingClientRect().top - button.getBoundingClientRect().bottom;
+        });
+        expect(gap, `${panel}: px between the action and the table`).toBeGreaterThanOrEqual(16);
+      }
+    });
+
     test('screenshots of the list and empty examples, light and dark', async ({ page }) => {
       await page.goto('/dev/ui');
       for (const panel of ['light', 'dark'] as const) {
