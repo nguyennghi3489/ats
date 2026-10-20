@@ -174,5 +174,13 @@
     "INVALID_CREDENTIALS": "Email hoặc mật khẩu chưa đúng.",
     "EMAIL_NOT_VERIFIED": "Email này chưa được xác minh. Mở email xác minh để kích hoạt tài khoản.",
     "SIGN_IN_RATE_LIMITED": "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau."
+  },
+  "jobs": {
+    "status": {
+      "draft": "Bản nháp",
+      "open": "Đang mở tuyển",
+      "paused": "Tạm dừng",
+      "closed": "Đã đóng"
+    }
   }
 }

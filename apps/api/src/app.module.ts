@@ -4,6 +4,7 @@ import type { AppConfig } from './config/config.js';
 import { ConfigModule } from './config/config.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './health/health.module.js';
+import { JobsModule } from './jobs/jobs.module.js';
 import { QueueModule } from './queue/queue.module.js';
 import { WorkspacesModule } from './workspaces/workspaces.module.js';
 
@@ -28,6 +29,7 @@ export class AppModule {
         HealthModule,
         auth,
         WorkspacesModule.forRoot(auth),
+        JobsModule,
       ],
     };
   }
