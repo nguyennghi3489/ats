@@ -47,6 +47,26 @@
         "PASSWORD_TOO_SHORT": "Mật khẩu cần ít nhất 8 ký tự",
         "PASSWORD_TOO_LONG": "Mật khẩu tối đa 128 ký tự"
       }
+    },
+    "verified": {
+      "title": "Email đã được xác minh",
+      "subtitle": "Tài khoản của bạn đã sẵn sàng.",
+      "notice": "Xác minh thành công.",
+      "signIn": "Đăng nhập"
+    },
+    "linkExpired": {
+      "title": "Liên kết đã hết hạn",
+      "subtitle": "Yêu cầu liên kết mới để tiếp tục xác minh.",
+      "notice": "Liên kết xác minh không còn hiệu lực.",
+      "email": "Người nhận",
+      "emailPlaceholder": "minh.anh{'@'}example.com",
+      "submit": "Gửi liên kết mới",
+      "backToSignIn": "Quay lại đăng nhập",
+      "errors": {
+        "EMAIL_INVALID": "Nhập địa chỉ email hợp lệ",
+        "RESEND_TOO_SOON": "Liên kết vừa được gửi. Đợi 60 giây rồi thử lại.",
+        "RESEND_LIMIT": "Đã gửi 5 liên kết trong một giờ. Vui lòng thử lại sau."
+      }
     }
   },
   "errors": {
