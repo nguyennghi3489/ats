@@ -112,6 +112,38 @@
         "RESEND_TOO_SOON": "A link was just sent. Wait 60 seconds and try again.",
         "RESEND_LIMIT": "5 links were sent in the last hour. Please try again later."
       }
+    },
+    "resetPassword": {
+      "title": "Set a new password",
+      "subtitle": "Create a new password for your account.",
+      "newPassword": "New password",
+      "passwordHelper": "At least 8 characters",
+      "confirmPassword": "Confirm password",
+      "show": "Show",
+      "hide": "Hide",
+      "showNewPassword": "Show new password",
+      "hideNewPassword": "Hide new password",
+      "showConfirmPassword": "Show confirmed password",
+      "hideConfirmPassword": "Hide confirmed password",
+      "submit": "Reset password",
+      "errors": {
+        "PASSWORD_TOO_SHORT": "Password needs at least 8 characters",
+        "PASSWORD_TOO_LONG": "Password can be at most 128 characters",
+        "PASSWORD_MISMATCH": "Passwords don't match"
+      },
+      "done": {
+        "title": "Password reset",
+        "subtitle": "You can sign in with your new password.",
+        "notice": "Your password has been updated.",
+        "signIn": "Sign in"
+      },
+      "invalid": {
+        "title": "Invalid link",
+        "subtitle": "Request a new link to continue.",
+        "notice": "This link can't be used.",
+        "requestNew": "Request a new link",
+        "backToSignIn": "Back to sign in"
+      }
     }
   },
   "errors": {

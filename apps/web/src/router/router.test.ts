@@ -129,7 +129,9 @@ describe('router', () => {
       '/verify-email',
       '/verify-email/:rest(.*)+',
       '/forgot-password',
-      '/reset-password/:rest(.*)*',
+      '/reset-password',
+      '/reset-password/invalid',
+      '/reset-password/:rest(.*)+',
       '/dev/ui',
     ]);
     expect(buildRoutes(false).find((route) => route.path === '/')?.meta?.public).toBeUndefined();

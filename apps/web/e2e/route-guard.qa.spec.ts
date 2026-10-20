@@ -38,7 +38,8 @@ test.describe('route guard (QA #82)', () => {
       '/verify-email?email=an%40example.test',
       '/verify-email/tok-123',
       '/forgot-password',
-      '/reset-password',
+      '/reset-password?token=tok-123',
+      '/reset-password/invalid',
       '/reset-password/tok-123',
     ]) {
       await page.goto(path);
