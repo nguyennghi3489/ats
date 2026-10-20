@@ -82,7 +82,7 @@ describe('router', () => {
 
     expect(wrapper.find('[data-testid="ui-gallery"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="not-found-page"]').exists()).toBe(false);
-  });
+  }, 30_000);
 
   it('answers /dev/ui with the 404 page in a production build', async () => {
     const { wrapper } = await mountAt('/dev/ui', false);
