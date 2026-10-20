@@ -2,6 +2,7 @@ import { VERIFY_EMAIL_EXPIRED_PATH, VERIFY_EMAIL_SUCCESS_PATH } from '@ats/share
 import {
   createRouter,
   createWebHistory,
+  type LocationQuery,
   type LocationQueryRaw,
   type RouteRecordRaw,
   type RouterHistory,
@@ -14,6 +15,13 @@ declare module 'vue-router' {
     /** Only for signed-out visitors: a signed-in user is sent to `/` instead. */
     guestOnly?: boolean;
   }
+}
+
+/** The non-empty `email` query value, or `undefined`. */
+export function emailQuery(query: LocationQuery): string | undefined {
+  const raw = query.email;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
 }
 
 // The other auth screens arrive in their own issues (forgot password #89, reset password #99); until
@@ -48,8 +56,17 @@ const authRoutes: RouteRecordRaw[] = [
     meta: { public: true },
   },
   {
-    path: '/verify-email/:rest(.*)*',
+    // The check-email page after sign-up (AUTH-03 / AUTH-04); it needs the address in `?email=`.
+    path: '/verify-email',
     name: 'verify-email',
+    component: () => import('../features/auth/CheckEmailView.vue'),
+    meta: { public: true },
+    beforeEnter: (to) => (emailQuery(to.query) ? true : { name: 'sign-up' }),
+  },
+  {
+    // Any other verification path (the result pages above are matched first).
+    path: '/verify-email/:rest(.*)+',
+    name: 'verify-email-result',
     component: authPlaceholder,
     meta: { public: true },
   },

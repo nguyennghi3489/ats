@@ -35,14 +35,14 @@ test.describe('route guard (QA #82)', () => {
     for (const path of [
       '/sign-in',
       '/sign-up',
-      '/verify-email',
+      '/verify-email?email=an%40example.test',
       '/verify-email/tok-123',
       '/forgot-password',
       '/reset-password',
       '/reset-password/tok-123',
     ]) {
       await page.goto(path);
-      await expect(page).toHaveURL(new RegExp(`${path}$`));
+      await expect(page).toHaveURL(new RegExp(`${path.replace(/[?]/g, '\\?')}$`));
     }
   });
 

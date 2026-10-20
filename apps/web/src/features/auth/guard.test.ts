@@ -79,7 +79,7 @@ describe('auth guard: signed out', () => {
     '/sign-in',
     '/sign-in?redirect=%2Fjobs&expired=1',
     '/sign-up',
-    '/verify-email',
+    '/verify-email?email=an%40example.test',
     '/verify-email/abc123',
     '/forgot-password',
     '/reset-password',
