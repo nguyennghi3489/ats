@@ -1,3 +1,4 @@
+import { VERIFY_EMAIL_EXPIRED_PATH, VERIFY_EMAIL_SUCCESS_PATH } from '@ats/shared';
 import {
   createRouter,
   createWebHistory,
@@ -32,6 +33,19 @@ const authRoutes: RouteRecordRaw[] = [
     name: 'sign-up',
     component: () => import('../features/auth/SignUpView.vue'),
     meta: { public: true, guestOnly: true },
+  },
+  // Where the API redirects a verification link (decisions §2); listed before the catch-all below.
+  {
+    path: VERIFY_EMAIL_SUCCESS_PATH,
+    name: 'verify-email-success',
+    component: () => import('../features/auth/EmailVerifiedView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: VERIFY_EMAIL_EXPIRED_PATH,
+    name: 'verify-email-expired',
+    component: () => import('../features/auth/LinkExpiredView.vue'),
+    meta: { public: true },
   },
   {
     path: '/verify-email/:rest(.*)*',
