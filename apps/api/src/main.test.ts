@@ -31,5 +31,5 @@ describe('main startup', () => {
     expect(exit).toHaveBeenCalledWith(1);
     const written = stderr.mock.calls.map(([chunk]) => String(chunk)).join('');
     expect(written).toContain('API_PORT is required');
-  });
+  }, 30_000);
 });

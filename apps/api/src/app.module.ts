@@ -5,6 +5,7 @@ import { ConfigModule } from './config/config.module.js';
 import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './health/health.module.js';
 import { QueueModule } from './queue/queue.module.js';
+import { WorkspacesModule } from './workspaces/workspaces.module.js';
 
 export interface AppModuleOptions {
   /**
@@ -17,6 +18,7 @@ export interface AppModuleOptions {
 @Module({})
 export class AppModule {
   static forRoot(config: AppConfig, options: AppModuleOptions = {}): DynamicModule {
+    const auth = AuthModule.forRoot({ redisKeyPrefix: options.redisPrefix ?? 'ats' });
     return {
       module: AppModule,
       imports: [
@@ -24,7 +26,8 @@ export class AppModule {
         DatabaseModule.forRoot({ url: config.databaseUrl }),
         QueueModule.forRoot({ redisUrl: config.redisUrl, prefix: options.redisPrefix }),
         HealthModule,
-        AuthModule.forRoot({ redisKeyPrefix: options.redisPrefix ?? 'ats' }),
+        auth,
+        WorkspacesModule.forRoot(auth),
       ],
     };
   }

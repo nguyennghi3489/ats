@@ -9,16 +9,20 @@ import {
   RESET_PASSWORD_PATH,
   VERIFY_EMAIL_EXPIRED_PATH,
   VERIFY_EMAIL_SUCCESS_PATH,
+  type WorkspaceRole,
 } from '@ats/shared';
 import { Logger } from '@nestjs/common';
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { signJWT, verifyJWT } from 'better-auth/crypto';
+import { organization } from 'better-auth/plugins';
+import { createAccessControl } from 'better-auth/plugins/access';
+import { adminAc, defaultStatements } from 'better-auth/plugins/organization/access';
 import type { AppConfig } from '../config/config.js';
 import type { DatabaseClient } from '../database/database.js';
 import type { EmailService } from '../email/email.service.js';
-import { authSchema } from './auth.schema.js';
+import { authSchema, MEMBER_STATUSES } from './auth.schema.js';
 import {
   invalidateEarlierResetLinks,
   isUsableResetLink,
@@ -116,6 +120,73 @@ function userLocale(user: object) {
   return locale.success ? locale.data : DEFAULT_LOCALE;
 }
 
+/** Workspace invitations are valid for 7 days (decisions §2). */
+const INVITATION_EXPIRES_IN_SECONDS = 7 * DAY_SECONDS;
+
+/**
+ * Organization plugin permissions for the workspace roles (decisions §3): only admins manage the
+ * workspace, its members and invitations; recruiters and collaborators manage none of it. Nobody
+ * deletes a workspace (deletion is disabled too). Job and candidate rules live in our own code.
+ */
+const workspaceAccess = createAccessControl(defaultStatements);
+const workspaceRoles = {
+  admin: workspaceAccess.newRole(adminAc.statements),
+  recruiter: workspaceAccess.newRole({ organization: [], member: [], invitation: [] }),
+  collaborator: workspaceAccess.newRole({ organization: [], member: [], invitation: [] }),
+} satisfies Record<WorkspaceRole, unknown>;
+
+/** The Better Auth organization plugin, configured as our workspaces (decisions §2–§5). */
+function workspacesPlugin() {
+  return organization({
+    ac: workspaceAccess,
+    roles: workspaceRoles,
+    creatorRole: 'admin' satisfies WorkspaceRole,
+    // Workspaces are created by `POST /api/workspaces` only: one transaction with the admin
+    // membership, the generated slug, the fixed code prefix and the idempotency key.
+    allowUserToCreateOrganization: false,
+    // Workspaces and their members are never hard-deleted (decisions §4).
+    disableOrganizationDeletion: true,
+    invitationExpiresIn: INVITATION_EXPIRES_IN_SECONDS,
+    schema: {
+      organization: {
+        additionalFields: {
+          // Set once at creation (decisions §5); `input: false` keeps it out of create/update bodies.
+          codePrefix: { type: 'string', required: true, input: false },
+        },
+      },
+      member: {
+        additionalFields: {
+          status: {
+            type: [...MEMBER_STATUSES],
+            required: true,
+            defaultValue: 'active',
+            input: false,
+          },
+        },
+      },
+    },
+    organizationHooks: {
+      beforeUpdateOrganization: async ({ organization: data }) => {
+        // Second line of defence: the prefix never changes, whatever reaches the update.
+        if ('codePrefix' in data) {
+          throw new APIError('BAD_REQUEST', {
+            code: 'CODE_PREFIX_NOT_EDITABLE',
+            message: 'CODE_PREFIX_NOT_EDITABLE',
+          });
+        }
+        // Unknown and read-only fields are stripped from the body; with nothing left Better Auth
+        // would run an empty UPDATE and answer 500.
+        if (Object.keys(data).length === 0) {
+          throw new APIError('BAD_REQUEST', {
+            code: 'VALIDATION_FAILED',
+            message: 'VALIDATION_FAILED',
+          });
+        }
+      },
+    },
+  });
+}
+
 /** 429 for a refused resend or reset request, with the seconds to wait (body and header). */
 function refuseIfLimited(decision: ResendDecision): void {
   if (decision.allowed) return;
@@ -132,7 +203,8 @@ function refuseIfLimited(decision: ResendDecision): void {
  * against Postgres on every request (cookie cache off), so deleting a session row signs it out
  * immediately. Failed email sign-ins are limited per client IP + email by `signInLimiter`
  * (decisions §2). Password reset: 1 h single-use links, the newest one only, requests limited
- * like the verification resend, all sessions signed out on reset. Organizations (step 4) and Google/LinkedIn (step 16) are added here later.
+ * like the verification resend, all sessions signed out on reset. Workspaces are Better Auth
+ * organizations (`workspacesPlugin`). Google/LinkedIn (step 16) are added here later.
  */
 export function createAuth(
   config: AuthConfig,
@@ -277,6 +349,7 @@ export function createAuth(
         await signInLimit.after(ctx);
       }),
     },
+    plugins: [workspacesPlugin()],
     telemetry: { enabled: false },
     logger: {
       level: 'warn',

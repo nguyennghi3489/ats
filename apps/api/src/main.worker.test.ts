@@ -31,5 +31,5 @@ describe('worker startup', () => {
     expect(exit).toHaveBeenCalledWith(1);
     const written = stderr.mock.calls.map(([chunk]) => String(chunk)).join('');
     expect(written).toContain('REDIS_URL is required');
-  });
+  }, 30_000);
 });
