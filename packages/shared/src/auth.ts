@@ -65,9 +65,38 @@ export const resendErrorSchema = z.object({
 
 export type ResendError = z.infer<typeof resendErrorSchema>;
 
-/** Password length rules; the same as Better Auth's defaults on the API. */
+/**
+ * Password length rules, for sign-up and password reset alike. The API enforces the same bounds
+ * (Better Auth `minPasswordLength` / `maxPasswordLength`) and answers 400 with these codes.
+ */
 export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_LENGTH = 128;
+
+export const PASSWORD_ERROR_CODES = ['PASSWORD_TOO_SHORT', 'PASSWORD_TOO_LONG'] as const;
+
+export type PasswordErrorCode = (typeof PASSWORD_ERROR_CODES)[number];
+
+/** A new password; issue messages are the error codes above, for the web app to translate. */
+export const passwordSchema = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH, { message: 'PASSWORD_TOO_SHORT' })
+  .max(PASSWORD_MAX_LENGTH, { message: 'PASSWORD_TOO_LONG' });
+
+/**
+ * Web app pages the password reset link lands on (decisions §2): the API checks the token, then
+ * redirects to `WEB_ORIGIN/reset-password?token=…`, where the user picks the new password and
+ * sends it with the token to `POST /api/auth/reset-password`.
+ */
+export const RESET_PASSWORD_PATH = '/reset-password';
+/** Expired (after 1 h), already used, replaced by a newer link, or unknown. */
+export const RESET_PASSWORD_INVALID_PATH = '/reset-password/invalid';
+
+/**
+ * Code of `POST /api/auth/reset-password` (400) for a token that can no longer be used. Requesting
+ * a reset (`POST /api/auth/request-password-reset`) answers 429 with `resendErrorSchema` under the
+ * same limits as the verification resend.
+ */
+export const RESET_PASSWORD_INVALID_TOKEN = 'INVALID_TOKEN';
 
 /** Longest user name accepted at sign-up, after trimming. */
 export const USER_NAME_MAX_LENGTH = 100;
