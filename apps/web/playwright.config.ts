@@ -31,7 +31,8 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  // Locally an already running API or dev server is reused; CI always starts fresh ones.
+  // Locally an already running API or dev server is reused; CI always starts fresh ones. The email
+  // worker is always started.
   webServer: [
     {
       name: 'api',
@@ -45,6 +46,21 @@ export default defineConfig({
       env: { API_PORT: portOf(apiURL), NODE_ENV: 'test', LOG_LEVEL: 'warn' },
       reuseExistingServer: !isCI,
       timeout: 120_000,
+      stdout: 'ignore',
+      stderr: 'pipe',
+    },
+    {
+      // Emails are only delivered by the worker (decisions §1): the API enqueues them in Redis and
+      // this process sends them to Mailpit, where the e2e helpers read them. It runs the `dist`
+      // the API entry above has just built, and is always started fresh (it has no URL to reuse).
+      name: 'worker',
+      command:
+        'node --env-file=.env.example --env-file-if-exists=../../.env --env-file-if-exists=.env dist/main.worker.js',
+      cwd: apiDir,
+      // "worker ready" for the email queue is logged once the BullMQ worker is listening.
+      wait: { stdout: /"message":"worker ready".*"queue":"email"/ },
+      env: { NODE_ENV: 'test', LOG_LEVEL: 'log' },
+      timeout: 60_000,
       stdout: 'ignore',
       stderr: 'pipe',
     },

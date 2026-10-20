@@ -1,3 +1,4 @@
+import { VERIFY_EMAIL_EXPIRED_PATH, VERIFY_EMAIL_SUCCESS_PATH } from '@ats/shared';
 import {
   createRouter,
   createWebHistory,
@@ -23,8 +24,8 @@ export function emailQuery(query: LocationQuery): string | undefined {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
 }
 
-// The auth screens arrive in their own issues (sign-in #88, sign-up #85, forgot password #89, reset
-// password #99); until then each route shows the 404 view so the guard has somewhere to send people.
+// The other auth screens arrive in their own issues (forgot password #89, reset password #99); until
+// then each route shows the 404 view so the guard has somewhere to send people.
 const authPlaceholder = () => import('../views/NotFoundView.vue');
 
 /** Pages a signed-out visitor can open. `/verify-email/**` and `/reset-password/**` take a token. */
@@ -32,14 +33,27 @@ const authRoutes: RouteRecordRaw[] = [
   {
     path: '/sign-in',
     name: 'sign-in',
-    component: authPlaceholder,
+    component: () => import('../features/auth/SignInView.vue'),
     meta: { public: true, guestOnly: true },
   },
   {
     path: '/sign-up',
     name: 'sign-up',
-    component: authPlaceholder,
+    component: () => import('../features/auth/SignUpView.vue'),
     meta: { public: true, guestOnly: true },
+  },
+  // Where the API redirects a verification link (decisions §2); listed before the catch-all below.
+  {
+    path: VERIFY_EMAIL_SUCCESS_PATH,
+    name: 'verify-email-success',
+    component: () => import('../features/auth/EmailVerifiedView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: VERIFY_EMAIL_EXPIRED_PATH,
+    name: 'verify-email-expired',
+    component: () => import('../features/auth/LinkExpiredView.vue'),
+    meta: { public: true },
   },
   {
     // The check-email page after sign-up (AUTH-03 / AUTH-04); it needs the address in `?email=`.
@@ -50,7 +64,7 @@ const authRoutes: RouteRecordRaw[] = [
     beforeEnter: (to) => (emailQuery(to.query) ? true : { name: 'sign-up' }),
   },
   {
-    // Where the verification link lands (`/verify-email/success`, `/verify-email/expired`).
+    // Any other verification path (the result pages above are matched first).
     path: '/verify-email/:rest(.*)+',
     name: 'verify-email-result',
     component: authPlaceholder,

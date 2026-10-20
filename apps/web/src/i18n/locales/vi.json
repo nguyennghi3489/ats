@@ -40,6 +40,78 @@
       "resentFooter": "Bạn có thể gửi lại nếu cần.",
       "waitAnnouncement": "Bạn có thể gửi lại email sau {seconds} giây.",
       "readyAnnouncement": "Bạn có thể gửi lại email xác minh ngay bây giờ."
+    },
+    "signIn": {
+      "title": "Đăng nhập",
+      "subtitle": "Dùng email và mật khẩu của bạn.",
+      "pendingTitle": "Đang đăng nhập",
+      "pendingSubtitle": "Vui lòng chờ trong giây lát.",
+      "pendingNotice": "Đang kiểm tra thông tin đăng nhập.",
+      "failedTitle": "Không thể đăng nhập",
+      "failedSubtitle": "Kiểm tra thông tin rồi thử lại.",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "show": "Hiện",
+      "hide": "Ẩn",
+      "showPassword": "Hiện mật khẩu",
+      "hidePassword": "Ẩn mật khẩu",
+      "submit": "Đăng nhập",
+      "submitPending": "Đang đăng nhập…",
+      "retry": "Thử lại",
+      "expired": "Phiên đăng nhập đã hết hạn. Đăng nhập lại để tiếp tục.",
+      "rateLimited": "Bạn đã đăng nhập sai quá nhiều lần. Thử lại sau {count} phút.",
+      "resendVerification": "Gửi lại email xác minh",
+      "forgotPassword": "Quên mật khẩu?",
+      "noAccount": "Chưa có tài khoản?",
+      "signUp": "Đăng ký",
+      "errors": {
+        "EMAIL_REQUIRED": "Nhập email",
+        "PASSWORD_REQUIRED": "Nhập mật khẩu"
+      }
+    },
+    "signUp": {
+      "title": "Tạo tài khoản",
+      "subtitle": "Bắt đầu bằng email hoặc phương thức được hỗ trợ.",
+      "subtitleInvalid": "Sửa các trường được đánh dấu rồi thử lại.",
+      "name": "Họ và tên",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "passwordHelper": "Ít nhất 8 ký tự",
+      "show": "Hiện",
+      "hide": "Ẩn",
+      "showPassword": "Hiện mật khẩu",
+      "hidePassword": "Ẩn mật khẩu",
+      "submit": "Tạo tài khoản",
+      "invalidNotice": "Chưa thể tạo tài khoản. Kiểm tra thông tin phía trên.",
+      "haveAccount": "Đã có tài khoản?",
+      "signIn": "Đăng nhập",
+      "errors": {
+        "NAME_REQUIRED": "Nhập họ và tên",
+        "NAME_TOO_LONG": "Họ và tên tối đa 100 ký tự",
+        "EMAIL_INVALID": "Nhập địa chỉ email hợp lệ",
+        "PASSWORD_TOO_SHORT": "Mật khẩu cần ít nhất 8 ký tự",
+        "PASSWORD_TOO_LONG": "Mật khẩu tối đa 128 ký tự"
+      }
+    },
+    "verified": {
+      "title": "Email đã được xác minh",
+      "subtitle": "Tài khoản của bạn đã sẵn sàng.",
+      "notice": "Xác minh thành công.",
+      "signIn": "Đăng nhập"
+    },
+    "linkExpired": {
+      "title": "Liên kết đã hết hạn",
+      "subtitle": "Yêu cầu liên kết mới để tiếp tục xác minh.",
+      "notice": "Liên kết xác minh không còn hiệu lực.",
+      "email": "Người nhận",
+      "emailPlaceholder": "minh.anh{'@'}example.com",
+      "submit": "Gửi liên kết mới",
+      "backToSignIn": "Quay lại đăng nhập",
+      "errors": {
+        "EMAIL_INVALID": "Nhập địa chỉ email hợp lệ",
+        "RESEND_TOO_SOON": "Liên kết vừa được gửi. Đợi 60 giây rồi thử lại.",
+        "RESEND_LIMIT": "Đã gửi 5 liên kết trong một giờ. Vui lòng thử lại sau."
+      }
     }
   },
   "errors": {
@@ -49,6 +121,9 @@
     "NOT_FOUND": "Không tìm thấy dữ liệu.",
     "WORKSPACE_ACCESS_REVOKED": "Bạn không còn quyền truy cập không gian làm việc này.",
     "RESEND_TOO_SOON": "Bạn vừa gửi email. Vui lòng đợi một chút rồi thử lại.",
-    "RESEND_LIMIT": "Bạn đã gửi lại quá nhiều lần. Vui lòng thử lại sau một giờ."
+    "RESEND_LIMIT": "Bạn đã gửi lại quá nhiều lần. Vui lòng thử lại sau một giờ.",
+    "INVALID_CREDENTIALS": "Email hoặc mật khẩu chưa đúng.",
+    "EMAIL_NOT_VERIFIED": "Email này chưa được xác minh. Mở email xác minh để kích hoạt tài khoản.",
+    "SIGN_IN_RATE_LIMITED": "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau."
   }
 }

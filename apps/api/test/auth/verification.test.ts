@@ -25,6 +25,10 @@ const SECOND = 1_000;
 const HOUR = 60 * 60 * SECOND;
 const SUCCESS_URL = `${TEST_WEB_ORIGIN}/verify-email/success`;
 const EXPIRED_URL = `${TEST_WEB_ORIGIN}/verify-email/expired`;
+// Tests that fake `Date` wait for each email before moving the clock. The in-process worker shares
+// the faked clock: Nodemailer times its SMTP connection with `Date.now()`, so a jump while an email
+// is being sent times the attempt out, and BullMQ's retry, due 10 s later on the faked clock, never
+// comes while the clock stands still.
 
 /** A fresh synthetic address, so runs and tests never share Mailpit messages or limits. */
 function uniqueEmail(name: string): string {
@@ -208,6 +212,31 @@ describe('email verification on sign-up', () => {
       expect(latest.headers.get('location')).toBe(SUCCESS_URL);
       expect(await isVerified(email)).toBe(true);
     });
+
+    it('is a different link when the newer one is sent within the same second', async () => {
+      // Better Auth's own token is a JWT of the email and whole-second times, so two links sent in
+      // the same second would be identical and the "old" one would keep working.
+      const signedUpAt = new Date('2026-10-01T08:00:00.000Z');
+      vi.useFakeTimers({ toFake: ['Date'], now: signedUpAt });
+      const email = uniqueEmail('same-second');
+      await signUp(email);
+      await waitForMessages(email, 1);
+      // Forget the sign-up send so the resend is not refused as too soon; the clock stands still.
+      const sends = await redis.keys(`${api.redisPrefix}:verify-email:sends:*`);
+      if (sends.length > 0) await redis.del(...sends);
+
+      expect((await resend(email)).status).toBe(200);
+      const [first, second] = await waitForMessages(email, 2);
+      expect(verificationPath(first)).not.toBe(verificationPath(second));
+
+      const old = await open(verificationPath(first));
+      expect(old.headers.get('location')).toBe(EXPIRED_URL);
+      expect(await isVerified(email)).toBe(false);
+
+      const latest = await open(verificationPath(second));
+      expect(latest.headers.get('location')).toBe(SUCCESS_URL);
+      expect(await isVerified(email)).toBe(true);
+    });
   });
 
   describe('resend limits', () => {
@@ -240,9 +269,11 @@ describe('email verification on sign-up', () => {
       vi.useFakeTimers({ toFake: ['Date'], now: signedUpAt });
       const email = uniqueEmail('limit');
       await signUp(email);
+      await waitForMessages(email, 1);
       for (let send = 2; send <= 5; send += 1) {
         vi.setSystemTime(signedUpAt.getTime() + (send - 1) * 60 * SECOND);
         expect((await resend(email)).status).toBe(200);
+        await waitForMessages(email, send);
       }
 
       vi.setSystemTime(signedUpAt.getTime() + 5 * 60 * SECOND);

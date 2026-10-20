@@ -1,6 +1,6 @@
 // Issue #81: the web auth client and the session store, driven in a real browser against the real API
 // through the Vite dev server proxy. No screen uses the store yet, so the checks import the app's own
-// modules from the dev server (same instances the mounted app uses) and watch the 404 page's copy.
+// modules from the dev server (same instances the mounted app uses) and watch the sign-in page's copy.
 //
 // Sign-in needs a verified email and the API sends no verification mail yet, so the test marks its
 // synthetic user verified in the Compose Postgres (`COMPOSE_PROJECT_NAME`, default `ats`).
@@ -10,7 +10,10 @@ import { expect, type Page, test } from '@playwright/test';
 import en from '../src/i18n/locales/en.json' with { type: 'json' };
 import vi from '../src/i18n/locales/vi.json' with { type: 'json' };
 
-const missingPath = '/khong-ton-tai';
+// A page a signed-out visitor can open (any unknown or private URL redirects here since #88). The
+// store's `load()` does not navigate, so the page stays put while its copy follows the locale.
+const signedOutPath = '/sign-in';
+const title = (page: Page) => page.getByRole('heading', { level: 1 });
 const password = 'qa-Password-81!';
 const composeFile = fileURLToPath(new URL('../../../docker-compose.yml', import.meta.url));
 
@@ -96,8 +99,8 @@ test.describe('session store against the real API', () => {
   test.use({ locale: 'vi-VN' });
 
   test('load() without a session is signed out, without throwing', async ({ page }) => {
-    await page.goto(missingPath);
-    await expect(page.getByTestId('not-found-title')).toHaveText(vi.notFound.title);
+    await page.goto(signedOutPath);
+    await expect(title(page)).toHaveText(vi.auth.signIn.title);
 
     const result = await inPage(page, 'load');
 
@@ -105,7 +108,7 @@ test.describe('session store against the real API', () => {
   });
 
   test('a Better Auth error surfaces as ApiError with the API code', async ({ page }) => {
-    await page.goto(missingPath);
+    await page.goto(signedOutPath);
 
     const result = await inPage(page, 'signIn', {
       email: `qa81-nobody-${Date.now()}@example.test`,
@@ -123,8 +126,8 @@ test.describe('session store against the real API', () => {
     page,
   }) => {
     const email = `qa81-${Date.now()}-${test.info().workerIndex}@example.test`;
-    await page.goto(missingPath);
-    await expect(page.getByTestId('not-found-title')).toHaveText(vi.notFound.title);
+    await page.goto(signedOutPath);
+    await expect(title(page)).toHaveText(vi.auth.signIn.title);
     await page.screenshot({ path: test.info().outputPath('before-load-vi.png'), fullPage: true });
 
     const signUp = await inPage(page, 'signUp', {
@@ -145,7 +148,7 @@ test.describe('session store against the real API', () => {
       user: { email, locale: 'en' },
       error: undefined,
     });
-    await expect(page.getByTestId('not-found-title')).toHaveText(en.notFound.title);
+    await expect(title(page)).toHaveText(en.auth.signIn.title);
     await expect(page.locator('html')).toHaveAttribute('lang', 'en');
     await page.screenshot({ path: test.info().outputPath('after-load-en.png'), fullPage: true });
 
@@ -173,15 +176,15 @@ test.describe('session store when GET /api/me misbehaves', () => {
         body: JSON.stringify({ user: { id: 'u-qa81', email: 'not-an-email', locale: 'en' } }),
       }),
     );
-    await page.goto(missingPath);
-    await expect(page.getByTestId('not-found-title')).toHaveText(vi.notFound.title);
+    await page.goto(signedOutPath);
+    await expect(title(page)).toHaveText(vi.auth.signIn.title);
 
     const result = await inPage(page, 'load');
 
     expect(result.error).toEqual({ name: 'ApiError', code: 'UNKNOWN_ERROR', status: 200 });
     expect(result.status).not.toBe('signed-in');
     expect(result.user).toBeNull();
-    await expect(page.getByTestId('not-found-title')).toHaveText(vi.notFound.title);
+    await expect(title(page)).toHaveText(vi.auth.signIn.title);
     await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
     await page.screenshot({ path: test.info().outputPath('malformed-me-vi.png'), fullPage: true });
   });
@@ -196,7 +199,7 @@ test.describe('session store when GET /api/me misbehaves', () => {
         body: JSON.stringify({ code: 'INTERNAL_ERROR' }),
       }),
     );
-    await page.goto(missingPath);
+    await page.goto(signedOutPath);
 
     const result = await inPage(page, 'load');
 
