@@ -68,6 +68,12 @@ function fieldError(field: Field): string | undefined {
   return code ? t(`auth.signIn.errors.${code}`) : undefined;
 }
 
+/** "Quên mật khẩu?" carries the typed email, so the forgot-password page opens with it filled in. */
+const forgotPasswordLink = computed(() => {
+  const email = form.email.trim();
+  return { path: '/forgot-password', query: email === '' ? {} : { email } };
+});
+
 const credentialsFailed = computed(() => failure.value?.kind === 'credentials');
 
 const title = computed(() => {
@@ -227,7 +233,11 @@ async function onSubmit() {
 
     <template #footer>
       <div class="sign-in__footer">
-        <RouterLink to="/forgot-password" class="sign-in__link" data-testid="sign-in-forgot-link">
+        <RouterLink
+          :to="forgotPasswordLink"
+          class="sign-in__link"
+          data-testid="sign-in-forgot-link"
+        >
           {{ t('auth.signIn.forgotPassword') }}
         </RouterLink>
         <span class="sign-in__separator" aria-hidden="true"> · </span>

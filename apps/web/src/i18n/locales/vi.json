@@ -113,6 +113,23 @@
         "RESEND_LIMIT": "Đã gửi 5 liên kết trong một giờ. Vui lòng thử lại sau."
       }
     },
+    "forgotPassword": {
+      "title": "Khôi phục mật khẩu",
+      "subtitle": "Nhập email để nhận hướng dẫn.",
+      "email": "Email",
+      "submit": "Gửi hướng dẫn",
+      "backToSignIn": "Quay lại đăng nhập",
+      "sentTitle": "Kiểm tra email",
+      "sentSubtitle": "Nếu có tài khoản phù hợp, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu.",
+      "sentNotice": "Bạn có thể quay lại đăng nhập hoặc đóng trang này.",
+      "resend": "Gửi lại",
+      "resendIn": "Gửi lại sau {count} giây",
+      "errors": {
+        "EMAIL_INVALID": "Nhập địa chỉ email hợp lệ",
+        "RESEND_TOO_SOON": "Hướng dẫn vừa được gửi. Đợi 60 giây rồi thử lại.",
+        "RESEND_LIMIT": "Đã gửi hướng dẫn 5 lần trong một giờ. Vui lòng thử lại sau."
+      }
+    },
     "resetPassword": {
       "title": "Đặt mật khẩu mới",
       "subtitle": "Tạo mật khẩu mới cho tài khoản của bạn.",

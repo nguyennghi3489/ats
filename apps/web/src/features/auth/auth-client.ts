@@ -92,6 +92,10 @@ export interface SignInInput {
   callbackURL?: string;
 }
 
+export interface PasswordResetRequestInput {
+  email: string;
+}
+
 export function createAuthApi(options: AuthApiOptions) {
   const client = buildClient(options);
 
@@ -101,6 +105,13 @@ export function createAuthApi(options: AuthApiOptions) {
     signUp: (input: SignUpInput) => unwrap(client.signUp.email(input)),
     signIn: (input: SignInInput) => unwrap(client.signIn.email(input)),
     signOut: () => unwrap(client.signOut()),
+    /**
+     * Emails a reset link if the address has an account. The API answers unknown addresses the same
+     * way and refuses a request too soon or too often (`RESEND_TOO_SOON`, `RESEND_LIMIT`, decisions §2).
+     * Where the link lands is fixed by the API, so no `redirectTo` is sent.
+     */
+    requestPasswordReset: (input: PasswordResetRequestInput) =>
+      unwrap(client.requestPasswordReset(input)),
   };
 }
 
