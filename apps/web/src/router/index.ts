@@ -16,8 +16,8 @@ declare module 'vue-router' {
   }
 }
 
-// The other auth screens arrive in their own issues (sign-in #88, forgot password #89, reset password
-// #99); until then each route shows the 404 view so the guard has somewhere to send people.
+// The other auth screens arrive in their own issues (forgot password #89, reset password #99); until
+// then each route shows the 404 view so the guard has somewhere to send people.
 const authPlaceholder = () => import('../views/NotFoundView.vue');
 
 /** Pages a signed-out visitor can open. `/verify-email/**` and `/reset-password/**` take a token. */
@@ -25,7 +25,7 @@ const authRoutes: RouteRecordRaw[] = [
   {
     path: '/sign-in',
     name: 'sign-in',
-    component: authPlaceholder,
+    component: () => import('../features/auth/SignInView.vue'),
     meta: { public: true, guestOnly: true },
   },
   {

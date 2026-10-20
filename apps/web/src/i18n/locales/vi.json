@@ -24,6 +24,34 @@
       "viName": "Tiếng Việt",
       "enName": "English"
     },
+    "signIn": {
+      "title": "Đăng nhập",
+      "subtitle": "Dùng email và mật khẩu của bạn.",
+      "pendingTitle": "Đang đăng nhập",
+      "pendingSubtitle": "Vui lòng chờ trong giây lát.",
+      "pendingNotice": "Đang kiểm tra thông tin đăng nhập.",
+      "failedTitle": "Không thể đăng nhập",
+      "failedSubtitle": "Kiểm tra thông tin rồi thử lại.",
+      "email": "Email",
+      "password": "Mật khẩu",
+      "show": "Hiện",
+      "hide": "Ẩn",
+      "showPassword": "Hiện mật khẩu",
+      "hidePassword": "Ẩn mật khẩu",
+      "submit": "Đăng nhập",
+      "submitPending": "Đang đăng nhập…",
+      "retry": "Thử lại",
+      "expired": "Phiên đăng nhập đã hết hạn. Đăng nhập lại để tiếp tục.",
+      "rateLimited": "Bạn đã đăng nhập sai quá nhiều lần. Thử lại sau {count} phút.",
+      "resendVerification": "Gửi lại email xác minh",
+      "forgotPassword": "Quên mật khẩu?",
+      "noAccount": "Chưa có tài khoản?",
+      "signUp": "Đăng ký",
+      "errors": {
+        "EMAIL_REQUIRED": "Nhập email",
+        "PASSWORD_REQUIRED": "Nhập mật khẩu"
+      }
+    },
     "signUp": {
       "title": "Tạo tài khoản",
       "subtitle": "Bắt đầu bằng email hoặc phương thức được hỗ trợ.",
@@ -74,6 +102,9 @@
     "NETWORK_ERROR": "Không kết nối được máy chủ. Kiểm tra mạng và thử lại.",
     "INTERNAL_ERROR": "Máy chủ gặp sự cố. Vui lòng thử lại sau.",
     "NOT_FOUND": "Không tìm thấy dữ liệu.",
-    "WORKSPACE_ACCESS_REVOKED": "Bạn không còn quyền truy cập không gian làm việc này."
+    "WORKSPACE_ACCESS_REVOKED": "Bạn không còn quyền truy cập không gian làm việc này.",
+    "INVALID_CREDENTIALS": "Email hoặc mật khẩu chưa đúng.",
+    "EMAIL_NOT_VERIFIED": "Email này chưa được xác minh. Mở email xác minh để kích hoạt tài khoản.",
+    "SIGN_IN_RATE_LIMITED": "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau."
   }
 }

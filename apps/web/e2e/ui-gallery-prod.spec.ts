@@ -58,6 +58,23 @@ test.describe('UI gallery in a production build', () => {
   });
 
   test('/dev/ui answers with the 404 route', async ({ page }) => {
+    // The 404 route needs a session since #82, and `vite preview` has no API behind it, so
+    // `GET /api/me` answers with a synthetic signed-in user.
+    await page.route('**/api/me', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          user: {
+            id: 'usr_qa41',
+            name: 'QA Gallery',
+            email: 'qa-gallery@example.test',
+            locale: 'en',
+            emailVerified: true,
+          },
+        }),
+      }),
+    );
     await page.goto(`${previewURL}/dev/ui`);
 
     await expect(page.getByTestId('not-found-page')).toBeVisible();

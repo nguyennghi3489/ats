@@ -16,7 +16,9 @@ test.describe('web scaffold', () => {
     await page.screenshot({ path: test.info().outputPath('home.png'), fullPage: true });
   });
 
-  test('shows the 404 route for an unknown URL', async ({ page }) => {
+  test('shows the 404 route for an unknown URL', async ({ page }, testInfo) => {
+    // Signed out, an unknown URL goes to /sign-in like any private one (#82, #88).
+    await signInAsNewUser(page, uniqueEmail(testInfo, 'qa-scaffold'));
     await page.goto('/this/route/does-not-exist');
 
     await expect(page.getByTestId('not-found-page')).toBeVisible();
