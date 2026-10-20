@@ -32,6 +32,10 @@ const HOUR = 60 * MINUTE;
 const RESET_PAGE = `${TEST_WEB_ORIGIN}/reset-password`;
 const INVALID_PAGE = `${TEST_WEB_ORIGIN}/reset-password/invalid`;
 const start = new Date('2026-10-01T08:00:00.000Z');
+// Tests that fake `Date` wait for each email before moving the clock (and before they end). The
+// in-process worker shares the faked clock: Nodemailer times its SMTP connection with `Date.now()`,
+// so a jump while an email is being sent times the attempt out, and BullMQ's retry, due 10 s later
+// on the faked clock, never comes while the clock stands still.
 
 /** A fresh synthetic address, so runs and tests never share Mailpit messages or limits. */
 function uniqueEmail(name: string): string {
@@ -304,6 +308,7 @@ describe('password reset', () => {
       const email = uniqueEmail('reset-soon');
       await verifiedUser(email);
       expect((await requestReset(email)).status).toBe(200);
+      await waitForMessages(email, 1);
 
       vi.setSystemTime(start.getTime() + 10 * SECOND);
       const refused = await requestReset(email);
@@ -326,6 +331,7 @@ describe('password reset', () => {
       for (let send = 0; send < 5; send += 1) {
         vi.setSystemTime(start.getTime() + send * MINUTE);
         expect((await requestReset(email)).status).toBe(200);
+        await waitForMessages(email, send + 1);
       }
 
       vi.setSystemTime(start.getTime() + 5 * MINUTE);
@@ -347,6 +353,7 @@ describe('password reset', () => {
       expect((await post('/api/auth/send-verification-email', { email })).status).toBe(429);
 
       expect((await requestReset(email)).status).toBe(200);
+      await waitForMessages(email, 1);
     });
 
     it('makes every earlier link invalid once a new one is sent', async () => {
@@ -354,8 +361,10 @@ describe('password reset', () => {
       const email = uniqueEmail('reset-replaced');
       await verifiedUser(email);
       await requestReset(email);
+      await waitForMessages(email, 1);
       vi.setSystemTime(start.getTime() + MINUTE);
       await requestReset(email);
+      await waitForMessages(email, 2);
       vi.setSystemTime(start.getTime() + 2 * MINUTE);
       await requestReset(email);
       const [first, second, third] = await waitForMessages(email, 3);
