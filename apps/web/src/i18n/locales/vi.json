@@ -112,6 +112,38 @@
         "RESEND_TOO_SOON": "Liên kết vừa được gửi. Đợi 60 giây rồi thử lại.",
         "RESEND_LIMIT": "Đã gửi 5 liên kết trong một giờ. Vui lòng thử lại sau."
       }
+    },
+    "resetPassword": {
+      "title": "Đặt mật khẩu mới",
+      "subtitle": "Tạo mật khẩu mới cho tài khoản của bạn.",
+      "newPassword": "Mật khẩu mới",
+      "passwordHelper": "Ít nhất 8 ký tự",
+      "confirmPassword": "Nhập lại mật khẩu",
+      "show": "Hiện",
+      "hide": "Ẩn",
+      "showNewPassword": "Hiện mật khẩu mới",
+      "hideNewPassword": "Ẩn mật khẩu mới",
+      "showConfirmPassword": "Hiện mật khẩu nhập lại",
+      "hideConfirmPassword": "Ẩn mật khẩu nhập lại",
+      "submit": "Đặt lại mật khẩu",
+      "errors": {
+        "PASSWORD_TOO_SHORT": "Mật khẩu cần ít nhất 8 ký tự",
+        "PASSWORD_TOO_LONG": "Mật khẩu tối đa 128 ký tự",
+        "PASSWORD_MISMATCH": "Mật khẩu chưa khớp"
+      },
+      "done": {
+        "title": "Đã đặt lại mật khẩu",
+        "subtitle": "Bạn có thể đăng nhập bằng mật khẩu mới.",
+        "notice": "Mật khẩu đã được cập nhật.",
+        "signIn": "Đăng nhập"
+      },
+      "invalid": {
+        "title": "Liên kết không hợp lệ",
+        "subtitle": "Yêu cầu liên kết mới để tiếp tục.",
+        "notice": "Không thể dùng liên kết này.",
+        "requestNew": "Yêu cầu liên kết mới",
+        "backToSignIn": "Quay lại đăng nhập"
+      }
     }
   },
   "errors": {

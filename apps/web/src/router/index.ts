@@ -1,4 +1,9 @@
-import { VERIFY_EMAIL_EXPIRED_PATH, VERIFY_EMAIL_SUCCESS_PATH } from '@ats/shared';
+import {
+  RESET_PASSWORD_INVALID_PATH,
+  RESET_PASSWORD_PATH,
+  VERIFY_EMAIL_EXPIRED_PATH,
+  VERIFY_EMAIL_SUCCESS_PATH,
+} from '@ats/shared';
 import {
   createRouter,
   createWebHistory,
@@ -24,7 +29,14 @@ export function emailQuery(query: LocationQuery): string | undefined {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
 }
 
-// The other auth screens arrive in their own issues (forgot password #89, reset password #99); until
+/** The non-blank `token` query value of a password reset link, or `undefined`. */
+export function tokenQuery(query: LocationQuery): string | undefined {
+  const raw = query.token;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return typeof value === 'string' && value.trim() !== '' ? value : undefined;
+}
+
+// The other auth screens arrive in their own issues (forgot password #89); until
 // then each route shows the 404 view so the guard has somewhere to send people.
 const authPlaceholder = () => import('../views/NotFoundView.vue');
 
@@ -76,9 +88,26 @@ const authRoutes: RouteRecordRaw[] = [
     component: authPlaceholder,
     meta: { public: true },
   },
+  // Where the API redirects a password reset link (decisions §2): here with `?token=` while it can
+  // be used, to the invalid page when it is expired, used or unknown. Without a token there is
+  // nothing to reset, so that opens the invalid page too.
   {
-    path: '/reset-password/:rest(.*)*',
+    path: RESET_PASSWORD_PATH,
     name: 'reset-password',
+    component: () => import('../features/auth/ResetPasswordView.vue'),
+    meta: { public: true },
+    beforeEnter: (to) => (tokenQuery(to.query) ? true : { path: RESET_PASSWORD_INVALID_PATH }),
+  },
+  {
+    path: RESET_PASSWORD_INVALID_PATH,
+    name: 'reset-password-invalid',
+    component: () => import('../features/auth/ResetPasswordInvalidView.vue'),
+    meta: { public: true },
+  },
+  {
+    // Any other reset path (the pages above are matched first).
+    path: '/reset-password/:rest(.*)+',
+    name: 'reset-password-other',
     component: authPlaceholder,
     meta: { public: true },
   },
