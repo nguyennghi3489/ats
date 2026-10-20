@@ -32,3 +32,20 @@ export {
   type SignUpForm,
 } from './auth.js';
 export { healthSchema, type Health } from './health.js';
+export {
+  createWorkspaceRequestSchema,
+  IDEMPOTENCY_KEY_HEADER,
+  WORKSPACE_ERROR_CODES,
+  WORKSPACE_NAME_MAX_LENGTH,
+  WORKSPACE_PREFIX_FALLBACK,
+  WORKSPACE_PREFIX_MAX_LENGTH,
+  WORKSPACE_ROLES,
+  workspaceNameSchema,
+  workspacePrefix,
+  workspaceRoleSchema,
+  workspaceSchema,
+  type CreateWorkspaceRequest,
+  type Workspace,
+  type WorkspaceErrorCode,
+  type WorkspaceRole,
+} from './workspaces.js';
