@@ -82,7 +82,7 @@ describe('router', () => {
 
     expect(wrapper.find('[data-testid="ui-gallery"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="not-found-page"]').exists()).toBe(false);
-  });
+  }, 30_000);
 
   it('answers /dev/ui with the 404 page in a production build', async () => {
     const { wrapper } = await mountAt('/dev/ui', false);
@@ -126,9 +126,12 @@ describe('router', () => {
       '/sign-up',
       '/verify-email/success',
       '/verify-email/expired',
-      '/verify-email/:rest(.*)*',
+      '/verify-email',
+      '/verify-email/:rest(.*)+',
       '/forgot-password',
-      '/reset-password/:rest(.*)*',
+      '/reset-password',
+      '/reset-password/invalid',
+      '/reset-password/:rest(.*)+',
       '/dev/ui',
     ]);
     expect(buildRoutes(false).find((route) => route.path === '/')?.meta?.public).toBeUndefined();

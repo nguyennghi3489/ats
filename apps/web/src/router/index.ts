@@ -1,7 +1,13 @@
-import { VERIFY_EMAIL_EXPIRED_PATH, VERIFY_EMAIL_SUCCESS_PATH } from '@ats/shared';
+import {
+  RESET_PASSWORD_INVALID_PATH,
+  RESET_PASSWORD_PATH,
+  VERIFY_EMAIL_EXPIRED_PATH,
+  VERIFY_EMAIL_SUCCESS_PATH,
+} from '@ats/shared';
 import {
   createRouter,
   createWebHistory,
+  type LocationQuery,
   type LocationQueryRaw,
   type RouteRecordRaw,
   type RouterHistory,
@@ -16,8 +22,21 @@ declare module 'vue-router' {
   }
 }
 
-// The other auth screens arrive in their own issues (reset password #99); until then each route shows
-// the 404 view so the guard has somewhere to send people.
+/** The non-empty `email` query value, or `undefined`. */
+export function emailQuery(query: LocationQuery): string | undefined {
+  const raw = query.email;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return typeof value === 'string' && value.trim() !== '' ? value.trim() : undefined;
+}
+
+/** The non-blank `token` query value of a password reset link, or `undefined`. */
+export function tokenQuery(query: LocationQuery): string | undefined {
+  const raw = query.token;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return typeof value === 'string' && value.trim() !== '' ? value : undefined;
+}
+
+// Auth paths without a page of their own show the 404 view so the guard has somewhere to send people.
 const authPlaceholder = () => import('../views/NotFoundView.vue');
 
 /** Pages a signed-out visitor can open. `/verify-email/**` and `/reset-password/**` take a token. */
@@ -48,8 +67,17 @@ const authRoutes: RouteRecordRaw[] = [
     meta: { public: true },
   },
   {
-    path: '/verify-email/:rest(.*)*',
+    // The check-email page after sign-up (AUTH-03 / AUTH-04); it needs the address in `?email=`.
+    path: '/verify-email',
     name: 'verify-email',
+    component: () => import('../features/auth/CheckEmailView.vue'),
+    meta: { public: true },
+    beforeEnter: (to) => (emailQuery(to.query) ? true : { name: 'sign-up' }),
+  },
+  {
+    // Any other verification path (the result pages above are matched first).
+    path: '/verify-email/:rest(.*)+',
+    name: 'verify-email-result',
     component: authPlaceholder,
     meta: { public: true },
   },
@@ -59,9 +87,26 @@ const authRoutes: RouteRecordRaw[] = [
     component: () => import('../features/auth/ForgotPasswordView.vue'),
     meta: { public: true },
   },
+  // Where the API redirects a password reset link (decisions §2): here with `?token=` while it can
+  // be used, to the invalid page when it is expired, used or unknown. Without a token there is
+  // nothing to reset, so that opens the invalid page too.
   {
-    path: '/reset-password/:rest(.*)*',
+    path: RESET_PASSWORD_PATH,
     name: 'reset-password',
+    component: () => import('../features/auth/ResetPasswordView.vue'),
+    meta: { public: true },
+    beforeEnter: (to) => (tokenQuery(to.query) ? true : { path: RESET_PASSWORD_INVALID_PATH }),
+  },
+  {
+    path: RESET_PASSWORD_INVALID_PATH,
+    name: 'reset-password-invalid',
+    component: () => import('../features/auth/ResetPasswordInvalidView.vue'),
+    meta: { public: true },
+  },
+  {
+    // Any other reset path (the pages above are matched first).
+    path: '/reset-password/:rest(.*)+',
+    name: 'reset-password-other',
     component: authPlaceholder,
     meta: { public: true },
   },

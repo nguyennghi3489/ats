@@ -24,6 +24,23 @@
       "viName": "Tiếng Việt",
       "enName": "English"
     },
+    "checkEmail": {
+      "title": "Kiểm tra email",
+      "subtitle": "Chúng tôi đã gửi liên kết xác minh tới:",
+      "recipient": "Người nhận",
+      "notice": "Hãy mở liên kết trong email để xác minh tài khoản.",
+      "resend": "Gửi lại email xác minh",
+      "resendIn": "Gửi lại sau {seconds} giây",
+      "wrongEmail": "Sai email?",
+      "backToSignUp": "Quay lại đăng ký",
+      "resentTitle": "Đã gửi lại email",
+      "resentSubtitle": "Một email xác minh mới đã được gửi.",
+      "resentNotice": "Email xác minh mới đã được gửi.",
+      "resendAgain": "Gửi lại",
+      "resentFooter": "Bạn có thể gửi lại nếu cần.",
+      "waitAnnouncement": "Bạn có thể gửi lại email sau {seconds} giây.",
+      "readyAnnouncement": "Bạn có thể gửi lại email xác minh ngay bây giờ."
+    },
     "signIn": {
       "title": "Đăng nhập",
       "subtitle": "Dùng email và mật khẩu của bạn.",
@@ -112,6 +129,38 @@
         "RESEND_TOO_SOON": "Hướng dẫn vừa được gửi. Đợi 60 giây rồi thử lại.",
         "RESEND_LIMIT": "Đã gửi hướng dẫn 5 lần trong một giờ. Vui lòng thử lại sau."
       }
+    },
+    "resetPassword": {
+      "title": "Đặt mật khẩu mới",
+      "subtitle": "Tạo mật khẩu mới cho tài khoản của bạn.",
+      "newPassword": "Mật khẩu mới",
+      "passwordHelper": "Ít nhất 8 ký tự",
+      "confirmPassword": "Nhập lại mật khẩu",
+      "show": "Hiện",
+      "hide": "Ẩn",
+      "showNewPassword": "Hiện mật khẩu mới",
+      "hideNewPassword": "Ẩn mật khẩu mới",
+      "showConfirmPassword": "Hiện mật khẩu nhập lại",
+      "hideConfirmPassword": "Ẩn mật khẩu nhập lại",
+      "submit": "Đặt lại mật khẩu",
+      "errors": {
+        "PASSWORD_TOO_SHORT": "Mật khẩu cần ít nhất 8 ký tự",
+        "PASSWORD_TOO_LONG": "Mật khẩu tối đa 128 ký tự",
+        "PASSWORD_MISMATCH": "Mật khẩu chưa khớp"
+      },
+      "done": {
+        "title": "Đã đặt lại mật khẩu",
+        "subtitle": "Bạn có thể đăng nhập bằng mật khẩu mới.",
+        "notice": "Mật khẩu đã được cập nhật.",
+        "signIn": "Đăng nhập"
+      },
+      "invalid": {
+        "title": "Liên kết không hợp lệ",
+        "subtitle": "Yêu cầu liên kết mới để tiếp tục.",
+        "notice": "Không thể dùng liên kết này.",
+        "requestNew": "Yêu cầu liên kết mới",
+        "backToSignIn": "Quay lại đăng nhập"
+      }
     }
   },
   "errors": {
@@ -120,6 +169,8 @@
     "INTERNAL_ERROR": "Máy chủ gặp sự cố. Vui lòng thử lại sau.",
     "NOT_FOUND": "Không tìm thấy dữ liệu.",
     "WORKSPACE_ACCESS_REVOKED": "Bạn không còn quyền truy cập không gian làm việc này.",
+    "RESEND_TOO_SOON": "Bạn vừa gửi email. Vui lòng đợi một chút rồi thử lại.",
+    "RESEND_LIMIT": "Bạn đã gửi lại quá nhiều lần. Vui lòng thử lại sau một giờ.",
     "INVALID_CREDENTIALS": "Email hoặc mật khẩu chưa đúng.",
     "EMAIL_NOT_VERIFIED": "Email này chưa được xác minh. Mở email xác minh để kích hoạt tài khoản.",
     "SIGN_IN_RATE_LIMITED": "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau."

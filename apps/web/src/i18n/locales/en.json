@@ -24,6 +24,23 @@
       "viName": "Tiếng Việt",
       "enName": "English"
     },
+    "checkEmail": {
+      "title": "Check your email",
+      "subtitle": "We sent a verification link to:",
+      "recipient": "Recipient",
+      "notice": "Open the link in the email to verify your account.",
+      "resend": "Resend verification email",
+      "resendIn": "Resend in {seconds} s",
+      "wrongEmail": "Wrong email?",
+      "backToSignUp": "Back to sign-up",
+      "resentTitle": "Email sent again",
+      "resentSubtitle": "A new verification email has been sent.",
+      "resentNotice": "A new verification email has been sent.",
+      "resendAgain": "Resend",
+      "resentFooter": "You can resend it if needed.",
+      "waitAnnouncement": "You can resend the email in {seconds} seconds.",
+      "readyAnnouncement": "You can resend the verification email now."
+    },
     "signIn": {
       "title": "Sign in",
       "subtitle": "Use your email and password.",
@@ -112,6 +129,38 @@
         "RESEND_TOO_SOON": "Instructions were just sent. Wait 60 seconds and try again.",
         "RESEND_LIMIT": "Instructions were sent 5 times in the last hour. Please try again later."
       }
+    },
+    "resetPassword": {
+      "title": "Set a new password",
+      "subtitle": "Create a new password for your account.",
+      "newPassword": "New password",
+      "passwordHelper": "At least 8 characters",
+      "confirmPassword": "Confirm password",
+      "show": "Show",
+      "hide": "Hide",
+      "showNewPassword": "Show new password",
+      "hideNewPassword": "Hide new password",
+      "showConfirmPassword": "Show confirmed password",
+      "hideConfirmPassword": "Hide confirmed password",
+      "submit": "Reset password",
+      "errors": {
+        "PASSWORD_TOO_SHORT": "Password needs at least 8 characters",
+        "PASSWORD_TOO_LONG": "Password can be at most 128 characters",
+        "PASSWORD_MISMATCH": "Passwords don't match"
+      },
+      "done": {
+        "title": "Password reset",
+        "subtitle": "You can sign in with your new password.",
+        "notice": "Your password has been updated.",
+        "signIn": "Sign in"
+      },
+      "invalid": {
+        "title": "Invalid link",
+        "subtitle": "Request a new link to continue.",
+        "notice": "This link can't be used.",
+        "requestNew": "Request a new link",
+        "backToSignIn": "Back to sign in"
+      }
     }
   },
   "errors": {
@@ -120,6 +169,8 @@
     "INTERNAL_ERROR": "The server ran into a problem. Please try again later.",
     "NOT_FOUND": "Not found.",
     "WORKSPACE_ACCESS_REVOKED": "You no longer have access to this workspace.",
+    "RESEND_TOO_SOON": "An email was just sent. Please wait a moment and try again.",
+    "RESEND_LIMIT": "Too many resend attempts. Please try again in an hour.",
     "INVALID_CREDENTIALS": "The email or password is incorrect.",
     "EMAIL_NOT_VERIFIED": "This email is not verified yet. Open the verification email to activate your account.",
     "SIGN_IN_RATE_LIMITED": "Too many failed sign-ins. Please try again later."
