@@ -137,6 +137,27 @@ describe('SignInView', () => {
     expect(wrapper.find('[role="status"]').exists()).toBe(false);
   });
 
+  it('passes the typed email to "Quên mật khẩu?"', async () => {
+    const wrapper = await mountView();
+    const forgot = () => wrapper.get('[data-testid="sign-in-forgot-link"]');
+
+    await emailInput(wrapper).setValue('  minh.anh@example.test ');
+    expect(forgot().attributes('href')).toBe('/forgot-password?email=minh.anh%40example.test');
+
+    await emailInput(wrapper).setValue('   ');
+    expect(forgot().attributes('href')).toBe('/forgot-password');
+  });
+
+  it('opens the forgot-password page with the typed email filled in', async () => {
+    const wrapper = await mountView();
+    await emailInput(wrapper).setValue('minh.anh@example.test');
+
+    await wrapper.get('[data-testid="sign-in-forgot-link"]').trigger('click');
+
+    await arrivedAt('/forgot-password?email=minh.anh%40example.test');
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
   it('shows no Google, Microsoft or passkey buttons and no "or" divider', async () => {
     const wrapper = await mountView();
 
