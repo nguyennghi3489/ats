@@ -49,3 +49,15 @@ export {
   type WorkspaceErrorCode,
   type WorkspaceRole,
 } from './workspaces.js';
+export {
+  AUDIT_ACTIONS,
+  AUDIT_METADATA_EXAMPLES,
+  AUDIT_TARGET_TYPES,
+  auditActionSchema,
+  auditMetadataSchema,
+  auditTargetType,
+  CLAUDE_EXTRACTION_OUTCOMES,
+  type AuditAction,
+  type AuditMetadata,
+  type AuditTargetType,
+} from './audit.js';
