@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { type Workspace, workspacePrefix } from '@ats/shared';
+import { type Workspace, type WorkspaceList, workspacePrefix } from '@ats/shared';
 import { Inject, Injectable } from '@nestjs/common';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { member, organization, session } from '../auth/auth.schema.js';
 import type { Database, Transaction } from '../database/database.js';
 import { DATABASE } from '../database/database.module.js';
@@ -63,6 +63,61 @@ export class WorkspacesService {
       return { workspace: { id, name: input.name, codePrefix, role: 'admin' }, created: true };
     });
   }
+
+  /**
+   * The workspaces `userId` is an active member of, sorted by name (Vietnamese, case-insensitive),
+   * and `activeWorkspaceId` when it is one of them, else `null` (deactivated or never set).
+   */
+  async list(userId: string, activeWorkspaceId: string | null | undefined): Promise<WorkspaceList> {
+    const workspaces = await this.database.db
+      .select(workspaceColumns)
+      .from(member)
+      .innerJoin(organization, eq(organization.id, member.organizationId))
+      .where(activeMembership(userId))
+      .orderBy(
+        sql`lower(${organization.name} collate "vi-x-icu") collate "vi-x-icu"`,
+        asc(organization.id),
+      );
+    const active = workspaces.some((workspace) => workspace.id === activeWorkspaceId)
+      ? (activeWorkspaceId ?? null)
+      : null;
+    return { activeWorkspaceId: active, workspaces };
+  }
+
+  /**
+   * Makes `workspaceId` the active workspace of the session with `sessionToken` when `userId` is an
+   * active member of it, and returns it. `undefined` when it is unknown, someone else's or a
+   * deactivated membership: callers answer all three alike.
+   */
+  switchActive(
+    userId: string,
+    sessionToken: string,
+    workspaceId: string,
+  ): Promise<Workspace | undefined> {
+    return this.database.transaction(async (tx) => {
+      const [workspace] = await tx
+        .select(workspaceColumns)
+        .from(member)
+        .innerJoin(organization, eq(organization.id, member.organizationId))
+        .where(and(activeMembership(userId), eq(member.organizationId, workspaceId)));
+      if (!workspace) return undefined;
+      await setActive(tx, sessionToken, workspace.id);
+      return workspace;
+    });
+  }
+}
+
+/** A workspace with the member's role in it, from `member` joined to `organization`. */
+const workspaceColumns = {
+  id: organization.id,
+  name: organization.name,
+  codePrefix: organization.codePrefix,
+  role: member.role,
+};
+
+/** Memberships of `userId` that still grant access (decisions §4). */
+function activeMembership(userId: string) {
+  return and(eq(member.userId, userId), eq(member.status, 'active'));
 }
 
 /** The workspace `userId` created with `idempotencyKey`, with their role in it, if any. */
