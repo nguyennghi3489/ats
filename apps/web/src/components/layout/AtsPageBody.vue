@@ -3,7 +3,8 @@
   - `default`: padded with the page's 40 px sides (20 px below the mobile breakpoint);
   - `flush`: edge to edge, for content with its own row padding such as a table. Row lines and the
     header band still run edge to edge, but the first and last table columns take the page's 40 px
-    sides (20 px on mobile), so the column text lines up with the page title;
+    sides (20 px on mobile), so the column text lines up with the page title. On mobile it keeps a
+    20 px top inset, since the header there has no bottom inset or line;
   - `centered`: grows to fill a flex parent and centres its content both ways, for empty states.
 -->
 <script setup lang="ts">
@@ -56,6 +57,11 @@ withDefaults(defineProps<{ variant?: 'default' | 'flush' | 'centered' }>(), {
 
   .ats-page-body--centered {
     padding: var(--space-8) 20px;
+  }
+
+  /* The mobile header has no bottom inset or line, so a flush table keeps 20 px under the actions. */
+  .ats-page-body--flush {
+    padding-top: 20px;
   }
 
   .ats-page-body--flush :deep(:is(th, td):first-child) {

@@ -64,6 +64,11 @@ describe('AtsPageBody', () => {
       expect(rule(desktop, '.ats-page-body--flush')).toMatch(/padding:\s*0/);
     });
 
+    it('keeps 20 px above a flush body below the mobile breakpoint, where the header has no bottom inset', () => {
+      // Example · Mobile navigation closed: about 20 px between the full-width action and the list.
+      expect(rule(mobile, '.ats-page-body--flush')).toMatch(/padding-top:\s*20px/);
+    });
+
     it('lines the first and last table columns of a flush body up with the page sides', () => {
       // ATS/Page wrapper, Example · Desktop list: "VỊ TRÍ" and "Product Designer" start on the
       // title's 40 px line (20 px on mobile) while the row lines still run edge to edge.
