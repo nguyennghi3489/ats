@@ -25,6 +25,10 @@ const SECOND = 1_000;
 const HOUR = 60 * 60 * SECOND;
 const SUCCESS_URL = `${TEST_WEB_ORIGIN}/verify-email/success`;
 const EXPIRED_URL = `${TEST_WEB_ORIGIN}/verify-email/expired`;
+// Tests that fake `Date` wait for each email before moving the clock. The in-process worker shares
+// the faked clock: Nodemailer times its SMTP connection with `Date.now()`, so a jump while an email
+// is being sent times the attempt out, and BullMQ's retry, due 10 s later on the faked clock, never
+// comes while the clock stands still.
 
 /** A fresh synthetic address, so runs and tests never share Mailpit messages or limits. */
 function uniqueEmail(name: string): string {
@@ -240,9 +244,11 @@ describe('email verification on sign-up', () => {
       vi.useFakeTimers({ toFake: ['Date'], now: signedUpAt });
       const email = uniqueEmail('limit');
       await signUp(email);
+      await waitForMessages(email, 1);
       for (let send = 2; send <= 5; send += 1) {
         vi.setSystemTime(signedUpAt.getTime() + (send - 1) * 60 * SECOND);
         expect((await resend(email)).status).toBe(200);
+        await waitForMessages(email, send);
       }
 
       vi.setSystemTime(signedUpAt.getTime() + 5 * 60 * SECOND);

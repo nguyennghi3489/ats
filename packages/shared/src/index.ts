@@ -15,6 +15,9 @@ export {
   RESET_PASSWORD_PATH,
   SIGN_IN_RATE_LIMITED,
   signInRateLimitedErrorSchema,
+  signUpFieldErrors,
+  signUpFormSchema,
+  USER_NAME_MAX_LENGTH,
   VERIFY_EMAIL_EXPIRED_PATH,
   VERIFY_EMAIL_SUCCESS_PATH,
   type Locale,
@@ -24,5 +27,8 @@ export {
   type ResendError,
   type ResendErrorCode,
   type SignInRateLimitedError,
+  type SignUpField,
+  type SignUpFieldError,
+  type SignUpForm,
 } from './auth.js';
 export { healthSchema, type Health } from './health.js';

@@ -10,6 +10,8 @@ import {
   RESET_PASSWORD_INVALID_PATH,
   RESET_PASSWORD_PATH,
   resendErrorSchema,
+  signUpFieldErrors,
+  signUpFormSchema,
   VERIFY_EMAIL_EXPIRED_PATH,
   VERIFY_EMAIL_SUCCESS_PATH,
 } from './index.js';
@@ -75,6 +77,66 @@ describe('verification email contract', () => {
     expect(
       resendErrorSchema.safeParse({ code: 'RESEND_LIMIT', retryAfterSeconds: 0 }).success,
     ).toBe(false);
+  });
+});
+
+describe('signUpFormSchema', () => {
+  const valid = { name: 'Minh Anh', email: 'minh.anh@example.test', password: '12345678' };
+
+  it('accepts a name, a valid email and an 8-character password', () => {
+    expect(signUpFormSchema.parse(valid)).toEqual(valid);
+  });
+
+  it('trims the name and the email', () => {
+    expect(
+      signUpFormSchema.parse({ ...valid, name: '  Minh Anh ', email: ' minh.anh@example.test ' }),
+    ).toEqual(valid);
+  });
+
+  it('keeps the password exactly as typed', () => {
+    expect(signUpFormSchema.parse({ ...valid, password: ' pass word ' }).password).toBe(
+      ' pass word ',
+    );
+  });
+});
+
+describe('signUpFieldErrors', () => {
+  const valid = { name: 'Minh Anh', email: 'minh.anh@example.test', password: '12345678' };
+
+  it('returns no errors for a valid form', () => {
+    expect(signUpFieldErrors(valid)).toEqual({});
+  });
+
+  it('flags an incomplete email and a 4-character password (design AUTH-02)', () => {
+    expect(signUpFieldErrors({ ...valid, email: 'minh.anh@', password: '1234' })).toEqual({
+      email: 'EMAIL_INVALID',
+      password: 'PASSWORD_TOO_SHORT',
+    });
+  });
+
+  it('flags an empty email as invalid', () => {
+    expect(signUpFieldErrors({ ...valid, email: '   ' })).toEqual({ email: 'EMAIL_INVALID' });
+  });
+
+  it('requires a name that is not only spaces', () => {
+    expect(signUpFieldErrors({ ...valid, name: '   ' })).toEqual({ name: 'NAME_REQUIRED' });
+  });
+
+  it('accepts a 100-character name and refuses 101 characters', () => {
+    expect(signUpFieldErrors({ ...valid, name: 'a'.repeat(100) })).toEqual({});
+    expect(signUpFieldErrors({ ...valid, name: 'a'.repeat(101) })).toEqual({
+      name: 'NAME_TOO_LONG',
+    });
+  });
+
+  it('accepts 8 to 128 password characters', () => {
+    expect(signUpFieldErrors({ ...valid, password: '1234567' })).toEqual({
+      password: 'PASSWORD_TOO_SHORT',
+    });
+    expect(signUpFieldErrors({ ...valid, password: 'a'.repeat(128) })).toEqual({});
+    expect(signUpFieldErrors({ ...valid, password: 'a'.repeat(129) })).toEqual({
+      password: 'PASSWORD_TOO_LONG',
+    });
   });
 });
 

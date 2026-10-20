@@ -2,8 +2,9 @@
 
 Playwright (Chromium) drives the web app against a real API and the Compose services (decisions §14).
 `playwright.config.ts` starts both apps through `webServer`: the API is built, pending Drizzle
-migrations are applied to `DATABASE_URL`, and the API is run from `apps/api`; then the Vite dev
-server proxies `/api/*` to it.
+migrations are applied to `DATABASE_URL`, and the API is run from `apps/api`; then the email worker
+is started from the same build (the API only queues emails; the worker sends them to Mailpit); then
+the Vite dev server proxies `/api/*` to it.
 
 ```sh
 docker compose up -d --wait           # backing services (Mailpit is needed by the helper tests)
@@ -12,7 +13,7 @@ pnpm test:e2e                         # from the repo root, or inside apps/web
 ```
 
 Locally an API or dev server already listening on the configured port is reused; CI always starts
-fresh ones.
+fresh ones. The worker is always started, so a reused API must have been built (`dist/`) already.
 
 ## Environment
 
