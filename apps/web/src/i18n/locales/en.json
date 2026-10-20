@@ -163,6 +163,34 @@
       }
     }
   },
+  "workspaces": {
+    "create": {
+      "title": "Create a workspace",
+      "subtitle": "Name your recruiting workspace.",
+      "newTitle": "Create a new workspace",
+      "newSubtitle": "Name the new workspace.",
+      "name": "Recruiter / workspace name",
+      "submit": "Create workspace",
+      "pendingTitle": "Creating the workspace",
+      "pendingSubtitle": "Please wait while the request is processed.",
+      "pendingButton": "Creating...",
+      "pendingNotice": "The workspace request is being processed.",
+      "failedTitle": "Couldn't create the workspace",
+      "failedSubtitle": "The request can't be completed right now.",
+      "failedNotice": "We couldn't confirm whether the workspace was created. Retry to continue.",
+      "retry": "Retry",
+      "back": "Back",
+      "inviteOnly": "Existing workspaces can only be joined by invitation. Ask an admin to send you one.",
+      "inviteOnlyShort": "Join by invitation. Ask an admin to send you one.",
+      "signOut": "Sign out",
+      "backToList": "Cancel · Back to the list",
+      "errors": {
+        "NAME_REQUIRED": "Enter a workspace name",
+        "NAME_TOO_LONG": "Use at most {max} characters for the workspace name",
+        "VALIDATION_FAILED": "This workspace name is not valid"
+      }
+    }
+  },
   "errors": {
     "unknown": "Something went wrong. Please try again.",
     "NETWORK_ERROR": "Could not reach the server. Check your connection and try again.",
