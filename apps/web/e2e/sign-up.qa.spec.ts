@@ -1,7 +1,7 @@
 // QA for issue #85, against the real API, the Compose Postgres and Mailpit: the edges the issue spec
 // (sign-up.spec.ts) does not walk through in a browser. AUTH-02 copy in vi then en, the email body
 // language and name, one request on repeated submits, the network error notice, and one account per
-// email. The verification email is sent by the worker, so the Mailpit checks need it running.
+// email. The verification email is sent by the worker, which `playwright.config.ts` starts.
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';

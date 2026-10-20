@@ -1,6 +1,6 @@
 // Issue #85: the sign-up screen (design AUTH-01, AUTH-02) against the real API, the Compose Postgres
-// and Mailpit. The verification email is delivered by the worker (`pnpm --filter api worker:dev`),
-// so the Mailpit checks need it running. Addresses are synthetic and unique per test.
+// and Mailpit. The verification email is delivered by the worker, which `playwright.config.ts`
+// starts next to the API. Addresses are synthetic and unique per test.
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
