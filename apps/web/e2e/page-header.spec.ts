@@ -153,5 +153,27 @@ test.describe('page header and body', () => {
         expect(m.overflowX).toBe(0);
       }
     });
+
+    test("the flush table text starts on the title's 20 px line", async ({ page }) => {
+      await page.goto('/dev/ui');
+      const example = page
+        .getByTestId('layout-demo-AtsPage')
+        .locator('[data-panel="light"] [data-example="list"]');
+      await example.scrollIntoViewIfNeeded();
+      const lefts = await example.evaluate((el) => {
+        const textLeft = (sel: string) => {
+          const range = document.createRange();
+          range.selectNodeContents(el.querySelector(sel)!);
+          return range.getBoundingClientRect().left;
+        };
+        return {
+          title: textLeft('.ats-page-header__title'),
+          columnHeader: textLeft('thead th'),
+          firstCell: textLeft('tbody tr td'),
+        };
+      });
+      expect(Math.abs(lefts.columnHeader - lefts.title)).toBeLessThan(2);
+      expect(Math.abs(lefts.firstCell - lefts.title)).toBeLessThan(2);
+    });
   });
 });

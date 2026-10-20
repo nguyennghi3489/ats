@@ -64,6 +64,17 @@ describe('AtsPageBody', () => {
       expect(rule(desktop, '.ats-page-body--flush')).toMatch(/padding:\s*0/);
     });
 
+    it('lines the first and last table columns of a flush body up with the page sides', () => {
+      // ATS/Page wrapper, Example · Desktop list: "VỊ TRÍ" and "Product Designer" start on the
+      // title's 40 px line (20 px on mobile) while the row lines still run edge to edge.
+      const first = '.ats-page-body--flush :deep(:is(th, td):first-child)';
+      const last = '.ats-page-body--flush :deep(:is(th, td):last-child)';
+      expect(rule(desktop, first)).toMatch(/padding-inline-start:\s*40px/);
+      expect(rule(desktop, last)).toMatch(/padding-inline-end:\s*40px/);
+      expect(rule(mobile, first)).toMatch(/padding-inline-start:\s*20px/);
+      expect(rule(mobile, last)).toMatch(/padding-inline-end:\s*20px/);
+    });
+
     it('centres the content of the centered variant both ways', () => {
       const centered = rule(desktop, '.ats-page-body--centered');
       expect(centered).toMatch(/display:\s*flex/);
