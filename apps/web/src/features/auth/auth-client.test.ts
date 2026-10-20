@@ -114,6 +114,22 @@ describe('createAuthApi', () => {
     expect(error).toMatchObject({ code: 'INVALID_EMAIL_OR_PASSWORD', status: 401 });
   });
 
+  it('keeps the error body as the cause, so screens can read fields such as retryAfterSeconds', async () => {
+    const { auth } = setup(
+      jsonResponse(
+        { code: 'SIGN_IN_RATE_LIMITED', message: 'Too many', retryAfterSeconds: 600 },
+        429,
+      ),
+    );
+
+    const error = await auth
+      .signIn({ email: 'an.nguyen@example.test', password: 'wrong-pass-1' })
+      .catch((e: unknown) => e);
+
+    expect(error).toMatchObject({ code: 'SIGN_IN_RATE_LIMITED', status: 429 });
+    expect((error as ApiError).cause).toMatchObject({ retryAfterSeconds: 600 });
+  });
+
   it('maps an error status without a code to UNKNOWN_ERROR', async () => {
     const { auth } = setup(new Response('', { status: 500 }));
 

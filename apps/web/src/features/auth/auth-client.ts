@@ -54,7 +54,8 @@ export async function unwrap<T>(call: Promise<BetterAuthResult<T>>): Promise<T> 
       typeof error.code === 'string' && error.code.length > 0
         ? error.code
         : CLIENT_ERROR_CODES.unknown;
-    throw new ApiError(code, error.status, error.message);
+    // The whole error body is the cause, so a screen can read extra fields such as `retryAfterSeconds`.
+    throw new ApiError(code, error.status, error.message, { cause: error });
   }
   return result.data as T;
 }
