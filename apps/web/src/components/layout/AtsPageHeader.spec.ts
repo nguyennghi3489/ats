@@ -138,6 +138,28 @@ describe('AtsPageHeader', () => {
       expect(actions).toMatch(/align-items:\s*stretch/);
     });
 
+    it('below the mobile breakpoint takes the 18/24 title size (Example · Mobile navigation closed)', () => {
+      const title = rule(mobile, '.ats-page-header__title');
+      expect(title).toMatch(/font-size:\s*var\(--font-size-lg\)/);
+      expect(title).toMatch(/line-height:\s*var\(--line-height-lg\)/);
+    });
+
+    it('stacks the actions under the title when the header itself is narrow, whatever the viewport', () => {
+      expect(rule(desktop, '.ats-page-header')).toMatch(
+        /container:\s*ats-page-header\s*\/\s*inline-size/,
+      );
+      const narrow =
+        /@container ats-page-header \(max-width: \d+px\)\s*\{([\s\S]*?)\n\}/.exec(style)?.[1] ?? '';
+      const row = rule(narrow, '.ats-page-header__row');
+      expect(row).toMatch(/flex-direction:\s*column/);
+      expect(row).toMatch(/align-items:\s*stretch/);
+      const actions = rule(narrow, '.ats-page-header__actions');
+      expect(actions).toMatch(/flex-direction:\s*column/);
+      expect(actions).toMatch(/align-items:\s*stretch/);
+      expect(rule(narrow, '.ats-page-header__title')).toMatch(/font-size:\s*var\(--font-size-lg\)/);
+      expect(rule(narrow, '.ats-page-header__description')).toMatch(/display:\s*none/);
+    });
+
     it('uses no raw colours', () => {
       expect(source).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgb\(|hsl\(/);
     });
