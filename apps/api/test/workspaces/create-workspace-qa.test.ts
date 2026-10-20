@@ -146,4 +146,58 @@ describe('POST /api/workspaces (QA)', () => {
       { email: 'qa-minh@example.test', active: minhWorkspace.id },
     ]);
   });
+
+  it.each([
+    ['snake_case code_prefix', { name: 'Bình Minh', code_prefix: 'ZZ' }],
+    ['codePrefix only, no organizationId (active workspace)', { codePrefix: 'ZZ' }],
+    ['codePrefix with a slug change', { slug: 'zz', codePrefix: 'ZZ' }],
+  ])('organization/update never changes the prefix: %s', async (_, data) => {
+    const cookie = await signedIn('qa-update@example.test');
+    const created = workspaceSchema.parse(
+      await (await create(cookie, { name: 'An Nhiên' }, randomUUID())).json(),
+    );
+
+    const response = await send('POST', '/api/auth/organization/update', { data }, { cookie });
+
+    expect(response.status).toBeLessThan(500);
+    const rows = await database.db.execute<{ code_prefix: string }>(
+      sql`select code_prefix from organization where id = ${created.id}`,
+    );
+    expect(rows.rows).toEqual([{ code_prefix: 'AN' }]);
+  });
+
+  it('the same key from another user creates their own workspace with the same name', async () => {
+    const key = randomUUID();
+    const lan = await signedIn('qa-key-a@example.test');
+    const minh = await signedIn('qa-key-b@example.test');
+
+    const lanWorkspace = workspaceSchema.parse(
+      await (await create(lan, { name: 'An Nhiên' }, key)).json(),
+    );
+    const response = await create(minh, { name: 'An Nhiên' }, key);
+
+    expect(response.status).toBe(201);
+    const minhWorkspace = workspaceSchema.parse(await response.json());
+    expect(minhWorkspace.id).not.toBe(lanWorkspace.id);
+    expect(minhWorkspace).toMatchObject({ name: 'An Nhiên', codePrefix: 'AN', role: 'admin' });
+    expect(await organizationCount()).toBe(2);
+  });
+
+  it('a malformed JSON body is refused with 400, not a server error, and creates nothing', async () => {
+    const cookie = await signedIn('qa-json@example.test');
+
+    const response = await api.request('/api/workspaces', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        origin: TEST_WEB_ORIGIN,
+        cookie,
+        'idempotency-key': randomUUID(),
+      },
+      body: '{"name":',
+    });
+
+    expect(response.status).toBe(400);
+    expect(await organizationCount()).toBe(0);
+  });
 });
