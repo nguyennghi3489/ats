@@ -266,6 +266,11 @@
         "languageFailed": "Could not save the language. Please try again.",
         "signOutFailed": "Could not sign out. Please try again."
       }
+    },
+    "workspaceMenu": {
+      "heading": "Workspaces",
+      "trigger": "Workspace: {name}",
+      "unavailable": "This workspace is no longer available. The list has been updated."
     }
   }
 }

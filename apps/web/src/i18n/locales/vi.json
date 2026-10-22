@@ -266,6 +266,11 @@
         "languageFailed": "Không lưu được ngôn ngữ. Vui lòng thử lại.",
         "signOutFailed": "Không đăng xuất được. Vui lòng thử lại."
       }
+    },
+    "workspaceMenu": {
+      "heading": "Không gian làm việc",
+      "trigger": "Không gian làm việc: {name}",
+      "unavailable": "Không gian này không còn khả dụng. Danh sách đã được cập nhật."
     }
   }
 }
