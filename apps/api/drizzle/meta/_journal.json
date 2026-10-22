@@ -26,8 +26,15 @@
     {
       "idx": 3,
       "version": "7",
-      "when": 1792509959534,
-      "tag": "0003_jobs",
+      "when": 1792488879173,
+      "tag": "0003_audit_log",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792674434814,
+      "tag": "0004_jobs",
       "breakpoints": true
     }
   ]

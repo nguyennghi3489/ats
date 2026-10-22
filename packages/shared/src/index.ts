@@ -40,13 +40,17 @@ export {
   WORKSPACE_PREFIX_FALLBACK,
   WORKSPACE_PREFIX_MAX_LENGTH,
   WORKSPACE_ROLES,
+  switchWorkspaceRequestSchema,
+  workspaceListSchema,
   workspaceNameSchema,
   workspacePrefix,
   workspaceRoleSchema,
   workspaceSchema,
   type CreateWorkspaceRequest,
+  type SwitchWorkspaceRequest,
   type Workspace,
   type WorkspaceErrorCode,
+  type WorkspaceList,
   type WorkspaceRole,
 } from './workspaces.js';
 export { COUNTRY_CODES, isCountryCode, type CountryCode } from './countries.js';
@@ -66,3 +70,15 @@ export {
   type JobStatus,
   type JobSummary,
 } from './jobs.js';
+export {
+  AUDIT_ACTIONS,
+  AUDIT_METADATA_EXAMPLES,
+  AUDIT_TARGET_TYPES,
+  auditActionSchema,
+  auditMetadataSchema,
+  auditTargetType,
+  CLAUDE_EXTRACTION_OUTCOMES,
+  type AuditAction,
+  type AuditMetadata,
+  type AuditTargetType,
+} from './audit.js';

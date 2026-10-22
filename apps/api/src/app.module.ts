@@ -1,4 +1,5 @@
 import { type DynamicModule, Module } from '@nestjs/common';
+import { AuditModule } from './audit/audit.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import type { AppConfig } from './config/config.js';
 import { ConfigModule } from './config/config.module.js';
@@ -26,6 +27,7 @@ export class AppModule {
         ConfigModule.forRoot(config),
         DatabaseModule.forRoot({ url: config.databaseUrl }),
         QueueModule.forRoot({ redisUrl: config.redisUrl, prefix: options.redisPrefix }),
+        AuditModule,
         HealthModule,
         auth,
         WorkspacesModule.forRoot(auth),
