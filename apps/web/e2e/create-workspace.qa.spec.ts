@@ -98,7 +98,7 @@ test.describe('create workspace (QA #105)', () => {
     await expect(submit(page)).toHaveText(vic.retry);
 
     await submit(page).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/jobs$/);
 
     expect(sent).toHaveLength(2);
     const keys = await Promise.all(sent.map((r) => r.headerValue('Idempotency-Key')));
@@ -130,7 +130,7 @@ test.describe('create workspace (QA #105)', () => {
 
     await fillName(page, 'Bình Minh');
     await submit(page).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/jobs$/);
 
     expect(sent).toHaveLength(2);
     const keys = await Promise.all(sent.map((r) => r.headerValue('Idempotency-Key')));

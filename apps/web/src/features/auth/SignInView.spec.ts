@@ -241,7 +241,7 @@ describe('SignInView', () => {
       await fill(wrapper, ' minh.anh@example.test ', 'secret-pass-1');
       await submit(wrapper);
 
-      await arrivedAt('/');
+      await arrivedAt('/jobs');
       expect(paths()).toEqual(['/api/auth/sign-in/email', '/api/me']);
       const body = (await requestOf(0).clone().json()) as Record<string, unknown>;
       expect(body).toMatchObject({ email: 'minh.anh@example.test', password: 'secret-pass-1' });
@@ -268,7 +268,7 @@ describe('SignInView', () => {
       await fill(wrapper);
       await submit(wrapper);
 
-      await arrivedAt('/');
+      await arrivedAt('/jobs');
     });
 
     it('shows the SIGN-02 state while signing in and sends one request for repeated submits', async () => {
@@ -291,7 +291,7 @@ describe('SignInView', () => {
       expect(paths()).toEqual(['/api/auth/sign-in/email']);
 
       release(signedIn());
-      await arrivedAt('/');
+      await arrivedAt('/jobs');
     });
   });
 

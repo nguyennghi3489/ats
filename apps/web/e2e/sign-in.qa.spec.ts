@@ -90,7 +90,7 @@ for (const [lang, browserLocale, copy] of [
       const me = page.waitForRequest((request) => new URL(request.url()).pathname === '/api/me');
       release();
       await me;
-      await expect(page).toHaveURL(/\/$/);
+      await expect(page).toHaveURL(/\/jobs$/);
     });
 
     test(`SIGN-03 copy after a wrong password against the real API (${lang})`, async ({
@@ -236,7 +236,7 @@ test.describe('sign-in QA (real limit, EN layout, toggle)', () => {
     expect(requests).toBe(0);
 
     await page.getByTestId('sign-in-email').press('Enter');
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/jobs$/);
     expect(requests).toBe(1);
   });
 

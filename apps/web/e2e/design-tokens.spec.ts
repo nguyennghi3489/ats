@@ -67,7 +67,7 @@ async function openHome(page: Page) {
   // `/` needs a session since #82.
   await signInAsNewMember(page, uniqueEmail(test.info(), 'qa-tokens'));
   await page.goto('/');
-  await expect(page.getByTestId('home-page')).toBeVisible();
+  await expect(page.getByTestId('placeholder-page')).toBeVisible();
 }
 
 test.describe('design tokens (#35)', () => {
@@ -113,7 +113,7 @@ test.describe('design tokens (#35)', () => {
       const h = document.createElement('h2');
       h.id = 'vi-sample';
       h.textContent = 'Nội dung đăng tuyển';
-      document.querySelector('[data-testid="home-page"]')!.append(h);
+      document.querySelector('[data-testid="placeholder-page"]')!.append(h);
     });
     await page.evaluate(async () => {
       await document.fonts.load('400 14px "Be Vietnam Pro"', 'Nội dung đăng tuyển');
@@ -149,7 +149,7 @@ test.describe('design tokens (#35)', () => {
       await openHome(page);
       await page.evaluate((t) => {
         if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-        const main = document.querySelector('[data-testid="home-page"]')!;
+        const main = document.querySelector('[data-testid="placeholder-page"]')!;
         const a = document.createElement('a');
         a.href = '#job';
         a.id = 'focus-link';
@@ -158,7 +158,12 @@ test.describe('design tokens (#35)', () => {
         b.id = 'focus-button';
         b.textContent = 'Lưu thay đổi';
         b.style.margin = '16px';
-        main.append(a, b);
+        // Tabbing starts here, after the sidebar links of the app layout (#113).
+        const start = document.createElement('span');
+        start.id = 'focus-start';
+        start.tabIndex = -1;
+        main.append(start, a, b);
+        start.focus();
       }, theme);
       const ring = theme === 'dark' ? DARK.ink : LIGHT.ink;
       const outline = (sel: string) =>

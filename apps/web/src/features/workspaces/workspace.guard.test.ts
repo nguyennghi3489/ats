@@ -96,7 +96,8 @@ describe('workspace guard', () => {
   it('selects the only workspace when none is active and continues', async () => {
     listAnswers = [listOf([anNhien])];
 
-    expect((await open('/')).fullPath).toBe('/');
+    // `/` opens /jobs inside the app layout (#113).
+    expect((await open('/')).fullPath).toBe('/jobs');
     expect(switchRequests()).toHaveLength(1);
     expect(await switchRequests()[0]!.json()).toEqual({ workspaceId: 'org_1' });
     expect(useWorkspaceStore(pinia).activeWorkspaceId).toBe('org_1');
@@ -124,7 +125,7 @@ describe('workspace guard', () => {
     const route = await open('/');
 
     expect(route.path).toBe('/workspaces');
-    expect(route.query.redirect).toBe('/');
+    expect(route.query.redirect).toBe('/jobs');
   });
 
   it('sends the user to the chooser, which can retry, when the list cannot be loaded', async () => {
@@ -149,7 +150,7 @@ describe('workspace guard', () => {
     await router.push('/workspaces/new');
     await router.push('/');
 
-    expect(router.currentRoute.value.fullPath).toBe('/');
+    expect(router.currentRoute.value.fullPath).toBe('/jobs');
     expect(listRequests()).toHaveLength(2);
   });
 
@@ -167,10 +168,10 @@ describe('workspace guard', () => {
     expect((await open('/welcome')).fullPath).toBe('/welcome');
   });
 
-  it('sends a user who has a workspace away from /welcome to /', async () => {
+  it('sends a user who has a workspace away from /welcome to /, which opens /jobs', async () => {
     listAnswers = [listOf([anNhien], 'org_1')];
 
-    expect((await open('/welcome')).fullPath).toBe('/');
+    expect((await open('/welcome')).fullPath).toBe('/jobs');
   });
 
   it('keeps /welcome when the list cannot be loaded', async () => {

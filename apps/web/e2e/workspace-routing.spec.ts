@@ -59,8 +59,9 @@ test.describe('workspace routing', () => {
     await page.getByTestId('create-workspace-name').fill('An Nhiên');
     await page.getByTestId('create-workspace-submit').click();
 
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByTestId('home-page')).toBeVisible();
+    // `/` opens /jobs inside the app layout (#113).
+    await expect(page).toHaveURL(/\/jobs$/);
+    await expect(page.getByTestId('app-layout')).toBeVisible();
   });
 
   test('a user with one workspace and none active lands on / with it active', async ({
@@ -72,8 +73,9 @@ test.describe('workspace routing', () => {
 
     await signInAgain(page, email);
 
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByTestId('home-page')).toBeVisible();
+    // `/` opens /jobs inside the app layout (#113).
+    await expect(page).toHaveURL(/\/jobs$/);
+    await expect(page.getByTestId('app-layout')).toBeVisible();
     expect((await listWorkspaces(page)).activeWorkspaceId).toBe(id);
   });
 
@@ -105,7 +107,8 @@ test.describe('workspace routing', () => {
 
     await page.goto('/welcome');
 
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByTestId('home-page')).toBeVisible();
+    // `/` opens /jobs inside the app layout (#113).
+    await expect(page).toHaveURL(/\/jobs$/);
+    await expect(page.getByTestId('app-layout')).toBeVisible();
   });
 });

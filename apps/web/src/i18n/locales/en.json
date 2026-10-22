@@ -227,5 +227,25 @@
       "paused": "Paused",
       "closed": "Closed"
     }
+  },
+  "shell": {
+    "nav": {
+      "label": "Main navigation",
+      "applications": "Applications",
+      "myApplications": "My applications",
+      "candidates": "Candidates",
+      "jobs": "Jobs",
+      "myJobs": "My jobs",
+      "workspaceSettings": "Workspace settings"
+    },
+    "roles": {
+      "admin": "Admin",
+      "recruiter": "Recruiter",
+      "collaborator": "Collaborator"
+    },
+    "placeholder": {
+      "title": "This page is coming soon",
+      "description": "We are still building this page."
+    }
   }
 }

@@ -182,13 +182,14 @@ test.describe('workspace routing (QA #107)', () => {
 
     await signInThrough(page, email, '/');
 
-    await expect(page).toHaveURL(/\/workspaces(\?redirect=%2F)?$/);
+    await expect(page).toHaveURL(/\/workspaces(\?redirect=%2F(jobs)?)?$/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.workspaces.choose.title);
     expect(await activeWorkspaceId(page)).toBeNull();
     await page.getByTestId('workspace-row').filter({ hasText: 'An Nhiên' }).click();
 
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByTestId('home-page')).toBeVisible();
+    // `/` opens /jobs inside the app layout (#113).
+    await expect(page).toHaveURL(/\/jobs$/);
+    await expect(page.getByTestId('app-layout')).toBeVisible();
     expect(await activeWorkspaceId(page)).toBe(anId);
   });
 
@@ -202,8 +203,9 @@ test.describe('workspace routing (QA #107)', () => {
     await createWorkspace(page, 'An Nhiên');
     await page.goto('/welcome');
 
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByTestId('home-page')).toBeVisible();
+    // `/` opens /jobs inside the app layout (#113).
+    await expect(page).toHaveURL(/\/jobs$/);
+    await expect(page.getByTestId('app-layout')).toBeVisible();
   });
 });
 

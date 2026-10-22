@@ -6,11 +6,11 @@ import { expect, test } from '@playwright/test';
 import { psql, signInAsNewMember, sqlString, uniqueEmail } from './support/session';
 
 test.describe('route guard', () => {
-  test('opening / signed out lands on /sign-in?redirect=%2F', async ({ page }) => {
+  test('opening / signed out lands on /sign-in?redirect=%2Fjobs', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page).toHaveURL(/\/sign-in\?redirect=%2F$/);
-    await expect(page.getByTestId('home-page')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/sign-in\?redirect=%2Fjobs$/);
+    await expect(page.getByTestId('placeholder-page')).toHaveCount(0);
   });
 
   test('a signed-out deep link keeps its full path in redirect', async ({ page }) => {
@@ -34,11 +34,11 @@ test.describe('session expiry', () => {
     const email = uniqueEmail(testInfo, 'qa82');
     await signInAsNewMember(page, email);
 
-    // Signed in: / opens, and /sign-in sends the user back to /.
+    // Signed in: / opens /jobs, and /sign-in sends the user back there.
     await page.goto('/');
-    await expect(page.getByTestId('home-page')).toBeVisible();
+    await expect(page.getByTestId('placeholder-page')).toBeVisible();
     await page.goto('/sign-in');
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/jobs$/);
 
     await page.goto('/jobs?status=open');
     await expect(page).toHaveURL(/\/jobs\?status=open$/);
