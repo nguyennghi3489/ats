@@ -135,6 +135,12 @@ export function buildRoutes(isDev: boolean = import.meta.env.DEV): RouteRecordRa
     },
     ...authRoutes,
     {
+      // Signed-in only: the workspace chooser (WS-04). `?redirect=` is followed after a switch.
+      path: '/workspaces',
+      name: 'workspace-choose',
+      component: () => import('../features/workspaces/ChooseWorkspaceView.vue'),
+    },
+    {
       // Signed-in only; `?from=chooser` shows the "new workspace" version (WS-05).
       path: '/workspaces/new',
       name: 'workspace-create',
