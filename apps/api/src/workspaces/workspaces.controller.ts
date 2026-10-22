@@ -13,18 +13,14 @@ import {
   Get,
   Headers,
   HttpStatus,
-  Inject,
   NotFoundException,
   Post,
   Put,
-  Req,
   Res,
-  UnauthorizedException,
 } from '@nestjs/common';
-import { fromNodeHeaders } from 'better-auth/node';
-import type { Request, Response } from 'express';
-import type { Auth } from '../auth/auth.js';
-import { AUTH } from '../auth/auth.tokens.js';
+import type { Response } from 'express';
+import { Actor, SessionOnly } from '../access/decorators.js';
+import type { Actor as Caller } from '../access/resolve-access.js';
 import { WorkspacesService } from './workspaces.service.js';
 
 /** Longest `Idempotency-Key` accepted (a UUID needs 36). */
@@ -32,26 +28,23 @@ export const IDEMPOTENCY_KEY_MAX_LENGTH = 255;
 
 @Controller('api/workspaces')
 export class WorkspacesController {
-  constructor(
-    @Inject(AUTH) private readonly auth: Auth,
-    private readonly workspaces: WorkspacesService,
-  ) {}
+  constructor(private readonly workspaces: WorkspacesService) {}
 
   /**
    * Creates a workspace for the signed-in, verified user (no workspace needed): 201 with it, or
    * 200 with the same workspace for a retry with the same `Idempotency-Key`. The caller becomes its
-   * admin and it becomes the session's active workspace. 401 `UNAUTHENTICATED`, 403
-   * `EMAIL_NOT_VERIFIED`, 400 `IDEMPOTENCY_KEY_REQUIRED` or `VALIDATION_FAILED`.
+   * admin and it becomes the session's active workspace. 401 `UNAUTHENTICATED` (global access
+   * guard), 403 `EMAIL_NOT_VERIFIED`, 400 `IDEMPOTENCY_KEY_REQUIRED` or `VALIDATION_FAILED`.
    */
   @Post()
+  @SessionOnly()
   async create(
-    @Req() req: Request,
+    @Actor() actor: Caller,
     @Res({ passthrough: true }) res: Response,
     @Headers(IDEMPOTENCY_KEY_HEADER.toLowerCase()) idempotencyKeyHeader: string | undefined,
     @Body() body: unknown,
   ): Promise<Workspace> {
-    const session = await this.session(req, res);
-    if (!session.user.emailVerified) {
+    if (!actor.user.emailVerified) {
       throw new ForbiddenException({ code: 'EMAIL_NOT_VERIFIED', message: 'Email not verified' });
     }
 
@@ -69,8 +62,8 @@ export class WorkspacesController {
     if (!parsed.success) throw validationFailed('Invalid workspace name');
 
     const { workspace, created } = await this.workspaces.create({
-      userId: session.user.id,
-      sessionToken: session.session.token,
+      userId: actor.user.id,
+      sessionToken: actor.sessionToken,
       name: parsed.data.name,
       idempotencyKey,
     });
@@ -80,35 +73,30 @@ export class WorkspacesController {
 
   /**
    * The signed-in user's workspaces (active memberships only, sorted by name) and the session's
-   * active one, `null` when it is no longer an active membership. 401 `UNAUTHENTICATED`.
+   * active one, `null` when it is no longer an active membership. 401 `UNAUTHENTICATED` (global
+   * access guard).
    */
   @Get()
-  async list(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<WorkspaceList> {
-    const session = await this.session(req, res);
-    return this.workspaces.list(session.user.id, session.session.activeOrganizationId);
+  @SessionOnly()
+  list(@Actor() actor: Caller): Promise<WorkspaceList> {
+    return this.workspaces.list(actor.user.id, actor.workspaceId);
   }
 
   /**
    * Makes a workspace the user is an active member of the session's active workspace and returns
    * it. Unknown ids, other people's workspaces and deactivated memberships all get the same 404
-   * `WORKSPACE_UNAVAILABLE` (decisions §3). 400 `VALIDATION_FAILED`, 401 `UNAUTHENTICATED`.
+   * `WORKSPACE_UNAVAILABLE` (decisions §3). 400 `VALIDATION_FAILED`, 401 `UNAUTHENTICATED` (global
+   * access guard).
    */
   @Put('active')
-  async switchActive(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @Body() body: unknown,
-  ): Promise<Workspace> {
-    const session = await this.session(req, res);
+  @SessionOnly()
+  async switchActive(@Actor() actor: Caller, @Body() body: unknown): Promise<Workspace> {
     const parsed = switchWorkspaceRequestSchema.safeParse(body);
     if (!parsed.success) throw validationFailed('Invalid workspace id');
 
     const workspace = await this.workspaces.switchActive(
-      session.user.id,
-      session.session.token,
+      actor.user.id,
+      actor.sessionToken,
       parsed.data.workspaceId,
     );
     if (!workspace) {
@@ -118,23 +106,6 @@ export class WorkspacesController {
       });
     }
     return workspace;
-  }
-
-  /**
-   * The caller's Better Auth session, passing on any cookie it refreshes. 401 `UNAUTHENTICATED`
-   * without one (until the global guard of decisions §3 does this).
-   */
-  private async session(req: Request, res: Response) {
-    const { headers, response: session } = await this.auth.api.getSession({
-      headers: fromNodeHeaders(req.headers),
-      returnHeaders: true,
-    });
-    const cookies = headers.getSetCookie();
-    if (cookies.length > 0) res.append('set-cookie', cookies);
-    if (!session) {
-      throw new UnauthorizedException({ code: 'UNAUTHENTICATED', message: 'Not signed in' });
-    }
-    return session;
   }
 }
 

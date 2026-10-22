@@ -31,6 +31,14 @@ export {
   type SignUpFieldError,
   type SignUpForm,
 } from './auth.js';
+export {
+  ACCESS_ERROR_CODES,
+  accessErrorCodeSchema,
+  UNAUTHENTICATED,
+  WORKSPACE_ACCESS_REVOKED,
+  WORKSPACE_REQUIRED,
+  type AccessErrorCode,
+} from './errors.js';
 export { healthSchema, type Health } from './health.js';
 export {
   createWorkspaceRequestSchema,
