@@ -163,6 +163,34 @@
       }
     }
   },
+  "workspaces": {
+    "create": {
+      "title": "Tạo không gian làm việc",
+      "subtitle": "Đặt tên cho không gian nhà tuyển dụng của bạn.",
+      "newTitle": "Tạo không gian mới",
+      "newSubtitle": "Đặt tên cho không gian mới.",
+      "name": "Tên nhà tuyển dụng / không gian",
+      "submit": "Tạo không gian",
+      "pendingTitle": "Đang tạo không gian",
+      "pendingSubtitle": "Vui lòng chờ trong khi yêu cầu được xử lý.",
+      "pendingButton": "Đang tạo...",
+      "pendingNotice": "Yêu cầu tạo không gian đang được xử lý.",
+      "failedTitle": "Chưa thể tạo không gian",
+      "failedSubtitle": "Không thể hoàn tất yêu cầu lúc này.",
+      "failedNotice": "Chưa thể xác nhận kết quả tạo không gian. Thử lại để tiếp tục.",
+      "retry": "Thử lại",
+      "back": "Quay lại",
+      "inviteOnly": "Tham gia không gian có sẵn chỉ qua lời mời. Hãy nhờ quản trị viên gửi lời mời.",
+      "inviteOnlyShort": "Tham gia qua lời mời. Hãy nhờ quản trị viên gửi lời mời.",
+      "signOut": "Đăng xuất",
+      "backToList": "Hủy · Quay lại danh sách",
+      "errors": {
+        "NAME_REQUIRED": "Nhập tên không gian",
+        "NAME_TOO_LONG": "Tên không gian tối đa {max} ký tự",
+        "VALIDATION_FAILED": "Tên không gian chưa hợp lệ"
+      }
+    }
+  },
   "errors": {
     "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại.",
     "NETWORK_ERROR": "Không kết nối được máy chủ. Kiểm tra mạng và thử lại.",

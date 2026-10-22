@@ -134,6 +134,12 @@ export function buildRoutes(isDev: boolean = import.meta.env.DEV): RouteRecordRa
       component: () => import('../views/HomeView.vue'),
     },
     ...authRoutes,
+    {
+      // Signed-in only; `?from=chooser` shows the "new workspace" version (WS-05).
+      path: '/workspaces/new',
+      name: 'workspace-create',
+      component: () => import('../features/workspaces/CreateWorkspaceView.vue'),
+    },
     ...(isDev ? devRoutes : []),
     {
       path: '/:pathMatch(.*)*',
