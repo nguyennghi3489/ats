@@ -220,5 +220,25 @@
       "paused": "Tạm dừng",
       "closed": "Đã đóng"
     }
+  },
+  "shell": {
+    "nav": {
+      "label": "Điều hướng chính",
+      "applications": "Ứng tuyển",
+      "myApplications": "Ứng tuyển của tôi",
+      "candidates": "Ứng viên",
+      "jobs": "Vị trí tuyển dụng",
+      "myJobs": "Vị trí của tôi",
+      "workspaceSettings": "Cài đặt không gian làm việc"
+    },
+    "roles": {
+      "admin": "Quản trị viên",
+      "recruiter": "Nhà tuyển dụng",
+      "collaborator": "Cộng tác viên"
+    },
+    "placeholder": {
+      "title": "Trang này sắp ra mắt",
+      "description": "Chúng tôi đang hoàn thiện trang này."
+    }
   }
 }

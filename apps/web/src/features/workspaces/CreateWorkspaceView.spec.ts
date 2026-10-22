@@ -184,7 +184,7 @@ describe('CreateWorkspaceView', () => {
 
     finish(created());
     await flushPromises();
-    await arrivedAt('/');
+    await arrivedAt('/jobs');
   });
 
   it('sends the trimmed name with an Idempotency-Key and lands on / afterwards', async () => {
@@ -195,7 +195,7 @@ describe('CreateWorkspaceView', () => {
     const [request] = createRequests();
     expect(await request!.clone().json()).toEqual({ name: 'An Nhiên' });
     expect(request!.headers.get('Idempotency-Key')).toMatch(/^[0-9a-f-]{36}$/);
-    await arrivedAt('/');
+    await arrivedAt('/jobs');
   });
 
   it('shows WS-03 on a 503 and "Thử lại" resends with the same Idempotency-Key', async () => {
@@ -222,7 +222,7 @@ describe('CreateWorkspaceView', () => {
     expect(second).toBeDefined();
     expect(second!.headers.get('Idempotency-Key')).toBe(first!.headers.get('Idempotency-Key'));
     expect(await second!.clone().json()).toEqual({ name: 'An Nhiên' });
-    await arrivedAt('/');
+    await arrivedAt('/jobs');
   });
 
   it('shows WS-03 when the request never reaches the API', async () => {

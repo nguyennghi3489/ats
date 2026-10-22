@@ -8,7 +8,7 @@ test.describe('smoke', () => {
     await signInAsNewUser(page, uniqueEmail(testInfo, 'qa-smoke'));
     const response = await page.goto('/');
     expect(response?.status()).toBe(200);
-    await expect(page.getByTestId('home-page')).toBeVisible();
+    await expect(page.getByTestId('placeholder-page')).toBeVisible();
   });
 
   test('the API health check is reachable through the web proxy', async ({ page }) => {

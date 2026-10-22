@@ -45,7 +45,7 @@ test.describe('deep links', () => {
     await page.goto(deepLink);
     await page.getByTestId('not-found-home-link').click();
 
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByTestId('home-page')).toBeVisible();
+    await expect(page).toHaveURL(/\/jobs$/);
+    await expect(page.getByTestId('placeholder-page')).toBeVisible();
   });
 });

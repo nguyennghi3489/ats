@@ -61,11 +61,11 @@ afterEach(() => {
 describe('auth guard: signed out', () => {
   beforeEach(() => serve(unauthenticated));
 
-  it('sends / to /sign-in?redirect=%2F', async () => {
+  it('sends / (which opens /jobs) to /sign-in?redirect=%2Fjobs', async () => {
     await router.push('/');
 
-    expect(router.currentRoute.value.fullPath).toBe('/sign-in?redirect=%2F');
-    expect(router.currentRoute.value.query).toEqual({ redirect: '/' });
+    expect(router.currentRoute.value.fullPath).toBe('/sign-in?redirect=%2Fjobs');
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/jobs' });
   });
 
   it('keeps the full deep-link path, query included, in redirect', async () => {
@@ -110,11 +110,14 @@ describe('auth guard: signed in', () => {
     expect(useSessionStore(pinia).isSignedIn).toBe(true);
   });
 
-  it.each(['/sign-in', '/sign-in?redirect=%2Fjobs', '/sign-up'])('sends %s to /', async (path) => {
-    await router.push(path);
+  it.each(['/sign-in', '/sign-in?redirect=%2Fjobs', '/sign-up'])(
+    'sends %s to / (which opens /jobs)',
+    async (path) => {
+      await router.push(path);
 
-    expect(router.currentRoute.value.fullPath).toBe('/');
-  });
+      expect(router.currentRoute.value.fullPath).toBe('/jobs');
+    },
+  );
 
   it('still lets the other auth pages open', async () => {
     await router.push('/reset-password/abc123');

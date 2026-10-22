@@ -157,7 +157,7 @@ describe('ChooseWorkspaceView', () => {
     const [request] = switchRequests();
     expect(await request!.clone().json()).toEqual({ workspaceId: 'org_2' });
     expect(useWorkspaceStore(pinia).activeWorkspaceId).toBe('org_2');
-    await arrivedAt('/');
+    await arrivedAt('/jobs');
   });
 
   it('disables the list while switching and sends one request', async () => {
@@ -173,7 +173,7 @@ describe('ChooseWorkspaceView', () => {
 
     finish(jsonResponse(may));
     await flushPromises();
-    await arrivedAt('/');
+    await arrivedAt('/jobs');
   });
 
   it('goes to a safe redirect after switching', async () => {
@@ -191,7 +191,7 @@ describe('ChooseWorkspaceView', () => {
     await rows(wrapper)[1]!.trigger('click');
     await flushPromises();
 
-    await arrivedAt('/');
+    await arrivedAt('/jobs');
   });
 
   it('WORKSPACE_UNAVAILABLE reloads the list and shows the translated notice', async () => {

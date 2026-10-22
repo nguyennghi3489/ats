@@ -10,7 +10,7 @@ test.describe('route guard', () => {
     await page.goto('/');
 
     await expect(page).toHaveURL(/\/sign-in\?redirect=%2F$/);
-    await expect(page.getByTestId('home-page')).toHaveCount(0);
+    await expect(page.getByTestId('placeholder-page')).toHaveCount(0);
   });
 
   test('a signed-out deep link keeps its full path in redirect', async ({ page }) => {
@@ -36,9 +36,9 @@ test.describe('session expiry', () => {
 
     // Signed in: / opens, and /sign-in sends the user back to /.
     await page.goto('/');
-    await expect(page.getByTestId('home-page')).toBeVisible();
+    await expect(page.getByTestId('placeholder-page')).toBeVisible();
     await page.goto('/sign-in');
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/jobs$/);
 
     await page.goto('/jobs?status=open');
     await expect(page).toHaveURL(/\/jobs\?status=open$/);

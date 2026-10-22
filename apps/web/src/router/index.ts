@@ -3,15 +3,18 @@ import {
   RESET_PASSWORD_PATH,
   VERIFY_EMAIL_EXPIRED_PATH,
   VERIFY_EMAIL_SUCCESS_PATH,
+  type WorkspaceRole,
 } from '@ats/shared';
 import {
   createRouter,
   createWebHistory,
   type LocationQuery,
   type LocationQueryRaw,
+  type NavigationGuardWithThis,
   type RouteRecordRaw,
   type RouterHistory,
 } from 'vue-router';
+import { useWorkspaceStore } from '../features/workspaces/workspace.store';
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -19,6 +22,11 @@ declare module 'vue-router' {
     public?: boolean;
     /** Only for signed-out visitors: a signed-in user is sent to `/` instead. */
     guestOnly?: boolean;
+    /**
+     * Workspace roles that may open the page; anyone else is sent to `/jobs` (see `requireRole`).
+     * Unset: every member.
+     */
+    roles?: readonly WorkspaceRole[];
   }
 }
 
@@ -126,13 +134,59 @@ const devRoutes: RouteRecordRaw[] = import.meta.env.DEV
     ]
   : [];
 
+/** Where a member lands when a page is not for their role. Every role has the jobs page. */
+export const ROLE_FALLBACK_PATH = '/jobs';
+
+/**
+ * Sends a member whose role in the active workspace is not in the page's `meta.roles` to `/jobs`;
+ * without an active workspace there is no role, so they go there too. Route guards run after the
+ * auth guard, so a signed-out visitor still reaches sign-in with the page in `redirect`. A UI
+ * convenience only: the API enforces every permission (decisions §3).
+ */
+export const requireRole: NavigationGuardWithThis<undefined> = async (to) => {
+  const allowed = to.meta.roles;
+  if (!allowed) return true;
+  const workspaces = useWorkspaceStore();
+  if (workspaces.status !== 'ready') await workspaces.load();
+  const role = workspaces.workspaces.find(
+    (workspace) => workspace.id === workspaces.activeWorkspaceId,
+  )?.role;
+  return role !== undefined && allowed.includes(role) ? true : ROLE_FALLBACK_PATH;
+};
+
+// Pages whose feature has not landed yet; each feature issue replaces its route's component.
+const placeholder = () => import('../views/PlaceholderView.vue');
+
+/** The signed-in, workspace-scoped pages, inside the app layout (sidebar and main area). */
+const appRoutes: RouteRecordRaw = {
+  path: '/',
+  component: () => import('../layouts/AppLayout.vue'),
+  children: [
+    // Redirects apply before guards, so a signed-out visitor at `/` signs in back to `/jobs`.
+    { path: '', name: 'home', redirect: ROLE_FALLBACK_PATH },
+    { path: 'applications', name: 'applications', component: placeholder },
+    {
+      path: 'candidates',
+      name: 'candidates',
+      component: placeholder,
+      meta: { roles: ['admin', 'recruiter'] },
+      beforeEnter: requireRole,
+    },
+    { path: 'jobs', name: 'jobs', component: placeholder },
+    {
+      path: 'settings/workspace',
+      name: 'workspace-settings',
+      component: placeholder,
+      meta: { roles: ['admin'] },
+      beforeEnter: requireRole,
+    },
+    { path: 'settings/personal', name: 'personal-settings', component: placeholder },
+  ],
+};
+
 export function buildRoutes(isDev: boolean = import.meta.env.DEV): RouteRecordRaw[] {
   return [
-    {
-      path: '/',
-      name: 'home',
-      component: () => import('../views/HomeView.vue'),
-    },
+    appRoutes,
     ...authRoutes,
     {
       // Signed-in only: the workspace chooser (WS-04). `?redirect=` is followed after a switch.

@@ -69,8 +69,8 @@ test.describe('choose workspace', () => {
     );
     await rows.nth(1).click();
     expect((await switched).status()).toBe(200);
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByTestId('home-page')).toBeVisible();
+    await expect(page).toHaveURL(/\/jobs$/);
+    await expect(page.getByTestId('placeholder-page')).toBeVisible();
 
     expect((await listWorkspaces(page)).activeWorkspaceId).toBe(mayId);
   });
@@ -93,7 +93,7 @@ test.describe('choose workspace', () => {
       await page.getByTestId('workspace-row').nth(1).focus();
       await page.keyboard.press(key);
 
-      await expect(page).toHaveURL(/\/$/);
+      await expect(page).toHaveURL(/\/jobs$/);
       expect(switches).toBe(1);
       expect((await listWorkspaces(page)).activeWorkspaceId).toBe(mayId);
     });

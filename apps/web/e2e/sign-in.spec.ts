@@ -72,8 +72,8 @@ test.describe('sign-in', () => {
 
     await signIn(page, email);
 
-    await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByTestId('home-page')).toBeVisible();
+    await expect(page).toHaveURL(/\/jobs$/);
+    await expect(page.getByTestId('placeholder-page')).toBeVisible();
   });
 
   test('redirect=%2Fjobs lands on /jobs after signing in', async ({ page }, testInfo) => {
@@ -111,7 +111,7 @@ test.describe('sign-in', () => {
 
     await passwordField(page).fill(password);
     await submit(page).click();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/jobs$/);
   });
 
   test('an unverified user sees the not-verified message and the link to verify', async ({
@@ -186,7 +186,7 @@ test.describe('sign-in', () => {
     await passwordField(page).press('Enter');
 
     release();
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/jobs$/);
     expect(requests).toBe(1);
   });
 

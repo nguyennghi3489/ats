@@ -1,6 +1,6 @@
-import type { MeUser } from '@ats/shared';
+import type { MeUser, WorkspaceRole } from '@ats/shared';
 import { flushPromises, mount } from '@vue/test-utils';
-import { createPinia } from 'pinia';
+import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMemoryHistory } from 'vue-router';
 import App from '../App.vue';
@@ -25,33 +25,53 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 let uninstall: (() => void) | undefined;
 
-/** Stubs GET /api/me: signed in as `user`, or 401 UNAUTHENTICATED when signed out. */
+/** The role of the signed-in user in their active workspace, answered by GET /api/workspaces. */
+let role: WorkspaceRole | null = 'admin';
+
+/**
+ * Stubs the API: GET /api/me signed in as `user` (or 401 UNAUTHENTICATED when signed out) and
+ * GET /api/workspaces with one active workspace in which the user has `role` (none when `null`).
+ */
 function signedIn(yes: boolean) {
   vi.stubGlobal(
     'fetch',
-    vi
-      .fn<typeof fetch>()
-      .mockImplementation(() =>
-        Promise.resolve(
-          yes ? jsonResponse({ user }) : jsonResponse({ code: 'UNAUTHENTICATED' }, 401),
-        ),
-      ),
+    vi.fn<typeof fetch>().mockImplementation((input) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (!yes) return Promise.resolve(jsonResponse({ code: 'UNAUTHENTICATED' }, 401));
+      if (url.endsWith('/api/workspaces')) {
+        return Promise.resolve(
+          jsonResponse(
+            role
+              ? {
+                  activeWorkspaceId: 'org_1',
+                  workspaces: [{ id: 'org_1', name: 'An Nhiên', codePrefix: 'AN', role }],
+                }
+              : { activeWorkspaceId: null, workspaces: [] },
+          ),
+        );
+      }
+      return Promise.resolve(jsonResponse({ user }));
+    }),
   );
 }
 
 /** Mounts the app as main.ts does: the auth guard installed on the router before the first push. */
 async function mountAt(path: string, isDev?: boolean) {
   const pinia = createPinia();
+  // main.ts installs pinia on the app before the router starts, so route guards find it active.
+  setActivePinia(pinia);
   const router = createAppRouter(createMemoryHistory(), isDev);
   uninstall = installAuthGuard(router, pinia);
   await router.push(path);
   await router.isReady();
   const wrapper = mount(App, { global: { plugins: [router, pinia, i18n] } });
+  await flushPromises();
   return { wrapper, router };
 }
 
 beforeEach(() => {
   setLocale('vi');
+  role = 'admin';
   signedIn(true);
 });
 
@@ -62,18 +82,121 @@ afterEach(() => {
 });
 
 describe('router', () => {
-  it('renders the placeholder home page at /', async () => {
-    const { wrapper } = await mountAt('/');
+  it('opens /jobs inside the app layout at /', async () => {
+    const { router, wrapper } = await mountAt('/');
 
-    expect(wrapper.find('[data-testid="home-page"]').exists()).toBe(true);
+    expect(router.currentRoute.value.fullPath).toBe('/jobs');
+    expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(true);
+    expect(wrapper.get('main').find('[data-testid="placeholder-page"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="not-found-page"]').exists()).toBe(false);
+  });
+
+  it.each(['/applications', '/candidates', '/jobs', '/settings/workspace', '/settings/personal'])(
+    'renders the placeholder page for %s inside the layout for an admin',
+    async (path) => {
+      const { router, wrapper } = await mountAt(path);
+
+      expect(router.currentRoute.value.path).toBe(path);
+      expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(true);
+      expect(wrapper.get('[data-testid="placeholder-page"] h1').text()).toBe(
+        'Trang này sắp ra mắt',
+      );
+    },
+  );
+
+  it('marks the current page in the sidebar', async () => {
+    const { wrapper } = await mountAt('/candidates');
+
+    expect(wrapper.get('[data-testid="app-sidebar"] [aria-current="page"]').text()).toBe(
+      'Ứng viên',
+    );
+  });
+
+  it('sends a collaborator who opens /candidates to /jobs', async () => {
+    role = 'collaborator';
+    signedIn(true);
+    const { router, wrapper } = await mountAt('/candidates');
+
+    expect(router.currentRoute.value.fullPath).toBe('/jobs');
+    expect(wrapper.findAll('[data-testid="app-sidebar"] a').map((a) => a.text())).toEqual([
+      'Ứng tuyển của tôi',
+      'Vị trí của tôi',
+    ]);
+  });
+
+  it.each(['recruiter', 'collaborator'] as const)(
+    'sends a %s who opens /settings/workspace to /jobs',
+    async (who) => {
+      role = who;
+      signedIn(true);
+      const { router } = await mountAt('/settings/workspace');
+
+      expect(router.currentRoute.value.fullPath).toBe('/jobs');
+    },
+  );
+
+  it('lets a recruiter open /candidates', async () => {
+    role = 'recruiter';
+    signedIn(true);
+    const { router } = await mountAt('/candidates');
+
+    expect(router.currentRoute.value.fullPath).toBe('/candidates');
+  });
+
+  it('sends a user without an active workspace away from role-restricted pages', async () => {
+    role = null;
+    signedIn(true);
+    const { router } = await mountAt('/candidates');
+
+    expect(router.currentRoute.value.fullPath).toBe('/jobs');
+  });
+
+  it('checks the role when moving between pages inside the layout', async () => {
+    role = 'collaborator';
+    signedIn(true);
+    const { router } = await mountAt('/jobs');
+    await router.push('/settings/workspace');
+
+    expect(router.currentRoute.value.fullPath).toBe('/jobs');
+  });
+
+  it('restricts /candidates and /settings/workspace by role', () => {
+    const layout = buildRoutes(false).find((route) => route.path === '/');
+    const roles = Object.fromEntries(
+      (layout?.children ?? []).map((child) => [child.path, child.meta?.roles]),
+    );
+
+    expect(roles).toMatchObject({
+      candidates: ['admin', 'recruiter'],
+      'settings/workspace': ['admin'],
+      applications: undefined,
+      jobs: undefined,
+      'settings/personal': undefined,
+    });
+  });
+
+  it.each(['/workspaces', '/workspaces/new', '/khong-ton-tai/abc'])(
+    'renders %s without the sidebar',
+    async (path) => {
+      const { wrapper } = await mountAt(path);
+
+      expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(false);
+    },
+  );
+
+  it('renders the sign-in page without the sidebar', async () => {
+    signedIn(false);
+    const { router, wrapper } = await mountAt('/sign-in');
+
+    expect(router.currentRoute.value.path).toBe('/sign-in');
+    expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(false);
   });
 
   it('renders the 404 page for an unknown URL', async () => {
     const { wrapper } = await mountAt('/khong-ton-tai/abc');
 
     expect(wrapper.find('[data-testid="not-found-page"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="home-page"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="placeholder-page"]').exists()).toBe(false);
   });
 
   it('serves the UI gallery at /dev/ui in development', async () => {
@@ -99,14 +222,21 @@ describe('router', () => {
     expect(router.currentRoute.value.path).toBe('/sign-in');
     expect(router.currentRoute.value.query.redirect).toBe('/jobs?status=open');
     expect(router.currentRoute.value.fullPath).toBe('/sign-in?redirect=%2Fjobs%3Fstatus%3Dopen');
-    expect(wrapper.find('[data-testid="home-page"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(false);
   });
 
-  it('sends a signed-out visitor at / to /sign-in?redirect=%2F', async () => {
+  it('keeps a role-restricted deep link in redirect when signed out', async () => {
+    signedIn(false);
+    const { router } = await mountAt('/candidates');
+
+    expect(router.currentRoute.value.fullPath).toBe('/sign-in?redirect=%2Fcandidates');
+  });
+
+  it('sends a signed-out visitor at / to sign-in, back to /jobs afterwards', async () => {
     signedIn(false);
     const { router } = await mountAt('/');
 
-    expect(router.currentRoute.value.fullPath).toBe('/sign-in?redirect=%2F');
+    expect(router.currentRoute.value.fullPath).toBe('/sign-in?redirect=%2Fjobs');
   });
 
   it('sends an unknown URL to sign-in when signed out, like any other page', async () => {
