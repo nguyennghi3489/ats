@@ -4,7 +4,8 @@
   supplies the ARIA wiring and the open/keyboard handlers. Items are AtsMenuItem children; caller-drawn
   role="menuitemradio" elements (single-choice options) take part in the keys the same way.
   The panel (role="menu") lives in a teleport layer on <body>, fixed under the trigger, flipped above it
-  when there is no room below and kept inside the viewport (so it fits a 360 px screen). It takes the
+  when there is no room below and kept inside the viewport (so it fits a 360 px screen); it is placed
+  again when its content grows while open, so a panel above the trigger never covers it. It takes the
   theme of the trigger's nearest [data-theme], so a dark area keeps a dark menu.
   Keyboard: Enter, Space or Arrow Down on the trigger open it on the first item, Arrow Up on the last.
   Inside: Arrow Up/Down (wrapping) and Home/End move between enabled items, a letter moves to the next
@@ -225,6 +226,19 @@ function reposition() {
   place();
 }
 
+let resizeObserver: { disconnect(): void } | undefined;
+
+/** Places the panel again whenever its own size changes (an error row added while it is open). */
+function watchSize(on: boolean) {
+  resizeObserver?.disconnect();
+  resizeObserver = undefined;
+  const el = panel.value;
+  if (!on || !el || typeof window.ResizeObserver !== 'function') return;
+  const observer = new window.ResizeObserver(reposition);
+  observer.observe(el);
+  resizeObserver = observer;
+}
+
 function listen(on: boolean) {
   const method = on ? 'addEventListener' : 'removeEventListener';
   document[method]('pointerdown', onPointerdown, true);
@@ -233,7 +247,11 @@ function listen(on: boolean) {
 }
 
 watch(open, (isOpen) => listen(isOpen));
-onBeforeUnmount(() => listen(false));
+watch(panel, (el) => watchSize(Boolean(el)));
+onBeforeUnmount(() => {
+  listen(false);
+  watchSize(false);
+});
 </script>
 
 <template>

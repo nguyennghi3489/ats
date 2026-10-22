@@ -289,7 +289,9 @@ async function signOut(): Promise<void> {
   border-block-start: 1px solid var(--color-line);
 }
 
+/* The error wraps inside the panel rather than widening it. */
 .account-menu__error {
+  contain: inline-size;
   margin: var(--space-1) 0 0;
   padding-inline: var(--space-1);
   color: var(--color-error-ink);

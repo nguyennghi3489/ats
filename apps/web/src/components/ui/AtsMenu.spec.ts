@@ -363,6 +363,8 @@ describe('AtsMenu', () => {
       } as DOMRect;
     }
 
+    let panel = rect(0, 0, 232, 176);
+
     async function openAt(
       triggerRect: DOMRect,
       viewport: { width: number; height: number },
@@ -370,7 +372,7 @@ describe('AtsMenu', () => {
     ) {
       vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(viewport.width);
       vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(viewport.height);
-      const panel = rect(0, 0, 232, 176);
+      panel = rect(0, 0, 232, 176);
       const original = Element.prototype.getBoundingClientRect;
       vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
         this: Element,
@@ -412,6 +414,38 @@ describe('AtsMenu', () => {
       const at = await openAt(rect(100, 700, 100, 36), { width: 1280, height: 800 });
       expect(at.top + 176).toBeLessThanOrEqual(700);
       expect(at.top).toBeGreaterThanOrEqual(0);
+    });
+
+    it('moves again when its content grows, so a panel above the trigger never covers it', async () => {
+      const observed: { callback: () => void; targets: Element[] }[] = [];
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          targets: Element[] = [];
+          constructor(callback: () => void) {
+            observed.push({ callback, targets: this.targets });
+          }
+          observe(target: Element) {
+            this.targets.push(target);
+          }
+          disconnect() {
+            this.targets.length = 0;
+          }
+        },
+      );
+      await openAt(rect(280, 848, 36, 36), { width: 1440, height: 900 }, 'bottom-end');
+      const el = document.querySelector<HTMLElement>('[role="menu"]')!;
+      expect(parseFloat(el.style.top) + 176).toBeLessThanOrEqual(848);
+
+      // An error row makes the panel taller and wider.
+      panel = rect(0, 0, 275, 236);
+      const watcher = observed.find((entry) => entry.targets.includes(el));
+      expect(watcher).toBeDefined();
+      watcher!.callback();
+      await settle();
+      expect(parseFloat(el.style.top) + 236).toBeLessThanOrEqual(848);
+      expect(parseFloat(el.style.left)).toBe(316 - 275);
+      vi.unstubAllGlobals();
     });
   });
 
