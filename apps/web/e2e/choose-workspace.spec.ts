@@ -2,6 +2,11 @@
 // Compose Postgres. A fresh synthetic user is signed in through `support/session.ts` and two
 // workspaces are created for them through `POST /api/workspaces` from the page, so the session
 // cookie and the browser origin are the app's own.
+//
+// The WS-04 light / dark baselines at 1440 px and 360 px live in choose-workspace.spec.ts-snapshots/,
+// one per platform: `-linux` is what CI compares against (rendered by the Chromium of the
+// mcr.microsoft.com/playwright image of the installed version), and `-darwin` serves local runs on
+// macOS. Refresh both with `--update-snapshots` after a visual change.
 import { expect, type Page, test } from '@playwright/test';
 import vi from '../src/i18n/locales/vi.json' with { type: 'json' };
 import { signInAsNewUser, uniqueEmail } from './support/session';
@@ -110,4 +115,65 @@ test.describe('choose workspace', () => {
     await expect(page).toHaveURL(/\/sign-in$/);
     expect((await page.request.get('/api/workspaces')).status()).toBe(401);
   });
+});
+
+test.describe('choose workspace matches the design', () => {
+  test.use({ locale: 'vi-VN' });
+
+  /** WS-04: a user with the design's three workspaces, on the chooser. */
+  async function openChooser(page: Page, email: string): Promise<void> {
+    await signInAsNewUser(page, email);
+    for (const name of ['An Nhiên', 'Mây Studio', 'Hải Đăng Labs']) {
+      await createWorkspace(page, name);
+    }
+    await page.goto('/workspaces');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(copy.title);
+    await expect(page.getByTestId('workspace-row')).toHaveCount(3);
+  }
+
+  async function expectScreenshot(page: Page, name: string): Promise<void> {
+    // The design shows no focused control.
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+    await page.evaluate(() => document.fonts.ready);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, 'no horizontal scrolling').toBeLessThanOrEqual(0);
+    await expect(page).toHaveScreenshot(`${name}.png`, {
+      fullPage: true,
+      animations: 'disabled',
+      caret: 'hide',
+      maxDiffPixelRatio: 0.02,
+    });
+  }
+
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test.describe(`${colorScheme} theme`, () => {
+      test.beforeEach(async ({ page }) => {
+        await page.emulateMedia({ colorScheme });
+      });
+
+      for (const viewport of [
+        { width: 1440, height: 900 },
+        { width: 360, height: 800 },
+      ]) {
+        test.describe(`${viewport.width} px`, () => {
+          test.use({ viewport });
+
+          test(`WS-04 matches the design (${viewport.width}, ${colorScheme})`, async ({
+            page,
+          }, testInfo) => {
+            await openChooser(
+              page,
+              uniqueEmail(testInfo, `qa106-ws04-${viewport.width}-${colorScheme}`),
+            );
+            await expect(page.locator('html')).toHaveAttribute('data-theme', colorScheme);
+            await expect(page.getByTestId('choose-workspace-create')).toBeVisible();
+            await expect(page.getByTestId('choose-workspace-sign-out')).toBeVisible();
+            await expectScreenshot(page, `ws-04-${viewport.width}-${colorScheme}`);
+          });
+        });
+      }
+    });
+  }
 });
