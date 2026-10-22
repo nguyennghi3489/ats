@@ -249,6 +249,11 @@
     "placeholder": {
       "title": "This page is coming soon",
       "description": "We are still building this page."
+    },
+    "workspaceMenu": {
+      "heading": "Workspaces",
+      "trigger": "Workspace: {name}",
+      "unavailable": "This workspace is no longer available. The list has been updated."
     }
   }
 }
