@@ -299,3 +299,73 @@ test.describe('QA #113 routes and layout', () => {
     expect(settings.width).toBe(191);
   });
 });
+
+// The criteria say a seeded user "signs in": the specs above seed the session through the auth
+// client, so here each role goes through the real sign-in form in a fresh session, lands on /jobs
+// inside the layout (the only workspace becomes active, #107) and sees its sidebar. The vi and en
+// screenshots are kept in test-results as evidence for the design comparison.
+test.describe('QA #113 sign-in form to the app layout', () => {
+  test.use({ locale: 'vi-VN', viewport: { width: 1440, height: 900 } });
+
+  for (const role of ['admin', 'recruiter', 'collaborator'] as const) {
+    test(`a seeded ${role} signs in through the form and lands on /jobs with their sidebar`, async ({
+      browser,
+      page,
+    }, testInfo) => {
+      const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const email = `qa113f-${role}-${testInfo.workerIndex}-${stamp}@example.test`;
+      if (role === 'admin') {
+        await signIn(page, email, NAMES.admin, 'vi');
+        await createWorkspace(page, 'An Nhiên');
+      } else {
+        const adminContext = await browser.newContext();
+        try {
+          const adminPage = await adminContext.newPage();
+          const adminEmail = `qa113f-admin-${testInfo.workerIndex}-${stamp}@example.test`;
+          await signIn(adminPage, adminEmail, NAMES.admin, 'vi');
+          const workspaceId = await createWorkspace(adminPage, 'An Nhiên');
+          await signIn(page, email, NAMES[role], 'vi');
+          psql(
+            `insert into member (id, organization_id, user_id, role, status)
+             select gen_random_uuid()::text, ${sqlString(workspaceId)}, id, ${sqlString(role)}, 'active'
+             from "user" where email = ${sqlString(email)}`,
+          );
+        } finally {
+          await adminContext.close();
+        }
+      }
+
+      // Drop the seeding session: the user now signs in like anyone else.
+      await page.context().clearCookies();
+      await page.goto('/sign-in');
+      await expect(page.getByTestId('app-sidebar')).toHaveCount(0);
+      await page.getByLabel(vi.auth.signIn.email).fill(email);
+      await page.getByLabel(vi.auth.signIn.password, { exact: true }).fill('qa-Password-e2e!');
+      await page.getByTestId('sign-in-submit').click();
+
+      await expect(page).toHaveURL(/\/jobs$/);
+      await expect(page.getByTestId('app-layout')).toBeVisible();
+      await expect(navLinks(page)).toHaveText(expectedItems('vi', role));
+      await expect(
+        sidebar(page).getByRole('link', { name: vi.shell.nav.workspaceSettings }),
+      ).toHaveCount(role === 'admin' ? 1 : 0);
+      await expect(page.getByTestId('app-sidebar-user-name')).toHaveText(NAMES[role]);
+      await expect(page.getByTestId('app-sidebar-user-role')).toHaveText(vi.shell.roles[role]);
+      await expect(sidebar(page).locator('[aria-current="page"]')).toHaveText(
+        role === 'collaborator' ? vi.shell.nav.myJobs : vi.shell.nav.jobs,
+      );
+      await page.mouse.move(1439, 899);
+      await page.screenshot({ path: testInfo.outputPath(`app-shell-${role}-signed-in-vi.png`) });
+
+      if (role === 'collaborator') {
+        await page.goto('/candidates');
+        await expect(page).toHaveURL(/\/jobs$/);
+      }
+
+      await setLocaleInPage(page, 'en');
+      await expect(navLinks(page, 'en')).toHaveText(expectedItems('en', role));
+      await expect(page.getByTestId('app-sidebar-user-role')).toHaveText(en.shell.roles[role]);
+      await page.screenshot({ path: testInfo.outputPath(`app-shell-${role}-signed-in-en.png`) });
+    });
+  }
+});
