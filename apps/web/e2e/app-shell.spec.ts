@@ -202,9 +202,18 @@ test.describe('app shell sidebar by role', () => {
     await expect(page.getByTestId('app-sidebar')).toHaveCount(0);
     await expect(page.getByTestId('app-layout')).toHaveCount(0);
 
+    // Without a workspace every page inside the layout sends the user to /welcome (#107).
     await signInAsNewUser(page, uniqueEmail(testInfo, 'qa113-out'));
+    for (const path of ['/welcome', '/jobs', '/candidates']) {
+      await page.goto(path);
+      await expect(page, path).toHaveURL(/\/welcome$/);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(vi.workspaces.welcome.title);
+      await expect(page.getByTestId('app-sidebar'), path).toHaveCount(0);
+      await expect(page.getByTestId('app-layout'), path).toHaveCount(0);
+    }
+
     await createWorkspace(page, 'An Nhiên');
-    for (const path of ['/workspaces', '/workspaces/new', '/welcome']) {
+    for (const path of ['/workspaces', '/workspaces/new']) {
       await page.goto(path);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       await expect(page.getByTestId('app-sidebar'), path).toHaveCount(0);

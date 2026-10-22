@@ -4,9 +4,8 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMemoryHistory } from 'vue-router';
 import App from '../App.vue';
-import { installAuthGuard } from '../features/auth/guard';
 import { i18n, setLocale } from '../i18n';
-import { buildRoutes, createAppRouter, stringifyQuery } from './index';
+import { buildRoutes, createAppRouter, installRouteGuards, stringifyQuery } from './index';
 
 const user: MeUser = {
   id: 'user-1',
@@ -25,43 +24,44 @@ function jsonResponse(body: unknown, status = 200): Response {
 
 let uninstall: (() => void) | undefined;
 
-/** The role of the signed-in user in their active workspace, answered by GET /api/workspaces. */
-let role: WorkspaceRole | null = 'admin';
+const anNhien = { id: 'org_1', name: 'An Nhiên', codePrefix: 'AN', role: 'admin' };
+const may = { id: 'org_2', name: 'Mây Studio', codePrefix: 'MS', role: 'recruiter' };
+
+/** What `GET /api/workspaces` answers while signed in. */
+let workspaceList: { activeWorkspaceId: string | null; workspaces: unknown[] };
+
+/** Signed in with one active workspace in which the user has `role`. */
+function memberAs(role: WorkspaceRole) {
+  workspaceList = { activeWorkspaceId: 'org_1', workspaces: [{ ...anNhien, role }] };
+}
 
 /**
- * Stubs the API: GET /api/me signed in as `user` (or 401 UNAUTHENTICATED when signed out) and
- * GET /api/workspaces with one active workspace in which the user has `role` (none when `null`).
+ * Stubs the API: signed in as `user` with `workspaceList`, or 401 UNAUTHENTICATED everywhere when
+ * signed out.
  */
 function signedIn(yes: boolean) {
   vi.stubGlobal(
     'fetch',
-    vi.fn<typeof fetch>().mockImplementation((input) => {
-      const url = String(input instanceof Request ? input.url : input);
+    vi.fn<typeof fetch>().mockImplementation((input, init) => {
       if (!yes) return Promise.resolve(jsonResponse({ code: 'UNAUTHENTICATED' }, 401));
-      if (url.endsWith('/api/workspaces')) {
-        return Promise.resolve(
-          jsonResponse(
-            role
-              ? {
-                  activeWorkspaceId: 'org_1',
-                  workspaces: [{ id: 'org_1', name: 'An Nhiên', codePrefix: 'AN', role }],
-                }
-              : { activeWorkspaceId: null, workspaces: [] },
-          ),
-        );
+      const request = input instanceof Request ? input : new Request(input, init);
+      const path = new URL(request.url, 'http://localhost').pathname;
+      if (path === '/api/workspaces') return Promise.resolve(jsonResponse(workspaceList));
+      if (path === '/api/workspaces/active' && request.method === 'PUT') {
+        return Promise.resolve(jsonResponse(workspaceList.workspaces[0]));
       }
       return Promise.resolve(jsonResponse({ user }));
     }),
   );
 }
 
-/** Mounts the app as main.ts does: the auth guard installed on the router before the first push. */
+/** Mounts the app as main.ts does: the route guards installed on the router before the first push. */
 async function mountAt(path: string, isDev?: boolean) {
   const pinia = createPinia();
   // main.ts installs pinia on the app before the router starts, so route guards find it active.
   setActivePinia(pinia);
   const router = createAppRouter(createMemoryHistory(), isDev);
-  uninstall = installAuthGuard(router, pinia);
+  uninstall = installRouteGuards(router, pinia);
   await router.push(path);
   await router.isReady();
   const wrapper = mount(App, { global: { plugins: [router, pinia, i18n] } });
@@ -71,7 +71,7 @@ async function mountAt(path: string, isDev?: boolean) {
 
 beforeEach(() => {
   setLocale('vi');
-  role = 'admin';
+  workspaceList = { activeWorkspaceId: 'org_1', workspaces: [anNhien] };
   signedIn(true);
 });
 
@@ -113,8 +113,7 @@ describe('router', () => {
   });
 
   it('sends a collaborator who opens /candidates to /jobs', async () => {
-    role = 'collaborator';
-    signedIn(true);
+    memberAs('collaborator');
     const { router, wrapper } = await mountAt('/candidates');
 
     expect(router.currentRoute.value.fullPath).toBe('/jobs');
@@ -127,8 +126,7 @@ describe('router', () => {
   it.each(['recruiter', 'collaborator'] as const)(
     'sends a %s who opens /settings/workspace to /jobs',
     async (who) => {
-      role = who;
-      signedIn(true);
+      memberAs(who);
       const { router } = await mountAt('/settings/workspace');
 
       expect(router.currentRoute.value.fullPath).toBe('/jobs');
@@ -136,24 +134,36 @@ describe('router', () => {
   );
 
   it('lets a recruiter open /candidates', async () => {
-    role = 'recruiter';
-    signedIn(true);
+    memberAs('recruiter');
     const { router } = await mountAt('/candidates');
 
     expect(router.currentRoute.value.fullPath).toBe('/candidates');
   });
 
-  it('sends a user without an active workspace away from role-restricted pages', async () => {
-    role = null;
-    signedIn(true);
-    const { router } = await mountAt('/candidates');
+  it.each(['/jobs', '/candidates', '/settings/workspace'])(
+    'sends a user without workspaces who opens %s to /welcome, without the sidebar',
+    async (path) => {
+      workspaceList = { activeWorkspaceId: null, workspaces: [] };
+      const { router, wrapper } = await mountAt(path);
+      await flushPromises();
 
-    expect(router.currentRoute.value.fullPath).toBe('/jobs');
+      expect(router.currentRoute.value.fullPath).toBe('/welcome');
+      expect(wrapper.get('h1').text()).toBe('Tiếp tục thiết lập');
+      expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(false);
+    },
+  );
+
+  it('selects the only workspace of a user with none active and opens the page in the layout', async () => {
+    workspaceList = { activeWorkspaceId: null, workspaces: [{ ...anNhien, role: 'recruiter' }] };
+    const { router, wrapper } = await mountAt('/candidates');
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/candidates');
+    expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(true);
   });
 
   it('checks the role when moving between pages inside the layout', async () => {
-    role = 'collaborator';
-    signedIn(true);
+    memberAs('collaborator');
     const { router } = await mountAt('/jobs');
     await router.push('/settings/workspace');
 
@@ -265,6 +275,72 @@ describe('router', () => {
       '/dev/ui',
     ]);
     expect(buildRoutes(false).find((route) => route.path === '/')?.meta?.public).toBeUndefined();
+  });
+
+  it('marks the app layout, and so every page inside it, requiresWorkspace', () => {
+    const layout = buildRoutes(false).find((route) => route.path === '/');
+
+    expect(layout?.meta?.requiresWorkspace).toBe(true);
+    expect(layout?.children?.length).toBeGreaterThan(0);
+  });
+
+  it('marks every signed-in page but the workspace setup pages requiresWorkspace', () => {
+    const signedInRoutes = buildRoutes(true).filter((route) => !route.meta?.public);
+
+    expect(
+      signedInRoutes.filter((route) => !route.meta?.requiresWorkspace).map((route) => route.path),
+    ).toEqual(['/workspaces', '/workspaces/new', '/welcome']);
+    expect(
+      buildRoutes(true)
+        .filter((route) => route.meta?.withoutWorkspace)
+        .map((route) => route.path),
+    ).toEqual(['/welcome']);
+  });
+
+  it.each(['/workspaces', '/workspaces/new', '/welcome'])(
+    'never sends a user without workspaces away from %s (no redirect loop)',
+    async (path) => {
+      workspaceList = { activeWorkspaceId: null, workspaces: [] };
+      const { router } = await mountAt(path);
+      await flushPromises();
+
+      expect(router.currentRoute.value.fullPath).toBe(path);
+    },
+  );
+
+  it.each(['/workspaces', '/workspaces/new'])(
+    'never sends a user with several workspaces and none active away from %s',
+    async (path) => {
+      workspaceList = { activeWorkspaceId: null, workspaces: [anNhien, may] };
+      const { router } = await mountAt(path);
+      await flushPromises();
+
+      expect(router.currentRoute.value.fullPath).toBe(path);
+    },
+  );
+
+  it('renders WS-06 at /welcome for a user without workspaces, and / sends them there', async () => {
+    workspaceList = { activeWorkspaceId: null, workspaces: [] };
+    const { router, wrapper } = await mountAt('/');
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/welcome');
+    expect(wrapper.get('h1').text()).toBe('Tiếp tục thiết lập');
+  });
+
+  it('sends a user with a workspace opening /welcome to /jobs inside the layout', async () => {
+    const { router, wrapper } = await mountAt('/welcome');
+    await flushPromises();
+
+    expect(router.currentRoute.value.fullPath).toBe('/jobs');
+    expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(true);
+  });
+
+  it('sends a deep link of a user with several workspaces and none active to the chooser', async () => {
+    workspaceList = { activeWorkspaceId: null, workspaces: [anNhien, may] };
+    const { router } = await mountAt('/jobs?status=open');
+
+    expect(router.currentRoute.value.fullPath).toBe('/workspaces?redirect=%2Fjobs%3Fstatus%3Dopen');
   });
 
   it('leaves the gallery route out of the production route table', () => {

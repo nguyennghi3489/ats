@@ -2,7 +2,7 @@
 // from docs/design/01-foundations ("ATS / Foundations", "Light specimen", "Dark specimen",
 // "Opacity token unit verification").
 import { expect, test, type Page } from '@playwright/test';
-import { signInAsNewUser, uniqueEmail } from './support/session';
+import { signInAsNewMember, uniqueEmail } from './support/session';
 
 const LIGHT = {
   canvas: 'rgb(247, 247, 242)', // #F7F7F2
@@ -65,7 +65,7 @@ async function bodyColours(page: Page) {
 
 async function openHome(page: Page) {
   // `/` needs a session since #82.
-  await signInAsNewUser(page, uniqueEmail(test.info(), 'qa-tokens'));
+  await signInAsNewMember(page, uniqueEmail(test.info(), 'qa-tokens'));
   await page.goto('/');
   await expect(page.getByTestId('placeholder-page')).toBeVisible();
 }
@@ -158,7 +158,12 @@ test.describe('design tokens (#35)', () => {
         b.id = 'focus-button';
         b.textContent = 'Lưu thay đổi';
         b.style.margin = '16px';
-        main.append(a, b);
+        // Tabbing starts here, after the sidebar links of the app layout (#113).
+        const start = document.createElement('span');
+        start.id = 'focus-start';
+        start.tabIndex = -1;
+        main.append(start, a, b);
+        start.focus();
       }, theme);
       const ring = theme === 'dark' ? DARK.ink : LIGHT.ink;
       const outline = (sel: string) =>

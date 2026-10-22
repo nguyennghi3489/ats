@@ -5,7 +5,7 @@
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
 import en from '../src/i18n/locales/en.json' with { type: 'json' };
 import vi from '../src/i18n/locales/vi.json' with { type: 'json' };
-import { psql, sqlString, uniqueEmail } from './support/session';
+import { addWorkspaceFor, psql, sqlString, uniqueEmail } from './support/session';
 
 const password = 'qa-Password-88!';
 const copy = vi.auth.signIn;
@@ -27,6 +27,8 @@ async function createUser(page: Page, email: string, options: { verified?: boole
   );
   if (options.verified !== false) {
     psql(`update "user" set email_verified = true where email = ${sqlString(email)}`);
+    // A member of one workspace, so signing in lands on the requested page (#107).
+    await addWorkspaceFor(page, email, password);
   }
 }
 

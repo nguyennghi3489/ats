@@ -1,7 +1,7 @@
 // QA for issue #82, against the real API and the Compose Postgres: the edges the issue spec
 // (session-expiry.spec.ts) does not walk through in a browser. Design screens: none for this issue.
 import { expect, test, type Page } from '@playwright/test';
-import { psql, signInAsNewUser, sqlString, uniqueEmail } from './support/session';
+import { psql, signInAsNewMember, sqlString, uniqueEmail } from './support/session';
 
 function deleteSessionsOf(email: string) {
   psql(
@@ -24,7 +24,7 @@ async function parallelApiCalls(page: Page, paths: string[]) {
 
 test.describe('route guard (QA #82)', () => {
   test('signed in, /sign-up also goes to /', async ({ page }, testInfo) => {
-    await signInAsNewUser(page, uniqueEmail(testInfo, 'qa82-signup'));
+    await signInAsNewMember(page, uniqueEmail(testInfo, 'qa82-signup'));
 
     await page.goto('/sign-up');
     await expect(page).toHaveURL(/\/jobs$/);
@@ -51,7 +51,7 @@ test.describe('route guard (QA #82)', () => {
     page,
   }, testInfo) => {
     const email = uniqueEmail(testInfo, 'qa82-parallel');
-    await signInAsNewUser(page, email);
+    await signInAsNewMember(page, email);
     await page.goto('/jobs?status=open');
     await expect(page).toHaveURL(/\/jobs\?status=open$/);
     const before = await page.evaluate(() => history.length);
@@ -70,7 +70,7 @@ test.describe('route guard (QA #82)', () => {
 
   test('a 401 while on a public auth page does not redirect', async ({ page }, testInfo) => {
     const email = uniqueEmail(testInfo, 'qa82-public');
-    await signInAsNewUser(page, email);
+    await signInAsNewMember(page, email);
     await page.goto('/reset-password/tok-123');
     await expect(page).toHaveURL(/\/reset-password\/tok-123$/);
 
@@ -86,7 +86,7 @@ test.describe('route guard (QA #82)', () => {
     page,
   }, testInfo) => {
     const email = uniqueEmail(testInfo, 'qa82-reload');
-    await signInAsNewUser(page, email);
+    await signInAsNewMember(page, email);
     deleteSessionsOf(email);
 
     await page.goto('/candidates?page=2');
