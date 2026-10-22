@@ -4,14 +4,18 @@ import {
   VERIFY_EMAIL_EXPIRED_PATH,
   VERIFY_EMAIL_SUCCESS_PATH,
 } from '@ats/shared';
+import type { Pinia } from 'pinia';
 import {
   createRouter,
   createWebHistory,
   type LocationQuery,
   type LocationQueryRaw,
   type RouteRecordRaw,
+  type Router,
   type RouterHistory,
 } from 'vue-router';
+import { installAuthGuard } from '../features/auth/guard';
+import { installWorkspaceGuard } from '../features/workspaces/workspace.guard';
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -19,6 +23,14 @@ declare module 'vue-router' {
     public?: boolean;
     /** Only for signed-out visitors: a signed-in user is sent to `/` instead. */
     guestOnly?: boolean;
+    /**
+     * Needs a workspace: users without one go to `/welcome`, users with several and none active to
+     * the chooser (see features/workspaces/workspace.guard.ts). Every signed-in page has it except
+     * `/workspaces`, `/workspaces/new` and `/welcome`.
+     */
+    requiresWorkspace?: boolean;
+    /** Only for users without a workspace (`/welcome`): anyone else is sent to `/`. */
+    withoutWorkspace?: boolean;
   }
 }
 
@@ -132,6 +144,7 @@ export function buildRoutes(isDev: boolean = import.meta.env.DEV): RouteRecordRa
       path: '/',
       name: 'home',
       component: () => import('../views/HomeView.vue'),
+      meta: { requiresWorkspace: true },
     },
     ...authRoutes,
     {
@@ -146,11 +159,20 @@ export function buildRoutes(isDev: boolean = import.meta.env.DEV): RouteRecordRa
       name: 'workspace-create',
       component: () => import('../features/workspaces/CreateWorkspaceView.vue'),
     },
+    {
+      // Signed-in only: "Tiếp tục thiết lập" (WS-06) for an account without a workspace.
+      path: '/welcome',
+      name: 'welcome',
+      component: () => import('../features/workspaces/WelcomeView.vue'),
+      meta: { withoutWorkspace: true },
+    },
     ...(isDev ? devRoutes : []),
     {
+      // Deep links to pages that do not exist yet land here, so it needs a workspace like them.
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../views/NotFoundView.vue'),
+      meta: { requiresWorkspace: true },
     },
   ];
 }
@@ -179,4 +201,18 @@ export function createAppRouter(
   isDev: boolean = import.meta.env.DEV,
 ) {
   return createRouter({ history, routes: buildRoutes(isDev), stringifyQuery });
+}
+
+/**
+ * Installs the navigation guards in the order they must run: the session guard, then the workspace
+ * guard. Call it before `app.use(router)` so the first navigation is guarded too. Returns a function
+ * that removes both.
+ */
+export function installRouteGuards(router: Router, pinia?: Pinia): () => void {
+  const removeAuth = installAuthGuard(router, pinia);
+  const removeWorkspace = installWorkspaceGuard(router, pinia);
+  return () => {
+    removeWorkspace();
+    removeAuth();
+  };
 }

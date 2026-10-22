@@ -1,11 +1,11 @@
 // Issue #33: the E2E harness starts the API and the web app; both answer, and the web dev server
 // forwards `/api/*` to the API the same way the app's client calls it.
 import { expect, test } from '@playwright/test';
-import { signInAsNewUser, uniqueEmail } from './support/session';
+import { signInAsNewMember, uniqueEmail } from './support/session';
 
 test.describe('smoke', () => {
   test('the home page loads for a signed-in user', async ({ page }, testInfo) => {
-    await signInAsNewUser(page, uniqueEmail(testInfo, 'qa-smoke'));
+    await signInAsNewMember(page, uniqueEmail(testInfo, 'qa-smoke'));
     const response = await page.goto('/');
     expect(response?.status()).toBe(200);
     await expect(page.getByTestId('home-page')).toBeVisible();

@@ -3,7 +3,7 @@
 // Compose Postgres; the session row is deleted with psql. The sign-in screen is its own issue, so
 // this checks URLs, not the sign-in page's copy.
 import { expect, test } from '@playwright/test';
-import { psql, signInAsNewUser, sqlString, uniqueEmail } from './support/session';
+import { psql, signInAsNewMember, sqlString, uniqueEmail } from './support/session';
 
 test.describe('route guard', () => {
   test('opening / signed out lands on /sign-in?redirect=%2F', async ({ page }) => {
@@ -32,7 +32,7 @@ test.describe('session expiry', () => {
     page,
   }, testInfo) => {
     const email = uniqueEmail(testInfo, 'qa82');
-    await signInAsNewUser(page, email);
+    await signInAsNewMember(page, email);
 
     // Signed in: / opens, and /sign-in sends the user back to /.
     await page.goto('/');
