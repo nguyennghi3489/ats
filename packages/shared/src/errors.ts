@@ -22,3 +22,17 @@ export const ACCESS_ERROR_CODES = [
 export const accessErrorCodeSchema = z.enum(ACCESS_ERROR_CODES);
 
 export type AccessErrorCode = z.infer<typeof accessErrorCodeSchema>;
+
+/**
+ * 404: the job does not exist, or exists but the caller may not see it. Hidden records behave
+ * exactly like missing ones (decisions §3): same status, same body.
+ */
+export const JOB_NOT_FOUND = 'JOB_NOT_FOUND';
+
+/** 403: the caller can see the record but its role does not allow the action (e.g. editing). */
+export const FORBIDDEN = 'FORBIDDEN';
+
+/** Error codes of the record-level rules of the `access` module. */
+export const RECORD_ACCESS_ERROR_CODES = [JOB_NOT_FOUND, FORBIDDEN] as const;
+
+export type RecordAccessErrorCode = (typeof RECORD_ACCESS_ERROR_CODES)[number];
