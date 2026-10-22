@@ -1,4 +1,4 @@
-// Entry point for drizzle-kit (drizzle.config.ts). Tables are declared next to their feature in
-// `src/<feature>/<feature>.schema.ts` and picked up by the config's glob; this file only makes sure
-// drizzle-kit finds a schema while no feature has tables yet. Shared Postgres types can live here.
-export {};
+// Entry point for drizzle-kit (drizzle.config.ts) and for code that needs tables of several
+// features. Tables are declared next to their feature in `src/<feature>/<feature>.schema.ts`
+// (also picked up by the config's glob) and re-exported here.
+export { jobAssignments, jobStages, jobs } from '../jobs/jobs.schema.js';
