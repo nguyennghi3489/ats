@@ -9,7 +9,12 @@ import { startTestApp, TEST_WEB_ORIGIN, type TestApp } from '../support/test-app
 const PUBLIC_ROUTES = ['GET /health'];
 
 /** Routes that need a session but no workspace. */
-const SESSION_ONLY_ROUTES = ['GET /api/me', 'POST /api/workspaces'];
+const SESSION_ONLY_ROUTES = [
+  'GET /api/me',
+  'GET /api/workspaces',
+  'POST /api/workspaces',
+  'PUT /api/workspaces/active',
+];
 
 interface Route {
   /** `GET /api/me` */

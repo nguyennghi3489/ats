@@ -178,6 +178,38 @@ describe('global access guard', () => {
       expect(response.status).toBe(201);
     });
 
+    it('serves GET /api/workspaces with a session and no active workspace (@SessionOnly)', async () => {
+      const cookie = await signedIn();
+
+      const response = await get('/api/workspaces', cookie);
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ workspaces: [], activeWorkspaceId: null });
+    });
+
+    it('serves PUT /api/workspaces/active after the active workspace is revoked (@SessionOnly)', async () => {
+      const cookie = await signedIn();
+      const first = (await (await createWorkspace(cookie, 'First')).json()) as { id: string };
+      const second = (await (await createWorkspace(cookie, 'Second')).json()) as { id: string };
+      await database.db.execute(
+        sql`update member set status = 'deactivated' where organization_id = ${second.id}`,
+      );
+      await expectError(await get('/test/access-probe', cookie), 403, 'WORKSPACE_ACCESS_REVOKED');
+
+      const listed = await get('/api/workspaces', cookie);
+      expect(listed.status).toBe(200);
+      expect(await listed.json()).toMatchObject({ activeWorkspaceId: null });
+      const switched = await api.request('/api/workspaces/active', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json', origin: TEST_WEB_ORIGIN, cookie },
+        body: JSON.stringify({ workspaceId: first.id }),
+      });
+      expect(switched.status).toBe(200);
+      expect(await (await get('/test/access-probe', cookie)).json()).toMatchObject({
+        workspaceId: first.id,
+      });
+    });
+
     it('keeps serving session-only routes after the workspace access is revoked', async () => {
       const cookie = await signedIn();
       expect((await createWorkspace(cookie)).status).toBe(201);
@@ -195,6 +227,7 @@ describe('global access guard', () => {
         401,
         'UNAUTHENTICATED',
       );
+      await expectError(await get('/api/workspaces'), 401, 'UNAUTHENTICATED');
     });
   });
 });
