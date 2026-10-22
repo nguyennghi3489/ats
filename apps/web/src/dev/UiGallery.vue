@@ -2,6 +2,8 @@
   Dev-only gallery at /dev/ui (absent from production builds, see src/router/index.ts). It collects every
   src/components/ui/**/*.demo.vue and shows each one in a light panel, a dark panel and a 360 px panel
   (the 360 px panel follows the app theme). Developer tooling, not product copy: no i18n here.
+  Then every src/components/layout/**/*.demo.vue (page header and body), whole-page examples shown in
+  full-width light and dark panels and a 360 px panel, one under the other.
   After them comes the auth page layout (src/features/auth/AuthLayout.vue) with sample sign-in content,
   in full-width light and dark panels and a 360 px panel. Its sample copy is kept here in both languages
   so the VI / EN switch changes every visible word, as it will on the real auth pages.
@@ -20,12 +22,22 @@ const modules = import.meta.glob<Component>('../components/ui/**/*.demo.vue', {
   import: 'default',
 });
 
-const demos = Object.entries(modules)
-  .map(([path, component]) => ({
-    name: path.replace(/^.*\//, '').replace(/\.demo\.vue$/, ''),
-    component,
-  }))
-  .sort((a, b) => a.name.localeCompare(b.name));
+const layoutModules = import.meta.glob<Component>('../components/layout/**/*.demo.vue', {
+  eager: true,
+  import: 'default',
+});
+
+function toDemos(found: Record<string, Component>) {
+  return Object.entries(found)
+    .map(([path, component]) => ({
+      name: path.replace(/^.*\//, '').replace(/\.demo\.vue$/, ''),
+      component,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+const demos = toDemos(modules);
+const layoutDemos = toDemos(layoutModules);
 
 const panels = [
   { id: 'light', title: 'Light', theme: 'light', style: undefined },
@@ -88,6 +100,28 @@ const samplePassword = ref('');
           v-for="panel in panels"
           :key="panel.id"
           class="ui-gallery__panel"
+          :data-panel="panel.id"
+          :data-theme="panel.theme"
+          :style="panel.style"
+        >
+          <h3 class="ui-gallery__panel-title">{{ panel.title }}</h3>
+          <component :is="demo.component" />
+        </div>
+      </div>
+    </section>
+
+    <section
+      v-for="demo in layoutDemos"
+      :key="demo.name"
+      class="ui-gallery__demo"
+      :data-testid="`layout-demo-${demo.name}`"
+    >
+      <h2 class="ui-gallery__name">{{ demo.name }}</h2>
+      <div class="ui-gallery__panels ui-gallery__panels--stacked">
+        <div
+          v-for="panel in panels"
+          :key="panel.id"
+          class="ui-gallery__panel ui-gallery__panel--page"
           :data-panel="panel.id"
           :data-theme="panel.theme"
           :style="panel.style"

@@ -5,7 +5,7 @@
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
 import en from '../src/i18n/locales/en.json' with { type: 'json' };
 import vi from '../src/i18n/locales/vi.json' with { type: 'json' };
-import { psql, sqlString, uniqueEmail } from './support/session';
+import { addWorkspaceFor, psql, sqlString, uniqueEmail } from './support/session';
 
 const password = 'qa-Password-88!';
 
@@ -26,6 +26,8 @@ async function newUser(page: Page, testInfo: TestInfo, options: { verified?: boo
   );
   if (options.verified !== false) {
     psql(`update "user" set email_verified = true where email = ${sqlString(email)}`);
+    // A member of one workspace, so signing in lands on `/` (#107).
+    await addWorkspaceFor(page, email, password);
   }
   return email;
 }
@@ -88,7 +90,7 @@ for (const [lang, browserLocale, copy] of [
       const me = page.waitForRequest((request) => new URL(request.url()).pathname === '/api/me');
       release();
       await me;
-      await expect(page).toHaveURL(/\/$/);
+      await expect(page).toHaveURL(/\/jobs$/);
     });
 
     test(`SIGN-03 copy after a wrong password against the real API (${lang})`, async ({
@@ -234,7 +236,7 @@ test.describe('sign-in QA (real limit, EN layout, toggle)', () => {
     expect(requests).toBe(0);
 
     await page.getByTestId('sign-in-email').press('Enter');
-    await expect(page).toHaveURL(/\/$/);
+    await expect(page).toHaveURL(/\/jobs$/);
     expect(requests).toBe(1);
   });
 

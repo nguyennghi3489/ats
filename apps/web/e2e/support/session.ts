@@ -69,3 +69,58 @@ export async function signInAsNewUser(
   psql(`update "user" set email_verified = true where email = ${sqlString(email)}`);
   await call('signIn', { email, password });
 }
+
+/**
+ * Creates a workspace named `name` as the signed-in user through `POST /api/workspaces`; the API
+ * makes it the session's active one. Returns its id.
+ */
+export async function createWorkspace(page: Page, name = 'QA Workspace'): Promise<string> {
+  const result = await page.evaluate(async (workspaceName) => {
+    const response = await fetch('/api/workspaces', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        'Idempotency-Key': globalThis.crypto.randomUUID(),
+      },
+      body: JSON.stringify({ name: workspaceName }),
+    });
+    return { status: response.status, body: (await response.json()) as { id?: string } };
+  }, name);
+  if (result.status !== 201 || !result.body.id) {
+    throw new Error(`POST /api/workspaces answered ${result.status}`);
+  }
+  return result.body.id;
+}
+
+/**
+ * Like `signInAsNewUser`, plus one active workspace, so the app opens its pages instead of sending
+ * the user to `/welcome` (#107).
+ */
+export async function signInAsNewMember(
+  page: Page,
+  email: string,
+  locale: 'vi' | 'en' = 'vi',
+): Promise<void> {
+  await signInAsNewUser(page, email, locale);
+  await createWorkspace(page);
+}
+
+/**
+ * Gives the existing, verified account `email` a workspace and leaves the browser signed out, for
+ * specs that sign in through the form and expect to land on a workspace page (#107). The page must
+ * be on the app's origin.
+ */
+export async function addWorkspaceFor(page: Page, email: string, secret: string): Promise<void> {
+  await page.evaluate(
+    async ([clientPath, input]) => {
+      const { authApi } = (await import(/* @vite-ignore */ clientPath)) as {
+        authApi: { signIn: (i: unknown) => Promise<unknown> };
+      };
+      await authApi.signIn(input);
+    },
+    ['/src/features/auth/auth-client.ts', { email, password: secret }] as const,
+  );
+  await createWorkspace(page);
+  await page.context().clearCookies();
+}

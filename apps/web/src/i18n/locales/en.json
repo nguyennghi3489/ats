@@ -163,6 +163,51 @@
       }
     }
   },
+  "workspaces": {
+    "create": {
+      "title": "Create a workspace",
+      "subtitle": "Name your recruiting workspace.",
+      "newTitle": "Create a new workspace",
+      "newSubtitle": "Name the new workspace.",
+      "name": "Recruiter / workspace name",
+      "submit": "Create workspace",
+      "pendingTitle": "Creating the workspace",
+      "pendingSubtitle": "Please wait while the request is processed.",
+      "pendingButton": "Creating...",
+      "pendingNotice": "The workspace request is being processed.",
+      "failedTitle": "Couldn't create the workspace",
+      "failedSubtitle": "The request can't be completed right now.",
+      "failedNotice": "We couldn't confirm whether the workspace was created. Retry to continue.",
+      "retry": "Retry",
+      "back": "Back",
+      "inviteOnly": "Existing workspaces can only be joined by invitation. Ask an admin to send you one.",
+      "inviteOnlyShort": "Join by invitation. Ask an admin to send you one.",
+      "signOut": "Sign out",
+      "backToList": "Cancel · Back to the list",
+      "errors": {
+        "NAME_REQUIRED": "Enter a workspace name",
+        "NAME_TOO_LONG": "Use at most {max} characters for the workspace name",
+        "VALIDATION_FAILED": "This workspace name is not valid"
+      }
+    },
+    "choose": {
+      "title": "Choose a workspace",
+      "subtitle": "Pick one to switch the whole recruiting context.",
+      "listLabel": "Your workspaces",
+      "loading": "Loading your workspaces...",
+      "create": "Create a new workspace",
+      "signOut": "Sign out",
+      "retry": "Retry",
+      "unavailable": "This workspace is no longer available. The list has been updated."
+    },
+    "welcome": {
+      "title": "Continue setup",
+      "subtitle": "This account has no workspace yet.",
+      "notice": "You can continue by creating a workspace.",
+      "create": "Create workspace",
+      "inviteHint": "Want to join an existing workspace? Ask an admin to send you an invitation."
+    }
+  },
   "errors": {
     "unknown": "Something went wrong. Please try again.",
     "NETWORK_ERROR": "Could not reach the server. Check your connection and try again.",
@@ -174,5 +219,33 @@
     "INVALID_CREDENTIALS": "The email or password is incorrect.",
     "EMAIL_NOT_VERIFIED": "This email is not verified yet. Open the verification email to activate your account.",
     "SIGN_IN_RATE_LIMITED": "Too many failed sign-ins. Please try again later."
+  },
+  "jobs": {
+    "status": {
+      "draft": "Draft",
+      "open": "Open",
+      "paused": "Paused",
+      "closed": "Closed"
+    }
+  },
+  "shell": {
+    "nav": {
+      "label": "Main navigation",
+      "applications": "Applications",
+      "myApplications": "My applications",
+      "candidates": "Candidates",
+      "jobs": "Jobs",
+      "myJobs": "My jobs",
+      "workspaceSettings": "Workspace settings"
+    },
+    "roles": {
+      "admin": "Admin",
+      "recruiter": "Recruiter",
+      "collaborator": "Collaborator"
+    },
+    "placeholder": {
+      "title": "This page is coming soon",
+      "description": "We are still building this page."
+    }
   }
 }

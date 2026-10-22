@@ -1,12 +1,21 @@
-import { createWorkspaceRequestSchema, IDEMPOTENCY_KEY_HEADER, type Workspace } from '@ats/shared';
+import {
+  createWorkspaceRequestSchema,
+  IDEMPOTENCY_KEY_HEADER,
+  switchWorkspaceRequestSchema,
+  type Workspace,
+  type WorkspaceList,
+} from '@ats/shared';
 import {
   BadRequestException,
   Body,
   Controller,
   ForbiddenException,
+  Get,
   Headers,
   HttpStatus,
+  NotFoundException,
   Post,
+  Put,
   Res,
 } from '@nestjs/common';
 import type { Response } from 'express';
@@ -59,6 +68,43 @@ export class WorkspacesController {
       idempotencyKey,
     });
     res.status(created ? HttpStatus.CREATED : HttpStatus.OK);
+    return workspace;
+  }
+
+  /**
+   * The signed-in user's workspaces (active memberships only, sorted by name) and the session's
+   * active one, `null` when it is no longer an active membership. 401 `UNAUTHENTICATED` (global
+   * access guard).
+   */
+  @Get()
+  @SessionOnly()
+  list(@Actor() actor: Caller): Promise<WorkspaceList> {
+    return this.workspaces.list(actor.user.id, actor.workspaceId);
+  }
+
+  /**
+   * Makes a workspace the user is an active member of the session's active workspace and returns
+   * it. Unknown ids, other people's workspaces and deactivated memberships all get the same 404
+   * `WORKSPACE_UNAVAILABLE` (decisions §3). 400 `VALIDATION_FAILED`, 401 `UNAUTHENTICATED` (global
+   * access guard).
+   */
+  @Put('active')
+  @SessionOnly()
+  async switchActive(@Actor() actor: Caller, @Body() body: unknown): Promise<Workspace> {
+    const parsed = switchWorkspaceRequestSchema.safeParse(body);
+    if (!parsed.success) throw validationFailed('Invalid workspace id');
+
+    const workspace = await this.workspaces.switchActive(
+      actor.user.id,
+      actor.sessionToken,
+      parsed.data.workspaceId,
+    );
+    if (!workspace) {
+      throw new NotFoundException({
+        code: 'WORKSPACE_UNAVAILABLE',
+        message: 'Workspace unavailable',
+      });
+    }
     return workspace;
   }
 }

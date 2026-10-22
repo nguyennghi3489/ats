@@ -75,6 +75,17 @@ test.describe('UI gallery in a production build', () => {
         }),
       }),
     );
+    // ...and a member of one active workspace, so the 404 route opens instead of `/welcome` (#107).
+    await page.route('**/api/workspaces', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          activeWorkspaceId: 'org_qa41',
+          workspaces: [{ id: 'org_qa41', name: 'QA Gallery', codePrefix: 'QA', role: 'admin' }],
+        }),
+      }),
+    );
     await page.goto(`${previewURL}/dev/ui`);
 
     await expect(page.getByTestId('not-found-page')).toBeVisible();

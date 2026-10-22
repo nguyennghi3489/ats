@@ -54,6 +54,45 @@ describe('UI gallery', () => {
       expect(panel.get('h1').text()).toBe(viTitle);
     });
   });
+  describe('page layout demos', () => {
+    const layoutDemo = () => wrapper.get('[data-testid="layout-demo-AtsPage"]');
+
+    it('lists every *.demo.vue under components/layout', () => {
+      expect(
+        wrapper.findAll('[data-testid^="layout-demo-"]').map((d) => d.attributes('data-testid')),
+      ).toEqual(['layout-demo-AtsPage']);
+      expect(layoutDemo().get('h2').text()).toBe('AtsPage');
+    });
+
+    it('shows the list, empty-state and breadcrumb examples in full-width light, dark and 360 px panels', () => {
+      const panels = layoutDemo().findAll('[data-panel]');
+
+      expect(panels.map((panel) => panel.attributes('data-panel'))).toEqual([
+        'light',
+        'dark',
+        'mobile',
+      ]);
+      expect(panels[0]!.attributes('data-theme')).toBe('light');
+      expect(panels[1]!.attributes('data-theme')).toBe('dark');
+      expect(panels[2]!.attributes('style')).toContain('width: 360px');
+      for (const panel of panels) {
+        expect(panel.classes()).toContain('ui-gallery__panel--page');
+        const list = panel.get('[data-example="list"]');
+        expect(list.get('.ats-page-header h1').text()).toBeTruthy();
+        expect(list.find('.ats-page-header__actions button').exists()).toBe(true);
+        expect(list.find('.ats-page-body--flush table').exists()).toBe(true);
+        const empty = panel.get('[data-example="empty"]');
+        expect(empty.find('.ats-page-body--centered .ats-empty-state').exists()).toBe(true);
+        const record = panel.get('[data-example="breadcrumb"]');
+        expect(record.find('.ats-page-header__breadcrumb a').exists()).toBe(true);
+        expect(record.find('.ats-page-body--default').exists()).toBe(true);
+        expect(panel.find('[data-example="long-title"] .ats-page-header__actions').exists()).toBe(
+          true,
+        );
+      }
+    });
+  });
+
   const demo = () => wrapper.get('[data-testid="ui-demo-AtsIcon"]');
 
   it('lists every *.demo.vue under components/ui', () => {

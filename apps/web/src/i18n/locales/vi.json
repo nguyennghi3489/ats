@@ -163,6 +163,51 @@
       }
     }
   },
+  "workspaces": {
+    "create": {
+      "title": "Tạo không gian làm việc",
+      "subtitle": "Đặt tên cho không gian nhà tuyển dụng của bạn.",
+      "newTitle": "Tạo không gian mới",
+      "newSubtitle": "Đặt tên cho không gian mới.",
+      "name": "Tên nhà tuyển dụng / không gian",
+      "submit": "Tạo không gian",
+      "pendingTitle": "Đang tạo không gian",
+      "pendingSubtitle": "Vui lòng chờ trong khi yêu cầu được xử lý.",
+      "pendingButton": "Đang tạo...",
+      "pendingNotice": "Yêu cầu tạo không gian đang được xử lý.",
+      "failedTitle": "Chưa thể tạo không gian",
+      "failedSubtitle": "Không thể hoàn tất yêu cầu lúc này.",
+      "failedNotice": "Chưa thể xác nhận kết quả tạo không gian. Thử lại để tiếp tục.",
+      "retry": "Thử lại",
+      "back": "Quay lại",
+      "inviteOnly": "Tham gia không gian có sẵn chỉ qua lời mời. Hãy nhờ quản trị viên gửi lời mời.",
+      "inviteOnlyShort": "Tham gia qua lời mời. Hãy nhờ quản trị viên gửi lời mời.",
+      "signOut": "Đăng xuất",
+      "backToList": "Hủy · Quay lại danh sách",
+      "errors": {
+        "NAME_REQUIRED": "Nhập tên không gian",
+        "NAME_TOO_LONG": "Tên không gian tối đa {max} ký tự",
+        "VALIDATION_FAILED": "Tên không gian chưa hợp lệ"
+      }
+    },
+    "choose": {
+      "title": "Chọn không gian làm việc",
+      "subtitle": "Chọn một nơi để đổi toàn bộ ngữ cảnh nhà tuyển dụng.",
+      "listLabel": "Không gian làm việc của bạn",
+      "loading": "Đang tải danh sách không gian...",
+      "create": "Tạo không gian mới",
+      "signOut": "Đăng xuất",
+      "retry": "Thử lại",
+      "unavailable": "Không gian này không còn khả dụng. Danh sách đã được cập nhật."
+    },
+    "welcome": {
+      "title": "Tiếp tục thiết lập",
+      "subtitle": "Tài khoản này chưa có không gian làm việc.",
+      "notice": "Bạn có thể tiếp tục bằng cách tạo không gian làm việc.",
+      "create": "Tạo không gian",
+      "inviteHint": "Muốn tham gia không gian hiện có? Hãy nhờ quản trị viên gửi lời mời."
+    }
+  },
   "errors": {
     "unknown": "Đã có lỗi xảy ra. Vui lòng thử lại.",
     "NETWORK_ERROR": "Không kết nối được máy chủ. Kiểm tra mạng và thử lại.",
@@ -174,5 +219,33 @@
     "INVALID_CREDENTIALS": "Email hoặc mật khẩu chưa đúng.",
     "EMAIL_NOT_VERIFIED": "Email này chưa được xác minh. Mở email xác minh để kích hoạt tài khoản.",
     "SIGN_IN_RATE_LIMITED": "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau."
+  },
+  "jobs": {
+    "status": {
+      "draft": "Bản nháp",
+      "open": "Đang mở tuyển",
+      "paused": "Tạm dừng",
+      "closed": "Đã đóng"
+    }
+  },
+  "shell": {
+    "nav": {
+      "label": "Điều hướng chính",
+      "applications": "Ứng tuyển",
+      "myApplications": "Ứng tuyển của tôi",
+      "candidates": "Ứng viên",
+      "jobs": "Vị trí tuyển dụng",
+      "myJobs": "Vị trí của tôi",
+      "workspaceSettings": "Cài đặt không gian làm việc"
+    },
+    "roles": {
+      "admin": "Quản trị viên",
+      "recruiter": "Nhà tuyển dụng",
+      "collaborator": "Cộng tác viên"
+    },
+    "placeholder": {
+      "title": "Trang này sắp ra mắt",
+      "description": "Chúng tôi đang hoàn thiện trang này."
+    }
   }
 }
