@@ -199,6 +199,13 @@
       "signOut": "Đăng xuất",
       "retry": "Thử lại",
       "unavailable": "Không gian này không còn khả dụng. Danh sách đã được cập nhật."
+    },
+    "welcome": {
+      "title": "Tiếp tục thiết lập",
+      "subtitle": "Tài khoản này chưa có không gian làm việc.",
+      "notice": "Bạn có thể tiếp tục bằng cách tạo không gian làm việc.",
+      "create": "Tạo không gian",
+      "inviteHint": "Muốn tham gia không gian hiện có? Hãy nhờ quản trị viên gửi lời mời."
     }
   },
   "errors": {

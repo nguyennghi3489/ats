@@ -199,6 +199,13 @@
       "signOut": "Sign out",
       "retry": "Retry",
       "unavailable": "This workspace is no longer available. The list has been updated."
+    },
+    "welcome": {
+      "title": "Continue setup",
+      "subtitle": "This account has no workspace yet.",
+      "notice": "You can continue by creating a workspace.",
+      "create": "Create workspace",
+      "inviteHint": "Want to join an existing workspace? Ask an admin to send you an invitation."
     }
   },
   "errors": {

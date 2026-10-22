@@ -4,7 +4,7 @@ import { expect, type Page, test } from '@playwright/test';
 import en from '../src/i18n/locales/en.json' with { type: 'json' };
 import vi from '../src/i18n/locales/vi.json' with { type: 'json' };
 import { latestMessageTo } from './support/mailpit';
-import { psql, sqlString, uniqueEmail } from './support/session';
+import { addWorkspaceFor, psql, sqlString, uniqueEmail } from './support/session';
 
 const copy = vi.auth.resetPassword;
 const oldPassword = 'qa99-Old-Password!';
@@ -54,6 +54,9 @@ test.describe('reset password pages', () => {
   }, testInfo) => {
     const email = uniqueEmail(testInfo, 'qa99');
     await createUser(page, email);
+    // A member of one workspace, so signing in with the new password lands on `/` (#107).
+    await page.goto('/sign-in');
+    await addWorkspaceFor(page, email, oldPassword);
     const link = await requestResetLink(page, email);
 
     await page.goto(link);
