@@ -34,10 +34,14 @@ export {
 export {
   ACCESS_ERROR_CODES,
   accessErrorCodeSchema,
+  FORBIDDEN,
+  JOB_NOT_FOUND,
+  RECORD_ACCESS_ERROR_CODES,
   UNAUTHENTICATED,
   WORKSPACE_ACCESS_REVOKED,
   WORKSPACE_REQUIRED,
   type AccessErrorCode,
+  type RecordAccessErrorCode,
 } from './errors.js';
 export { healthSchema, type Health } from './health.js';
 export {
