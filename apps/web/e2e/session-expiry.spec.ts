@@ -6,10 +6,10 @@ import { expect, test } from '@playwright/test';
 import { psql, signInAsNewUser, sqlString, uniqueEmail } from './support/session';
 
 test.describe('route guard', () => {
-  test('opening / signed out lands on /sign-in?redirect=%2F', async ({ page }) => {
+  test('opening / signed out lands on /sign-in?redirect=%2Fjobs', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page).toHaveURL(/\/sign-in\?redirect=%2F$/);
+    await expect(page).toHaveURL(/\/sign-in\?redirect=%2Fjobs$/);
     await expect(page.getByTestId('placeholder-page')).toHaveCount(0);
   });
 
@@ -34,7 +34,7 @@ test.describe('session expiry', () => {
     const email = uniqueEmail(testInfo, 'qa82');
     await signInAsNewUser(page, email);
 
-    // Signed in: / opens, and /sign-in sends the user back to /.
+    // Signed in: / opens /jobs, and /sign-in sends the user back there.
     await page.goto('/');
     await expect(page.getByTestId('placeholder-page')).toBeVisible();
     await page.goto('/sign-in');

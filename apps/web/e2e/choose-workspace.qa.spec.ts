@@ -105,7 +105,7 @@ test.describe('choose workspace (QA #106)', () => {
     await expect(page.getByTestId('choose-workspace-sign-out')).toBeFocused();
   });
 
-  test('a safe redirect is followed after switching; an off-site one lands on /', async ({
+  test('a safe redirect is followed after switching; an off-site one lands on /jobs', async ({
     page,
   }, testInfo) => {
     await signInAsNewUser(page, uniqueEmail(testInfo, 'qa106redir'));
@@ -119,7 +119,8 @@ test.describe('choose workspace (QA #106)', () => {
 
     await page.goto('/workspaces?redirect=%2F%2Fevil.example');
     await page.getByTestId('workspace-row').nth(0).click();
-    await expect(page).toHaveURL(/^http:\/\/localhost:\d+\/$/);
+    // The fallback `/` opens `/jobs` (#113).
+    await expect(page).toHaveURL(/^http:\/\/localhost:\d+\/jobs$/);
     expect((await listWorkspaces(page)).activeWorkspaceId).toBe(anNhienId);
   });
 

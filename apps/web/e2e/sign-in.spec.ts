@@ -85,13 +85,14 @@ test.describe('sign-in', () => {
     await expect(page).toHaveURL(/\/jobs$/);
   });
 
-  test('an off-site redirect lands on / instead', async ({ page }, testInfo) => {
+  test('an off-site redirect lands on /jobs instead', async ({ page }, testInfo) => {
     const email = await newUser(page, testInfo);
     await page.goto('/sign-in?redirect=https%3A%2F%2Fevil.example');
 
     await signIn(page, email);
 
-    await expect(page).toHaveURL(/^http:\/\/localhost:\d+\/$/);
+    // The fallback `/` opens `/jobs` (#113).
+    await expect(page).toHaveURL(/^http:\/\/localhost:\d+\/jobs$/);
   });
 
   test('a wrong password shows SIGN-03, keeps the email and clears the password', async ({
