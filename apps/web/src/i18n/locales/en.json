@@ -189,6 +189,16 @@
         "NAME_TOO_LONG": "Use at most {max} characters for the workspace name",
         "VALIDATION_FAILED": "This workspace name is not valid"
       }
+    },
+    "choose": {
+      "title": "Choose a workspace",
+      "subtitle": "Pick one to switch the whole recruiting context.",
+      "listLabel": "Your workspaces",
+      "loading": "Loading your workspaces...",
+      "create": "Create a new workspace",
+      "signOut": "Sign out",
+      "retry": "Retry",
+      "unavailable": "This workspace is no longer available. The list has been updated."
     }
   },
   "errors": {

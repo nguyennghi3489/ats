@@ -72,3 +72,59 @@ describe('workspacesApi.list', () => {
     expect((error as ApiError).code).toBe('UNKNOWN_ERROR');
   });
 });
+
+describe('workspacesApi.getList', () => {
+  it('reads the workspaces and the active one of GET /api/workspaces', async () => {
+    const { workspaces } = setup(() =>
+      jsonResponse({ activeWorkspaceId: 'org_1', workspaces: [{ ...workspace, extra: 'x' }] }),
+    );
+
+    await expect(workspaces.getList()).resolves.toEqual({
+      activeWorkspaceId: 'org_1',
+      workspaces: [workspace],
+    });
+  });
+
+  it('throws UNKNOWN_ERROR for a body that does not match the schema', async () => {
+    const { workspaces } = setup(() => jsonResponse({ workspaces: [{ id: 'org_1' }] }));
+
+    const error = await workspaces.getList().catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).code).toBe('UNKNOWN_ERROR');
+    expect((error as ApiError).status).toBe(200);
+  });
+});
+
+describe('workspacesApi.switch', () => {
+  it('puts the workspace id to /api/workspaces/active and returns the workspace', async () => {
+    const { fetchFn, workspaces } = setup(() => jsonResponse(workspace));
+
+    await expect(workspaces.switch('org_1')).resolves.toEqual(workspace);
+
+    const [url, init] = fetchFn.mock.calls[0]!;
+    expect(url).toBe('/api/workspaces/active');
+    expect(init?.method).toBe('PUT');
+    expect(init?.body).toBe(JSON.stringify({ workspaceId: 'org_1' }));
+  });
+
+  it('throws WORKSPACE_UNAVAILABLE from a 404', async () => {
+    const { workspaces } = setup(() =>
+      jsonResponse({ code: 'WORKSPACE_UNAVAILABLE', message: 'Unavailable' }, 404),
+    );
+
+    const error = await workspaces.switch('org_9').catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).code).toBe('WORKSPACE_UNAVAILABLE');
+  });
+
+  it('throws UNKNOWN_ERROR for a success body that is not a workspace', async () => {
+    const { workspaces } = setup(() => jsonResponse({ ok: true }));
+
+    const error = await workspaces.switch('org_1').catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).code).toBe('UNKNOWN_ERROR');
+  });
+});

@@ -1,9 +1,16 @@
 /**
  * Workspace calls of the web app. `POST /api/workspaces` creates one (decisions §4, §5): the caller
  * sends a client-chosen `Idempotency-Key`, so a retry after a lost answer returns the workspace already
- * created instead of a second one. `GET /api/workspaces` lists the user's active memberships.
+ * created instead of a second one. `GET /api/workspaces` lists the user's active memberships and
+ * `PUT /api/workspaces/active` switches the session's active workspace (decisions §3).
  */
-import { IDEMPOTENCY_KEY_HEADER, type Workspace, workspaceSchema } from '@ats/shared';
+import {
+  IDEMPOTENCY_KEY_HEADER,
+  type Workspace,
+  type WorkspaceList,
+  workspaceListSchema,
+  workspaceSchema,
+} from '@ats/shared';
 import { type ApiClient, ApiError, api, CLIENT_ERROR_CODES } from '../../lib/api';
 
 /**
@@ -14,18 +21,11 @@ function malformed(what: string, cause?: unknown): ApiError {
   return new ApiError(CLIENT_ERROR_CODES.unknown, 200, `Malformed ${what} response`, { cause });
 }
 
-/** The workspaces of a `GET /api/workspaces` answer (`{ activeWorkspaceId, workspaces }`). */
-function parseWorkspaceList(body: unknown): Workspace[] {
-  const list =
-    typeof body === 'object' && body !== null
-      ? (body as Record<string, unknown>).workspaces
-      : undefined;
-  if (!Array.isArray(list)) throw malformed('GET /api/workspaces');
-  return list.map((item) => {
-    const parsed = workspaceSchema.safeParse(item);
-    if (!parsed.success) throw malformed('GET /api/workspaces', parsed.error);
-    return parsed.data;
-  });
+/** A `GET /api/workspaces` answer (`{ activeWorkspaceId, workspaces }`), checked against the schema. */
+function parseWorkspaceList(body: unknown): WorkspaceList {
+  const parsed = workspaceListSchema.safeParse(body);
+  if (!parsed.success) throw malformed('GET /api/workspaces', parsed.error);
+  return parsed.data;
 }
 
 export function createWorkspacesApi(client: ApiClient = api) {
@@ -45,9 +45,28 @@ export function createWorkspacesApi(client: ApiClient = api) {
       return parsed.data;
     },
 
+    /**
+     * The workspaces the signed-in user is an active member of and the session's active one. A body
+     * that does not match the shared schema throws `UNKNOWN_ERROR` with status 200.
+     */
+    async getList(): Promise<WorkspaceList> {
+      return parseWorkspaceList(await client.get<unknown>('/workspaces'));
+    },
+
     /** The workspaces the signed-in user is an active member of. */
     async list(): Promise<Workspace[]> {
-      return parseWorkspaceList(await client.get<unknown>('/workspaces'));
+      return parseWorkspaceList(await client.get<unknown>('/workspaces')).workspaces;
+    },
+
+    /**
+     * Makes `workspaceId` the session's active workspace. A workspace the user cannot enter throws
+     * 404 `WORKSPACE_UNAVAILABLE`; a success body that is not a workspace throws `UNKNOWN_ERROR`.
+     */
+    async switch(workspaceId: string): Promise<Workspace> {
+      const body = await client.put<unknown>('/workspaces/active', { workspaceId });
+      const parsed = workspaceSchema.safeParse(body);
+      if (!parsed.success) throw malformed('PUT /api/workspaces/active', parsed.error);
+      return parsed.data;
     },
   };
 }

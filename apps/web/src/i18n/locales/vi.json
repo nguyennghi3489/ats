@@ -189,6 +189,16 @@
         "NAME_TOO_LONG": "Tên không gian tối đa {max} ký tự",
         "VALIDATION_FAILED": "Tên không gian chưa hợp lệ"
       }
+    },
+    "choose": {
+      "title": "Chọn không gian làm việc",
+      "subtitle": "Chọn một nơi để đổi toàn bộ ngữ cảnh nhà tuyển dụng.",
+      "listLabel": "Không gian làm việc của bạn",
+      "loading": "Đang tải danh sách không gian...",
+      "create": "Tạo không gian mới",
+      "signOut": "Đăng xuất",
+      "retry": "Thử lại",
+      "unavailable": "Không gian này không còn khả dụng. Danh sách đã được cập nhật."
     }
   },
   "errors": {
