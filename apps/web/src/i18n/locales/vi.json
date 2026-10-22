@@ -249,6 +249,11 @@
     "placeholder": {
       "title": "Trang này sắp ra mắt",
       "description": "Chúng tôi đang hoàn thiện trang này."
+    },
+    "workspaceMenu": {
+      "heading": "Không gian làm việc",
+      "trigger": "Không gian làm việc: {name}",
+      "unavailable": "Không gian này không còn khả dụng. Danh sách đã được cập nhật."
     }
   }
 }
