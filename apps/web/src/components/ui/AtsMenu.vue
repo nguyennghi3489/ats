@@ -1,7 +1,8 @@
 <!--
   Dropdown action menu (design page "01 · Foundations", ATS/Menu). The caller renders its own trigger
   (usually AtsButton or AtsIconButton) in the `trigger` slot and binds the slot's `props` to it; the menu
-  supplies the ARIA wiring and the open/keyboard handlers. Items are AtsMenuItem children.
+  supplies the ARIA wiring and the open/keyboard handlers. Items are AtsMenuItem children; caller-drawn
+  role="menuitemradio" elements (single-choice options) take part in the keys the same way.
   The panel (role="menu") lives in a teleport layer on <body>, fixed under the trigger, flipped above it
   when there is no room below and kept inside the viewport (so it fits a 360 px screen). It takes the
   theme of the trigger's nearest [data-theme], so a dark area keeps a dark menu.
@@ -86,7 +87,7 @@ const triggerProps = computed<AtsMenuTriggerProps>(() => ({
 function enabledItems() {
   return [
     ...(panel.value?.querySelectorAll<HTMLElement>(
-      '[role="menuitem"]:not([aria-disabled="true"])',
+      '[role="menuitem"]:not([aria-disabled="true"]), [role="menuitemradio"]:not([aria-disabled="true"])',
     ) ?? []),
   ];
 }
@@ -188,7 +189,9 @@ function onPanelKeydown(event: KeyboardEvent) {
     case ' ':
       // Handled here rather than on each item, so links and buttons select the same way.
       event.preventDefault();
-      (event.target as HTMLElement | null)?.closest<HTMLElement>('[role="menuitem"]')?.click();
+      (event.target as HTMLElement | null)
+        ?.closest<HTMLElement>('[role="menuitem"], [role="menuitemradio"]')
+        ?.click();
       return;
     case 'Tab':
       // Focus goes back to the trigger first, so the browser's Tab moves on from there.

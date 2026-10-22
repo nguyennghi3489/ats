@@ -7,7 +7,8 @@ import { describe, expect, it } from 'vitest';
 import AtsIcon from './AtsIcon.vue';
 import { ICON_NAMES, type IconName } from './icons';
 
-// The 11 masters on the design page "01 · Foundations" (ATS/Icon/*).
+// The 11 masters on the design page "01 · Foundations" (ATS/Icon/*), plus the "..." drawn in
+// ATS/App chrome/Desktop (design page "02 · App shell") for the account menu trigger.
 const DESIGN_ICONS: IconName[] = [
   'archive-box',
   'chevron-down',
@@ -16,6 +17,7 @@ const DESIGN_ICONS: IconName[] = [
   'empty',
   'error',
   'info',
+  'more',
   'profile',
   'spinner',
   'success',

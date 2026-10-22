@@ -58,6 +58,15 @@ export const ICONS = {
     grid: 20,
     paths: ['M17.5 10a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0z', 'M10 9v4.5', 'M10 6.5v.01'],
   },
+  // "..." of the account trigger in ATS/App chrome/Desktop · 16: three dots
+  more: {
+    grid: 16,
+    paths: [
+      'M3.75 8a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z',
+      'M8.75 8a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z',
+      'M13.75 8a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0z',
+    ],
+  },
   // ATS/Icon/Profile · 16
   profile: {
     grid: 16,

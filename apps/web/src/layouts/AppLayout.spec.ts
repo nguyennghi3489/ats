@@ -147,6 +147,17 @@ describe('AppLayout', () => {
     expect(sidebar.find('[data-testid="account-slot"]').exists()).toBe(true);
   });
 
+  it('puts the account menu next to the user name by default', async () => {
+    const wrapper = await mountLayout();
+    mounted.push(wrapper);
+
+    const trigger = wrapper.get(
+      '[data-testid="app-sidebar-user"] [data-testid="account-menu-trigger"]',
+    );
+    expect(trigger.attributes('aria-label')).toBe('Tài khoản của Minh Anh');
+    expect(trigger.attributes('aria-haspopup')).toBe('menu');
+  });
+
   it('hides the sidebar below 768 px', () => {
     const source = readFileSync(join(__dirname, 'AppLayout.vue'), 'utf8');
     const mobile = /@media \(max-width: 767px\) \{([\s\S]*?)\n\}/.exec(source)?.[1] ?? '';

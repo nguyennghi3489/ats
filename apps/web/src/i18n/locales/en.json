@@ -249,6 +249,23 @@
     "placeholder": {
       "title": "This page is coming soon",
       "description": "We are still building this page."
+    },
+    "accountMenu": {
+      "trigger": "Account menu for {name}",
+      "heading": "Personal account",
+      "personalSettings": "Personal settings",
+      "theme": "Appearance",
+      "themeSystem": "System",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "language": "Language",
+      "languageVi": "Tiếng Việt",
+      "languageEn": "English",
+      "signOut": "Sign out",
+      "errors": {
+        "languageFailed": "Could not save the language. Please try again.",
+        "signOutFailed": "Could not sign out. Please try again."
+      }
     }
   }
 }

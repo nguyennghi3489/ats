@@ -2,7 +2,8 @@
   Desktop app layout for the signed-in, workspace-scoped pages (design page "02 · App shell",
   ATS/App chrome/Desktop and the desktop examples): the fixed 224 px sidebar and a scrolling main area
   holding the routed page. The page header, tabs and body belong to each page, not to this chrome.
-  The `workspace` and `account` slots are passed to the sidebar for the workspace and account menus.
+  The `workspace` and `account` slots are passed to the sidebar for the workspace and account menus;
+  without an `account` slot the sidebar gets the account menu (AccountMenu.vue).
   Below 768 px the sidebar is not shown (the mobile top bar replaces it).
   The role comes from the active workspace in the workspace store, loaded here when nobody has yet.
 -->
@@ -10,6 +11,7 @@
 import { computed } from 'vue';
 import { useSessionStore } from '../features/auth/session.store';
 import { useWorkspaceStore } from '../features/workspaces/workspace.store';
+import AccountMenu from './AccountMenu.vue';
 import AppSidebar from './AppSidebar.vue';
 
 defineSlots<{
@@ -36,7 +38,9 @@ const userName = computed(() => session.user?.name ?? '');
   <div class="app-layout" data-testid="app-layout">
     <AppSidebar class="app-layout__sidebar" :role="role" :user-name="userName">
       <template v-if="$slots.workspace" #workspace><slot name="workspace" /></template>
-      <template v-if="$slots.account" #account><slot name="account" /></template>
+      <template #account>
+        <slot name="account"><AccountMenu /></slot>
+      </template>
     </AppSidebar>
     <main class="app-layout__main">
       <RouterView />
