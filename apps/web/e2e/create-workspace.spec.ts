@@ -37,7 +37,7 @@ interface WorkspaceList {
 }
 
 /**
- * `GET /api/workspaces` with the page's session cookie. The route comes with #101; this issue's
+ * `GET /api/workspaces` with the page's session cookie. This issue's
  * criterion checks the new workspace there, so a missing route fails the test.
  */
 async function listWorkspaces(page: Page): Promise<WorkspaceList> {

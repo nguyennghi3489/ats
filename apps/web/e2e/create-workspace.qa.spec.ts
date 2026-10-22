@@ -23,20 +23,11 @@ interface WorkspaceList {
   workspaces: Array<{ id: string; name: string }>;
 }
 
-/**
- * The user's workspaces and the active one. `GET /api/workspaces` is not served yet (#101), so this
- * reads Better Auth's organization list and the session's active organization instead.
- */
+/** The user's workspaces and the active one, from `GET /api/workspaces`. */
 async function listWorkspaces(page: Page): Promise<WorkspaceList> {
-  const orgs = await page.request.get('/api/auth/organization/list');
-  expect(orgs.status()).toBe(200);
-  const session = await page.request.get('/api/auth/get-session');
-  expect(session.status()).toBe(200);
-  const body = (await session.json()) as { session?: { activeOrganizationId?: string | null } };
-  return {
-    activeWorkspaceId: body.session?.activeOrganizationId ?? null,
-    workspaces: (await orgs.json()) as WorkspaceList['workspaces'],
-  };
+  const response = await page.request.get('/api/workspaces');
+  expect(response.status(), 'GET /api/workspaces').toBe(200);
+  return (await response.json()) as WorkspaceList;
 }
 
 /** Records every create request the page sends. */
@@ -163,9 +154,6 @@ test.describe('create workspace (QA #105)', () => {
   test('with a workspace already (no ?from), WS-05 shows and "Hủy · Quay lại danh sách" goes to /workspaces', async ({
     page,
   }, testInfo) => {
-    // Known failure: the view detects "already has workspaces" through GET /api/workspaces, which
-    // the API does not serve yet (#101, 404), so it falls back to WS-01. Remove once #101 lands.
-    test.fail(true, 'GET /api/workspaces is not served yet (#101)');
     await signInAsNewUser(page, uniqueEmail(testInfo, 'qa105-ws05'));
     const created = await page.request.post('/api/workspaces', {
       data: { name: 'Công ty Có Sẵn' },
