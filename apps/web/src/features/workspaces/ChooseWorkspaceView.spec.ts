@@ -287,3 +287,38 @@ describe('ChooseWorkspaceView', () => {
     );
   });
 });
+
+describe('ChooseWorkspaceView after revoked access', () => {
+  it('shows the revoked notice with ?revoked=1 and lists only the remaining workspaces', async () => {
+    listAnswers = [listOf([may, haiDang], null)];
+    const wrapper = await mountView('/workspaces?revoked=1');
+
+    const notice = wrapper.get('[data-testid="choose-workspace-revoked"]');
+    expect(notice.text()).toBe('Bạn không còn quyền truy cập không gian làm việc này.');
+    expect(notice.text()).toBe(viMessages.workspaces.revoked.notice);
+    expect(notice.attributes('role')).toBe('status');
+    expect(rows(wrapper).map((r) => r.text().replace('→', '').trim())).toEqual([
+      'Mây Studio',
+      'Hải Đăng Labs',
+    ]);
+    expect(wrapper.find('[data-testid="choose-workspace-error"]').exists()).toBe(false);
+  });
+
+  it('shows the English copy in English', async () => {
+    setLocale('en');
+    const wrapper = await mountView('/workspaces?revoked=1');
+
+    expect(wrapper.get('[data-testid="choose-workspace-revoked"]').text()).toBe(
+      en.workspaces.revoked.notice,
+    );
+  });
+
+  it.each(['/workspaces', '/workspaces?revoked=0', '/workspaces?redirect=%2Fjobs'])(
+    'shows no revoked notice at %s',
+    async (path) => {
+      const wrapper = await mountView(path);
+
+      expect(wrapper.find('[data-testid="choose-workspace-revoked"]').exists()).toBe(false);
+    },
+  );
+});
