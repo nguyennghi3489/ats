@@ -200,6 +200,9 @@
       "retry": "Retry",
       "unavailable": "This workspace is no longer available. The list has been updated."
     },
+    "revoked": {
+      "notice": "You no longer have access to this workspace."
+    },
     "welcome": {
       "title": "Continue setup",
       "subtitle": "This account has no workspace yet.",

@@ -200,6 +200,9 @@
       "retry": "Thử lại",
       "unavailable": "Không gian này không còn khả dụng. Danh sách đã được cập nhật."
     },
+    "revoked": {
+      "notice": "Bạn không còn quyền truy cập không gian làm việc này."
+    },
     "welcome": {
       "title": "Tiếp tục thiết lập",
       "subtitle": "Tài khoản này chưa có không gian làm việc.",

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setLocale } from '../i18n';
 import en from '../i18n/locales/en.json';
 import viMessages from '../i18n/locales/vi.json';
-import { ApiError, createApiClient, onUnauthenticated } from './api';
+import { ApiError, createApiClient, onUnauthenticated, onWorkspaceAccessRevoked } from './api';
 
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
@@ -164,6 +164,69 @@ describe('onUnauthenticated', () => {
       fetch: vi
         .fn<typeof fetch>()
         .mockResolvedValue(jsonResponse({ code: 'UNAUTHENTICATED' }, 401)),
+    });
+
+    await api.get('/jobs').catch(() => undefined);
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+});
+
+describe('onWorkspaceAccessRevoked', () => {
+  let stop: (() => void) | undefined;
+
+  afterEach(() => {
+    stop?.();
+    stop = undefined;
+  });
+
+  it.each(['WORKSPACE_ACCESS_REVOKED', 'WORKSPACE_REQUIRED'])(
+    'tells listeners about a 403 %s and still rejects the call',
+    async (code) => {
+      const listener = vi.fn();
+      stop = onWorkspaceAccessRevoked(listener);
+      const api = createApiClient({
+        baseUrl: '/api',
+        fetch: vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({ code }, 403)),
+      });
+
+      const error = await api.get('/jobs').catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ApiError);
+      expect(error).toMatchObject({ code, status: 403 });
+      expect(listener).toHaveBeenCalledOnce();
+      expect(listener).toHaveBeenCalledWith(error);
+    },
+  );
+
+  it.each([
+    ['another 403 code', jsonResponse({ code: 'FORBIDDEN' }, 403)],
+    ['a 403 role refusal', jsonResponse({ code: 'ROLE_NOT_ALLOWED' }, 403)],
+    ['the code with another status', jsonResponse({ code: 'WORKSPACE_ACCESS_REVOKED' }, 404)],
+    ['a 403 without a code', new Response('', { status: 403 })],
+    ['a 401 UNAUTHENTICATED', jsonResponse({ code: 'UNAUTHENTICATED' }, 401)],
+    ['a success', jsonResponse({ ok: true }, 200)],
+  ])('stays quiet for %s', async (_label, response) => {
+    const listener = vi.fn();
+    stop = onWorkspaceAccessRevoked(listener);
+    const api = createApiClient({
+      baseUrl: '/api',
+      fetch: vi.fn<typeof fetch>().mockResolvedValue(response),
+    });
+
+    await api.get('/jobs').catch(() => undefined);
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('stops calling a listener once it is removed', async () => {
+    const listener = vi.fn();
+    onWorkspaceAccessRevoked(listener)();
+    const api = createApiClient({
+      baseUrl: '/api',
+      fetch: vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(jsonResponse({ code: 'WORKSPACE_ACCESS_REVOKED' }, 403)),
     });
 
     await api.get('/jobs').catch(() => undefined);

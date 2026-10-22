@@ -4,8 +4,10 @@
   Picking a row disables the list, switches the session's active workspace (`PUT
   /api/workspaces/active`) and goes to `/`, or to the `redirect` query when it is a safe path.
   A workspace that is no longer available (`WORKSPACE_UNAVAILABLE`, decisions §3) reloads the list and
-  says so in an error notice.
-  Differs from the design: none intended. Rows show only the workspace name (no role badge).
+  says so in an error notice. With `?revoked=1` (set after a 403 `WORKSPACE_ACCESS_REVOKED`, see
+  workspace-cache.ts) a notice says the user no longer has access to the workspace they were using.
+  Differs from the design: rows show only the workspace name (no role badge). The revoked notice has
+  no design screen; it uses the info tone, like the sign-in page's session-expired notice.
 -->
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
@@ -38,6 +40,9 @@ const signingOut = ref(false);
 onMounted(() => {
   void store.load();
 });
+
+/** Came here because access to the active workspace was revoked (decisions §3). */
+const revoked = computed(() => route.query.revoked === '1');
 
 const loading = computed(() => store.status === 'loading' || store.status === 'idle');
 
@@ -97,6 +102,10 @@ async function onSignOut() {
 <template>
   <AuthLayout :title="t('workspaces.choose.title')" :subtitle="t('workspaces.choose.subtitle')">
     <div class="choose-workspace">
+      <AtsNotice v-if="revoked" tone="info" data-testid="choose-workspace-revoked">
+        {{ t('workspaces.revoked.notice') }}
+      </AtsNotice>
+
       <AtsNotice v-if="errorText" tone="error" data-testid="choose-workspace-error">
         {{ errorText }}
       </AtsNotice>

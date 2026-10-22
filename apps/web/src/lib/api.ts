@@ -4,6 +4,7 @@
  * The API answers errors with a `{ code, message }` body (decisions §12). The `code` is what the app
  * branches on and translates; `message` is a developer hint and is never shown to users.
  */
+import { WORKSPACE_ACCESS_REVOKED, WORKSPACE_REQUIRED } from '@ats/shared';
 import { translateError } from '../i18n/errors';
 
 /** Client-side codes for failures that never produced an API error body. */
@@ -52,6 +53,34 @@ export function onUnauthenticated(listener: UnauthenticatedListener): () => void
 
 function notifyUnauthenticated(error: ApiError): void {
   for (const listener of unauthenticatedListeners) listener(error);
+}
+
+/**
+ * The 403 codes (decisions §3) that mean the session's active workspace can no longer be used: the
+ * membership was deactivated or removed (`WORKSPACE_ACCESS_REVOKED`), or there is none
+ * (`WORKSPACE_REQUIRED`). Other 403 codes, such as a role refusal, are ordinary errors.
+ */
+const WORKSPACE_LOST_CODES: ReadonlySet<string> = new Set([
+  WORKSPACE_ACCESS_REVOKED,
+  WORKSPACE_REQUIRED,
+]);
+
+export type WorkspaceAccessRevokedListener = (error: ApiError) => void;
+
+const workspaceAccessRevokedListeners = new Set<WorkspaceAccessRevokedListener>();
+
+/**
+ * Calls `listener` whenever any API client gets a 403 `WORKSPACE_ACCESS_REVOKED` or
+ * `WORKSPACE_REQUIRED`, before the call rejects. The workspace cache uses it to drop the workspace's
+ * data and leave its pages; returns a function that removes the listener.
+ */
+export function onWorkspaceAccessRevoked(listener: WorkspaceAccessRevokedListener): () => void {
+  workspaceAccessRevokedListeners.add(listener);
+  return () => workspaceAccessRevokedListeners.delete(listener);
+}
+
+function notifyWorkspaceAccessRevoked(error: ApiError): void {
+  for (const listener of workspaceAccessRevokedListeners) listener(error);
 }
 
 export interface ApiClientOptions {
@@ -124,6 +153,9 @@ export function createApiClient(options: ApiClientOptions) {
       if (isErrorBody(data)) {
         const error = new ApiError(data.code, response.status, data.message);
         if (error.status === 401 && error.code === UNAUTHENTICATED) notifyUnauthenticated(error);
+        if (error.status === 403 && WORKSPACE_LOST_CODES.has(error.code)) {
+          notifyWorkspaceAccessRevoked(error);
+        }
         throw error;
       }
       throw new ApiError(CLIENT_ERROR_CODES.unknown, response.status);

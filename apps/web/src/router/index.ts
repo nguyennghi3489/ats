@@ -17,6 +17,7 @@ import {
   type RouterHistory,
 } from 'vue-router';
 import { installAuthGuard } from '../features/auth/guard';
+import { installWorkspaceRevokedHandler } from '../features/workspaces/workspace-cache';
 import { installWorkspaceGuard } from '../features/workspaces/workspace.guard';
 import { useWorkspaceStore } from '../features/workspaces/workspace.store';
 
@@ -261,13 +262,15 @@ export function createAppRouter(
 
 /**
  * Installs the navigation guards in the order they must run: the session guard, then the workspace
- * guard. Call it before `app.use(router)` so the first navigation is guarded too. Returns a function
- * that removes both.
+ * guard, plus the revoked-workspace hook (features/workspaces/workspace-cache.ts). Call it before
+ * `app.use(router)` so the first navigation is guarded too. Returns a function that removes them.
  */
 export function installRouteGuards(router: Router, pinia?: Pinia): () => void {
   const removeAuth = installAuthGuard(router, pinia);
   const removeWorkspace = installWorkspaceGuard(router, pinia);
+  const removeRevoked = installWorkspaceRevokedHandler(router, pinia);
   return () => {
+    removeRevoked();
     removeWorkspace();
     removeAuth();
   };
