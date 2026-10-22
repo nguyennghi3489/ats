@@ -62,11 +62,33 @@ export const workspaceSchema = z.object({
 
 export type Workspace = z.infer<typeof workspaceSchema>;
 
-/** Error codes of `POST /api/workspaces`. */
+/**
+ * `GET /api/workspaces`: the workspaces the signed-in user is an active member of, sorted by name
+ * (Vietnamese collation, case-insensitive), and the session's active one. `activeWorkspaceId` is
+ * `null` when none is set or it is no longer an active membership. 401 `UNAUTHENTICATED`.
+ */
+export const workspaceListSchema = z.object({
+  activeWorkspaceId: z.string().min(1).nullable(),
+  workspaces: z.array(workspaceSchema),
+});
+
+export type WorkspaceList = z.infer<typeof workspaceListSchema>;
+
+/**
+ * Body of `PUT /api/workspaces/active`. Answers 200 with the workspace, now the session's active
+ * one, or 404 `WORKSPACE_UNAVAILABLE` (unknown, someone else's or a deactivated membership alike),
+ * 400 `VALIDATION_FAILED`, 401 `UNAUTHENTICATED`.
+ */
+export const switchWorkspaceRequestSchema = z.object({ workspaceId: z.string().min(1) });
+
+export type SwitchWorkspaceRequest = z.infer<typeof switchWorkspaceRequestSchema>;
+
+/** Error codes of the `/api/workspaces` endpoints. */
 export const WORKSPACE_ERROR_CODES = [
   'VALIDATION_FAILED',
   'IDEMPOTENCY_KEY_REQUIRED',
   'UNAUTHENTICATED',
+  'WORKSPACE_UNAVAILABLE',
 ] as const;
 
 export type WorkspaceErrorCode = (typeof WORKSPACE_ERROR_CODES)[number];
