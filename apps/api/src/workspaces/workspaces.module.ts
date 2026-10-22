@@ -3,7 +3,8 @@ import { WorkspacesController } from './workspaces.controller.js';
 import { WorkspacesService } from './workspaces.service.js';
 
 /**
- * Workspaces: `POST /api/workspaces` creates one. Pass the root's `AuthModule.forRoot(...)` module
+ * Workspaces: `POST /api/workspaces` creates one, `GET /api/workspaces` lists the user's and
+ * `PUT /api/workspaces/active` switches the session's active one. Pass the root's `AuthModule.forRoot(...)` module
  * (the same object, so Nest shares its instance) for the Better Auth sessions; the database is
  * global.
  */
