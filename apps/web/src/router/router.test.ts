@@ -120,6 +120,16 @@ describe('router', () => {
     );
   });
 
+  it.each(['', '/stages', '/team'])(
+    'keeps "Vị trí tuyển dụng" selected in the sidebar on the job page%s',
+    async (tab) => {
+      const { wrapper } = await mountAt(`/jobs/00000000-0000-4000-8000-000000000001${tab}`);
+
+      const current = wrapper.findAll('[data-testid="app-sidebar"] [aria-current="page"]');
+      expect(current.map((item) => item.text())).toEqual(['Vị trí tuyển dụng']);
+    },
+  );
+
   it('sends a collaborator who opens /candidates to /jobs', async () => {
     memberAs('collaborator');
     const { router, wrapper } = await mountAt('/candidates');

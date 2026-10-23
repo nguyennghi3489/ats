@@ -202,32 +202,41 @@ const appRoutes: RouteRecordRaw = {
       meta: { roles: ['admin', 'recruiter'] },
       beforeEnter: requireRole,
     },
-    { path: 'jobs', name: 'jobs', component: placeholder },
     {
-      // The job page (features/jobs/JobLayout.vue): header and tabs, each tab its own child route.
-      // The applications tab is the default, so `/jobs/:id` shows it too.
-      path: 'jobs/:id',
-      component: () => import('../features/jobs/JobLayout.vue'),
-      // Until each tab's step lands, its placeholder takes an h2: the job title is the page's h1.
+      // The job list and, nested under it, the job page, so the sidebar's "Vị trí tuyển dụng" stays
+      // selected on every job (design "Example · Record · Product Designer").
+      path: 'jobs',
       children: [
+        { path: '', name: 'jobs', component: placeholder },
         {
-          path: 'applications',
-          alias: '',
-          name: 'job-applications',
-          component: placeholder,
-          props: tabPlaceholder,
-        },
-        { path: 'plan', name: 'job-plan', component: placeholder, props: tabPlaceholder },
-        { path: 'content', name: 'job-content', component: placeholder, props: tabPlaceholder },
-        { path: 'stages', name: 'job-stages', component: placeholder, props: tabPlaceholder },
-        {
-          // Admins and recruiters only; anyone else lands on the job's default tab.
-          path: 'team',
-          name: 'job-team',
-          component: placeholder,
-          props: tabPlaceholder,
-          meta: { roles: ['admin', 'recruiter'] },
-          beforeEnter: requireRoleOr((to) => `/jobs/${encodeURIComponent(String(to.params.id))}`),
+          // The job page (features/jobs/JobLayout.vue): header and tabs, each tab its own child route.
+          // The applications tab is the default, so `/jobs/:id` shows it too.
+          path: ':id',
+          component: () => import('../features/jobs/JobLayout.vue'),
+          // Until each tab's step lands, its placeholder takes an h2: the job title is the page's h1.
+          children: [
+            {
+              path: 'applications',
+              alias: '',
+              name: 'job-applications',
+              component: placeholder,
+              props: tabPlaceholder,
+            },
+            { path: 'plan', name: 'job-plan', component: placeholder, props: tabPlaceholder },
+            { path: 'content', name: 'job-content', component: placeholder, props: tabPlaceholder },
+            { path: 'stages', name: 'job-stages', component: placeholder, props: tabPlaceholder },
+            {
+              // Admins and recruiters only; anyone else lands on the job's default tab.
+              path: 'team',
+              name: 'job-team',
+              component: placeholder,
+              props: tabPlaceholder,
+              meta: { roles: ['admin', 'recruiter'] },
+              beforeEnter: requireRoleOr(
+                (to) => `/jobs/${encodeURIComponent(String(to.params.id))}`,
+              ),
+            },
+          ],
         },
       ],
     },
