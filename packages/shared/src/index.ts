@@ -1,5 +1,7 @@
 export {
   DEFAULT_LOCALE,
+  DISPLAY_NAME_MAX_LENGTH,
+  displayNameSchema,
   LOCALES,
   localeSchema,
   meResponseSchema,

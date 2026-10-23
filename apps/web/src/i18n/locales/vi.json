@@ -255,5 +255,37 @@
       "trigger": "Không gian làm việc: {name}",
       "unavailable": "Không gian này không còn khả dụng. Danh sách đã được cập nhật."
     }
+  },
+  "settings": {
+    "personal": {
+      "title": "Cài đặt cá nhân",
+      "profile": {
+        "heading": "Hồ sơ",
+        "name": "Họ và tên",
+        "email": "Email",
+        "emailHelper": "Email đăng nhập không đổi được ở đây.",
+        "save": "Lưu",
+        "saved": "Đã lưu họ và tên.",
+        "errors": {
+          "NAME_REQUIRED": "Vui lòng nhập họ và tên.",
+          "NAME_TOO_LONG": "Họ và tên tối đa {max} ký tự."
+        }
+      },
+      "language": {
+        "heading": "Ngôn ngữ",
+        "legend": "Ngôn ngữ giao diện",
+        "vi": "Tiếng Việt",
+        "en": "English",
+        "error": "Không lưu được ngôn ngữ. Vui lòng thử lại."
+      },
+      "theme": {
+        "heading": "Giao diện",
+        "legend": "Chế độ hiển thị",
+        "system": "Hệ thống",
+        "light": "Sáng",
+        "dark": "Tối",
+        "helper": "Giao diện chỉ được lưu trên thiết bị này."
+      }
+    }
   }
 }
