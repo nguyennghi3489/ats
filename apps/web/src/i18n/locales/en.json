@@ -302,6 +302,31 @@
         "dark": "Dark",
         "helper": "The theme is saved on this device only."
       }
+    },
+    "password": {
+      "heading": "Change password",
+      "current": "Current password",
+      "new": "New password",
+      "newHelper": "At least 8 characters",
+      "confirm": "Confirm new password",
+      "show": "Show",
+      "hide": "Hide",
+      "showCurrent": "Show current password",
+      "hideCurrent": "Hide current password",
+      "showNew": "Show new password",
+      "hideNew": "Hide new password",
+      "showConfirm": "Show confirmed password",
+      "hideConfirm": "Hide confirmed password",
+      "submit": "Change password",
+      "submitting": "Changing password…",
+      "changed": "Your password has been changed. Your other devices have been signed out.",
+      "errors": {
+        "CURRENT_PASSWORD_REQUIRED": "Enter your current password",
+        "INVALID_PASSWORD": "Your current password is incorrect",
+        "PASSWORD_TOO_SHORT": "Password needs at least 8 characters",
+        "PASSWORD_TOO_LONG": "Password can be at most 128 characters",
+        "PASSWORD_MISMATCH": "The new passwords don't match"
+      }
     }
   }
 }

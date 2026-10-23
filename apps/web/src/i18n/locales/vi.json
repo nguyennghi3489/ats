@@ -302,6 +302,31 @@
         "dark": "Tối",
         "helper": "Giao diện chỉ được lưu trên thiết bị này."
       }
+    },
+    "password": {
+      "heading": "Đổi mật khẩu",
+      "current": "Mật khẩu hiện tại",
+      "new": "Mật khẩu mới",
+      "newHelper": "Ít nhất 8 ký tự",
+      "confirm": "Nhập lại mật khẩu mới",
+      "show": "Hiện",
+      "hide": "Ẩn",
+      "showCurrent": "Hiện mật khẩu hiện tại",
+      "hideCurrent": "Ẩn mật khẩu hiện tại",
+      "showNew": "Hiện mật khẩu mới",
+      "hideNew": "Ẩn mật khẩu mới",
+      "showConfirm": "Hiện mật khẩu nhập lại",
+      "hideConfirm": "Ẩn mật khẩu nhập lại",
+      "submit": "Đổi mật khẩu",
+      "submitting": "Đang đổi mật khẩu…",
+      "changed": "Đã đổi mật khẩu. Các thiết bị khác đã được đăng xuất.",
+      "errors": {
+        "CURRENT_PASSWORD_REQUIRED": "Nhập mật khẩu hiện tại",
+        "INVALID_PASSWORD": "Mật khẩu hiện tại chưa đúng",
+        "PASSWORD_TOO_SHORT": "Mật khẩu cần ít nhất 8 ký tự",
+        "PASSWORD_TOO_LONG": "Mật khẩu tối đa 128 ký tự",
+        "PASSWORD_MISMATCH": "Mật khẩu nhập lại không khớp"
+      }
     }
   }
 }

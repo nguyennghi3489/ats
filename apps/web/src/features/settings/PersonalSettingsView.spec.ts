@@ -137,6 +137,7 @@ describe('PersonalSettingsView', () => {
       copy.profile.heading,
       copy.language.heading,
       copy.theme.heading,
+      viMessages.settings.password.heading,
     ]);
   });
 

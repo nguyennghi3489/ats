@@ -25,11 +25,15 @@ const updateUser = '**/api/auth/update-user';
 /** Every heading, label, legend, button and helper of the page in one locale. */
 async function expectCopy(page: Page, copy: typeof viCopy): Promise<void> {
   const main = page.getByTestId('personal-settings');
+  // The change-password section (#122) closes the page; its own copy is checked in its spec.
+  const passwordHeading =
+    copy === viCopy ? vi.settings.password.heading : en.settings.password.heading;
   await expect(main.getByRole('heading', { level: 1 })).toHaveText(copy.title);
   await expect(main.getByRole('heading', { level: 2 })).toHaveText([
     copy.profile.heading,
     copy.language.heading,
     copy.theme.heading,
+    passwordHeading,
   ]);
   await expect(main.getByRole('textbox', { name: copy.profile.name })).toBeVisible();
   await expect(main.getByRole('textbox', { name: copy.profile.email })).toBeVisible();

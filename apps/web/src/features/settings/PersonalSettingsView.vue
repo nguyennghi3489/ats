@@ -7,7 +7,7 @@
   - Ngôn ngữ: switches the UI at once and saves `locale` on the account; if saving fails, the previous
     language comes back with an error.
   - Giao diện: applied at once through `useTheme().setTheme`, saved on this device only.
-  The change-password section (a later issue) goes in the `password` slot, below the others.
+  - Đổi mật khẩu: `ChangePasswordForm`, below the others; the `password` slot can replace it.
 -->
 <script setup lang="ts">
 /* global document -- DOM global, which no-undef does not know in .vue files */
@@ -27,9 +27,10 @@ import { ApiError, CLIENT_ERROR_CODES } from '../../lib/api';
 import { parseThemePreference, useTheme } from '../../lib/theme';
 import { authApi, unwrap } from '../auth/auth-client';
 import { useSessionStore } from '../auth/session.store';
+import ChangePasswordForm from './ChangePasswordForm.vue';
 
 defineSlots<{
-  /** The change-password section, mounted below the others. */
+  /** The change-password section below the others; `ChangePasswordForm` by default. */
   password?: () => unknown;
 }>();
 
@@ -263,7 +264,7 @@ function onThemeChoice(value: string | undefined) {
           </p>
         </section>
 
-        <slot name="password" />
+        <slot name="password"><ChangePasswordForm /></slot>
       </div>
     </AtsPageBody>
   </div>
