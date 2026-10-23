@@ -1,0 +1,286 @@
+# Production stack for the DigitalOcean Droplet (decisions §14). Setup, backups and restore: docs/deploy.md.
+#
+#   docker compose -f docker-compose.prod.yml pull
+#   docker compose -f docker-compose.prod.yml up -d --wait
+#
+# Every secret and host-specific value comes from /opt/ats/.env (template: .env.prod.example); `${VAR:?}`
+# marks the required ones, so Compose refuses to start when one is missing.
+# Only Caddy publishes host ports (80, 443). Everything else is reachable on the Compose network only.
+# Memory limits total about 6.8 GiB of the Droplet's 8 GB, leaving the rest for the OS.
+
+name: ats-prod
+
+x-logging: &logging # Rotated container logs, so they cannot fill the disk.
+  driver: json-file
+  options:
+    max-size: 10m
+    max-file: '5'
+
+# Settings shared by the api and worker (same image, decisions §1). Names match .env.example.
+x-app-environment: &app-environment
+  NODE_ENV: production
+  LOG_LEVEL: ${LOG_LEVEL:-log}
+  APP_URL: https://${DOMAIN:?DOMAIN is required}
+  DATABASE_URL: postgres://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+  REDIS_URL: redis://redis:6379
+  SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
+  S3_ENDPOINT: http://versitygw:7070
+  S3_REGION: ${S3_REGION:-us-east-1}
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?S3_ACCESS_KEY_ID is required}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?S3_SECRET_ACCESS_KEY is required}
+  S3_BUCKET: ${S3_BUCKET:?S3_BUCKET is required}
+  S3_FORCE_PATH_STYLE: 'true'
+  SMTP_HOST: ${SMTP_HOST:?SMTP_HOST is required}
+  SMTP_PORT: ${SMTP_PORT:-465}
+  SMTP_SECURE: ${SMTP_SECURE:-true}
+  SMTP_USER: ${SMTP_USER:?SMTP_USER is required}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:?SMTP_PASSWORD is required}
+  MAIL_FROM: ${MAIL_FROM:?MAIL_FROM is required}
+  DOCLING_URL: http://docling-serve:5001
+
+services:
+  caddy:
+    image: caddy:2.11-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN is required}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL is required}
+    ports:
+      - 80:80
+      - 443:443
+      - 443:443/udp # HTTP/3
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+    logging: *logging
+
+  web:
+    image: ghcr.io/nguyennghi3489/ats-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:8080/']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 64m
+    logging: *logging
+
+  api:
+    image: ghcr.io/nguyennghi3489/ats-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    environment:
+      <<: *app-environment
+      API_PORT: '3000'
+      NODE_OPTIONS: --max-old-space-size=384
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      versitygw:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:3000/health']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging: *logging
+
+  worker:
+    image: ghcr.io/nguyennghi3489/ats-api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    command: ['node', 'dist/main.worker.js']
+    environment:
+      <<: *app-environment
+      NODE_OPTIONS: --max-old-space-size=384
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      versitygw:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+    logging: *logging
+
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+    # Sized for the 2 GiB limit below.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - effective_cache_size=1536MB
+      - -c
+      - work_mem=8MB
+      - -c
+      - maintenance_work_mem=128MB
+    shm_size: 256m
+    volumes:
+      # Postgres 18 images keep data under /var/lib/postgresql/<major>/docker.
+      - postgres-data:/var/lib/postgresql
+      - ./deploy/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+    logging: *logging
+
+  redis:
+    image: redis:8-alpine
+    restart: unless-stopped
+    # BullMQ needs noeviction: Redis must refuse writes rather than drop queued jobs.
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'yes',
+        '--maxmemory',
+        '200mb',
+        '--maxmemory-policy',
+        'noeviction',
+      ]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging: *logging
+
+  versitygw:
+    image: versity/versitygw:v1.9.0
+    restart: unless-stopped
+    environment:
+      VGW_BACKEND: posix
+      VGW_BACKEND_ARG: /data
+      VGW_PORT: ':7070'
+      VGW_HEALTH: /health
+      VGW_REGION: ${S3_REGION:-us-east-1}
+      ROOT_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:?S3_ACCESS_KEY_ID is required}
+      ROOT_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:?S3_SECRET_ACCESS_KEY is required}
+      VGW_QUIET: 'true'
+      S3_BUCKET: ${S3_BUCKET:?S3_BUCKET is required}
+    # Creates the bucket (a directory under /data with the posix backend), then runs the image entrypoint.
+    entrypoint:
+      [
+        '/bin/sh',
+        '-c',
+        'mkdir -p "$${VGW_BACKEND_ARG}/$${S3_BUCKET}" && exec /usr/local/bin/docker-entrypoint.sh',
+      ]
+    volumes:
+      - versitygw-data:/data
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '-O', '/dev/null', 'http://127.0.0.1:7070/health']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+    logging: *logging
+
+  docling-serve:
+    image: ghcr.io/docling-project/docling-serve-cpu:v1.37.0
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5001/health', timeout=3)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 3g
+    logging: *logging
+
+  # Nightly pg_dump with rotation (decisions §14): /backups/{daily,weekly,monthly,last} on the `backups` volume.
+  # Run one now:  docker compose -f docker-compose.prod.yml exec pg-backup /backup.sh
+  pg-backup:
+    image: prodrigestivill/postgres-backup-local:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      # Plain SQL, gzip level 1; restore with `gunzip -c <file> | psql` (docs/deploy.md).
+      POSTGRES_EXTRA_OPTS: -Z1
+      TZ: ${BACKUP_TZ:-Asia/Ho_Chi_Minh}
+      SCHEDULE: ${BACKUP_SCHEDULE:-0 3 * * *}
+      BACKUP_KEEP_DAYS: '14'
+      BACKUP_KEEP_WEEKS: '8'
+      BACKUP_KEEP_MONTHS: '0'
+      HEALTHCHECK_PORT: '8080'
+    volumes:
+      - backups:/backups
+    # The image checks every 5 minutes, which would make `up --wait` hang that long; same probe, sooner.
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fsS -o /dev/null "http://localhost:$${HEALTHCHECK_PORT}/"']
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+    logging: *logging
+
+volumes:
+  postgres-data:
+  redis-data:
+  versitygw-data:
+  caddy-data:
+  caddy-config:
+  backups:
