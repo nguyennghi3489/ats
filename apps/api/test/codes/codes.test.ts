@@ -99,7 +99,7 @@ describe('CodesService.nextCode', () => {
     expect(await counter(workspaceId, 'job')).toBe(CONCURRENT);
   });
 
-  it('never hands out a code taken in a rolled-back transaction to two committed records', async () => {
+  it('never lets two committed records hold the same code; a rolled-back code is handed out again', async () => {
     const workspaceId = await createWorkspace('AN');
     const createdBy = await createUser();
     const createJob = (fail: boolean) =>
@@ -112,18 +112,16 @@ describe('CodesService.nextCode', () => {
 
     expect(await createJob(false)).toBe('AN-001');
     await expect(createJob(true)).rejects.toThrow('job creation failed');
-    const next = await createJob(false);
+    // The increment rolls back with the transaction (decisions §5: same transaction as the insert),
+    // so the number the failed job took was never committed and goes to the next job: no gap.
+    expect(await createJob(false)).toBe('AN-002');
     await expect(createJob(true)).rejects.toThrow('job creation failed');
-    const last = await createJob(false);
+    expect(await createJob(false)).toBe('AN-003');
 
-    // The counter moves with the transaction (decisions §5): the rolled-back number was never
-    // committed anywhere, so it is not a code any record holds.
     const stored = await database.db.execute<{ code: string }>(
       sql`select code from jobs where workspace_id = ${workspaceId} order by code`,
     );
-    const committed = stored.rows.map((row) => row.code);
-    expect(committed).toEqual(['AN-001', next, last]);
-    expect(new Set(committed).size).toBe(committed.length);
+    expect(stored.rows.map((row) => row.code)).toEqual(['AN-001', 'AN-002', 'AN-003']);
     expect(await counter(workspaceId, 'job')).toBe(3);
   });
 
