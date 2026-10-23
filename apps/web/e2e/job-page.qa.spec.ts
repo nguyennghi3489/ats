@@ -354,6 +354,56 @@ test.describe('job page (QA #129)', () => {
     }
   });
 
+  test('the selected sidebar item on the job page has the selected fill, unlike the others', async ({
+    page,
+  }, testInfo) => {
+    const { jobId } = await adminWithJob(page, uniqueEmail(testInfo, 'qa129-nav-fill'));
+
+    await page.goto(`/jobs/${jobId}/plan`);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Product Designer');
+    const sidebar = page.getByTestId('app-sidebar');
+    const jobs = sidebar.getByRole('link', { name: vi.shell.nav.jobs, exact: true });
+    const candidates = sidebar.getByRole('link', { name: vi.shell.nav.candidates, exact: true });
+    await expect(jobs).toHaveAttribute('aria-current', 'page');
+    await expect(candidates).not.toHaveAttribute('aria-current', 'page');
+    const fill = (el: Element) => getComputedStyle(el).backgroundColor;
+    expect(await jobs.evaluate(fill)).not.toBe(await candidates.evaluate(fill));
+  });
+
+  test('a collaborator keeps "Vị trí của tôi" selected in the sidebar on the job page', async ({
+    page,
+  }, testInfo) => {
+    const adminEmail = uniqueEmail(testInfo, 'qa129-navc-admin');
+    await signInAsNewUser(page, adminEmail);
+    const workspaceId = await createWorkspace(page, 'An Nhiên');
+    const jobId = seedJob(workspaceId, adminEmail);
+    await page.context().clearCookies();
+
+    const email = uniqueEmail(testInfo, 'qa129-navc-collab');
+    await signInAsNewUser(page, email);
+    joinWorkspace(workspaceId, email, 'collaborator');
+    psql(
+      `insert into job_assignments (job_id, user_id)
+       select ${sqlString(jobId)}, id from "user" where email = ${sqlString(email)}`,
+    );
+
+    for (const path of [`/jobs/${jobId}`, `/jobs/${jobId}/content`]) {
+      await page.goto(path);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Product Designer');
+      await expect(
+        page
+          .getByTestId('app-sidebar')
+          .getByRole('link', { name: vi.shell.nav.myJobs, exact: true }),
+      ).toHaveAttribute('aria-current', 'page');
+    }
+    // The team URL sends the collaborator back to the job, still with the item selected.
+    await page.goto(`/jobs/${jobId}/team`);
+    await expect(page).toHaveURL(new RegExp(`/jobs/${jobId}$`));
+    await expect(
+      page.getByTestId('app-sidebar').getByRole('link', { name: vi.shell.nav.myJobs, exact: true }),
+    ).toHaveAttribute('aria-current', 'page');
+  });
+
   test('360 px: header readable, every tab reachable by scrolling the tab row', async ({
     page,
   }, testInfo) => {
