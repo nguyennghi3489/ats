@@ -196,7 +196,11 @@ const appRoutes: RouteRecordRaw = {
       meta: { roles: ['admin'] },
       beforeEnter: requireRole,
     },
-    { path: 'settings/personal', name: 'personal-settings', component: placeholder },
+    {
+      path: 'settings/personal',
+      name: 'personal-settings',
+      component: () => import('../features/settings/PersonalSettingsView.vue'),
+    },
   ],
 };
 

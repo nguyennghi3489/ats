@@ -101,6 +101,19 @@ export const RESET_PASSWORD_INVALID_TOKEN = 'INVALID_TOKEN';
 /** Longest user name accepted at sign-up, after trimming. */
 export const USER_NAME_MAX_LENGTH = 100;
 
+/** Longest display name accepted on the personal settings page, after trimming. */
+export const DISPLAY_NAME_MAX_LENGTH = 80;
+
+/**
+ * The user's display name as personal settings saves it: trimmed, 1–80 characters. Issue messages
+ * are error codes (`NAME_REQUIRED`, `NAME_TOO_LONG`) for the web app to translate.
+ */
+export const displayNameSchema = z
+  .string()
+  .trim()
+  .min(1, { message: 'NAME_REQUIRED' })
+  .max(DISPLAY_NAME_MAX_LENGTH, { message: 'NAME_TOO_LONG' });
+
 /**
  * The sign-up form (design AUTH-01): full name, email and password. Name and email are trimmed;
  * the password is kept exactly as typed.

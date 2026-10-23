@@ -91,7 +91,7 @@ describe('router', () => {
     expect(wrapper.find('[data-testid="not-found-page"]').exists()).toBe(false);
   });
 
-  it.each(['/applications', '/candidates', '/jobs', '/settings/workspace', '/settings/personal'])(
+  it.each(['/applications', '/candidates', '/jobs', '/settings/workspace'])(
     'renders the placeholder page for %s inside the layout for an admin',
     async (path) => {
       const { router, wrapper } = await mountAt(path);
@@ -103,6 +103,14 @@ describe('router', () => {
       );
     },
   );
+
+  it('renders the personal settings page for /settings/personal inside the layout', async () => {
+    const { router, wrapper } = await mountAt('/settings/personal');
+
+    expect(router.currentRoute.value.path).toBe('/settings/personal');
+    expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(true);
+    expect(wrapper.get('[data-testid="personal-settings"] h1').text()).toBe('Cài đặt cá nhân');
+  });
 
   it('marks the current page in the sidebar', async () => {
     const { wrapper } = await mountAt('/candidates');

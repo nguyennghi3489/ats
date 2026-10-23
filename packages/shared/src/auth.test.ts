@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_LOCALE,
+  DISPLAY_NAME_MAX_LENGTH,
+  displayNameSchema,
   localeSchema,
   meResponseSchema,
   PASSWORD_MAX_LENGTH,
@@ -161,5 +163,23 @@ describe('password reset contract', () => {
   it('names the web pages the reset link lands on', () => {
     expect(RESET_PASSWORD_PATH).toBe('/reset-password');
     expect(RESET_PASSWORD_INVALID_PATH).toBe('/reset-password/invalid');
+  });
+});
+
+describe('displayNameSchema', () => {
+  it('trims the name and accepts 1 to 80 characters (personal settings)', () => {
+    expect(DISPLAY_NAME_MAX_LENGTH).toBe(80);
+    expect(displayNameSchema.parse('  Lê Minh Anh  ')).toBe('Lê Minh Anh');
+    expect(displayNameSchema.safeParse('A').success).toBe(true);
+    expect(displayNameSchema.safeParse('a'.repeat(80)).success).toBe(true);
+    expect(displayNameSchema.safeParse(` ${'a'.repeat(80)} `).success).toBe(true);
+  });
+
+  it('refuses an empty, whitespace-only or too long name with an error code', () => {
+    expect(displayNameSchema.safeParse('').error?.issues[0]?.message).toBe('NAME_REQUIRED');
+    expect(displayNameSchema.safeParse('   ').error?.issues[0]?.message).toBe('NAME_REQUIRED');
+    expect(displayNameSchema.safeParse('a'.repeat(81)).error?.issues[0]?.message).toBe(
+      'NAME_TOO_LONG',
+    );
   });
 });

@@ -255,5 +255,37 @@
       "trigger": "Workspace: {name}",
       "unavailable": "This workspace is no longer available. The list has been updated."
     }
+  },
+  "settings": {
+    "personal": {
+      "title": "Personal settings",
+      "profile": {
+        "heading": "Profile",
+        "name": "Full name",
+        "email": "Email",
+        "emailHelper": "Your sign-in email cannot be changed here.",
+        "save": "Save",
+        "saved": "Your name has been saved.",
+        "errors": {
+          "NAME_REQUIRED": "Enter your full name.",
+          "NAME_TOO_LONG": "Your full name can be at most {max} characters."
+        }
+      },
+      "language": {
+        "heading": "Language",
+        "legend": "Interface language",
+        "vi": "Tiếng Việt",
+        "en": "English",
+        "error": "Could not save the language. Please try again."
+      },
+      "theme": {
+        "heading": "Appearance",
+        "legend": "Display mode",
+        "system": "System",
+        "light": "Light",
+        "dark": "Dark",
+        "helper": "The theme is saved on this device only."
+      }
+    }
   }
 }
