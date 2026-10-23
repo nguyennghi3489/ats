@@ -27,7 +27,8 @@ test.describe('deep links', () => {
     expect(response?.status()).toBe(200);
 
     await expect(page).toHaveURL(new RegExp(`${deepLink}$`));
-    // The app is mounted: the router renders a view inside #app (no job route exists yet, so 404 view).
+    // The app is mounted: the router renders a view inside #app (the job page of #129; job 123 does
+    // not exist, so its unavailable state).
     await expect(page.locator('#app main')).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await page.screenshot({ path: test.info().outputPath('deep-link.png'), fullPage: true });
@@ -43,7 +44,9 @@ test.describe('deep links', () => {
   }, testInfo) => {
     await signInAsNewMember(page, uniqueEmail(testInfo, 'qa-deeplink'));
     await page.goto(deepLink);
-    await page.getByTestId('not-found-home-link').click();
+    // Since #129 `/jobs/:id` is the job page: an unknown job shows the unavailable state, whose link
+    // goes back to the jobs list (the home page) without a full reload.
+    await page.getByTestId('job-unavailable').getByRole('link').click();
 
     await expect(page).toHaveURL(/\/jobs$/);
     await expect(page.getByTestId('placeholder-page')).toBeVisible();

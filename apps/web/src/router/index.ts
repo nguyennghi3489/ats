@@ -12,6 +12,8 @@ import {
   type LocationQuery,
   type LocationQueryRaw,
   type NavigationGuardWithThis,
+  type RouteLocationNormalized,
+  type RouteLocationRaw,
   type RouteRecordRaw,
   type Router,
   type RouterHistory,
@@ -151,24 +153,36 @@ const devRoutes: RouteRecordRaw[] = import.meta.env.DEV
 export const ROLE_FALLBACK_PATH = '/jobs';
 
 /**
- * Sends a member whose role in the active workspace is not in the page's `meta.roles` to `/jobs`;
- * without an active workspace there is no role, so they go there too. Route guards run after the
- * auth and workspace guards, so a signed-out visitor still reaches sign-in with the page in `redirect`. A UI
- * convenience only: the API enforces every permission (decisions §3).
+ * A route guard that sends a member whose role in the active workspace is not in the page's
+ * `meta.roles` to `fallback(to)`; without an active workspace there is no role, so they go there
+ * too. Route guards run after the auth and workspace guards, so a signed-out visitor still reaches
+ * sign-in with the page in `redirect`. A UI convenience only: the API enforces every permission
+ * (decisions §3).
  */
-export const requireRole: NavigationGuardWithThis<undefined> = async (to) => {
-  const allowed = to.meta.roles;
-  if (!allowed) return true;
-  const workspaces = useWorkspaceStore();
-  if (workspaces.status !== 'ready') await workspaces.load();
-  const role = workspaces.workspaces.find(
-    (workspace) => workspace.id === workspaces.activeWorkspaceId,
-  )?.role;
-  return role !== undefined && allowed.includes(role) ? true : ROLE_FALLBACK_PATH;
-};
+export function requireRoleOr(
+  fallback: (to: RouteLocationNormalized) => RouteLocationRaw,
+): NavigationGuardWithThis<undefined> {
+  return async (to) => {
+    const allowed = to.meta.roles;
+    if (!allowed) return true;
+    const workspaces = useWorkspaceStore();
+    if (workspaces.status !== 'ready') await workspaces.load();
+    const role = workspaces.workspaces.find(
+      (workspace) => workspace.id === workspaces.activeWorkspaceId,
+    )?.role;
+    return role !== undefined && allowed.includes(role) ? true : fallback(to);
+  };
+}
+
+/** `requireRoleOr` sending anyone else to `/jobs`, for the top-level pages. */
+export const requireRole: NavigationGuardWithThis<undefined> = requireRoleOr(
+  () => ROLE_FALLBACK_PATH,
+);
 
 // Pages whose feature has not landed yet; each feature issue replaces its route's component.
 const placeholder = () => import('../views/PlaceholderView.vue');
+/** Props of a placeholder inside the job page, under the job title's h1. */
+const tabPlaceholder = { headingLevel: 2 };
 
 /** The signed-in, workspace-scoped pages, inside the app layout (sidebar and main area). */
 const appRoutes: RouteRecordRaw = {
@@ -188,7 +202,44 @@ const appRoutes: RouteRecordRaw = {
       meta: { roles: ['admin', 'recruiter'] },
       beforeEnter: requireRole,
     },
-    { path: 'jobs', name: 'jobs', component: placeholder },
+    {
+      // The job list and, nested under it, the job page, so the sidebar's "Vị trí tuyển dụng" stays
+      // selected on every job (design "Example · Record · Product Designer").
+      path: 'jobs',
+      children: [
+        { path: '', name: 'jobs', component: placeholder },
+        {
+          // The job page (features/jobs/JobLayout.vue): header and tabs, each tab its own child route.
+          // The applications tab is the default, so `/jobs/:id` shows it too.
+          path: ':id',
+          component: () => import('../features/jobs/JobLayout.vue'),
+          // Until each tab's step lands, its placeholder takes an h2: the job title is the page's h1.
+          children: [
+            {
+              path: 'applications',
+              alias: '',
+              name: 'job-applications',
+              component: placeholder,
+              props: tabPlaceholder,
+            },
+            { path: 'plan', name: 'job-plan', component: placeholder, props: tabPlaceholder },
+            { path: 'content', name: 'job-content', component: placeholder, props: tabPlaceholder },
+            { path: 'stages', name: 'job-stages', component: placeholder, props: tabPlaceholder },
+            {
+              // Admins and recruiters only; anyone else lands on the job's default tab.
+              path: 'team',
+              name: 'job-team',
+              component: placeholder,
+              props: tabPlaceholder,
+              meta: { roles: ['admin', 'recruiter'] },
+              beforeEnter: requireRoleOr(
+                (to) => `/jobs/${encodeURIComponent(String(to.params.id))}`,
+              ),
+            },
+          ],
+        },
+      ],
+    },
     {
       path: 'settings/workspace',
       name: 'workspace-settings',
