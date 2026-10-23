@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiError, CLIENT_ERROR_CODES } from '../../lib/api';
-import { authBaseUrl, createAuthApi } from './auth-client';
+import { ApiError, CLIENT_ERROR_CODES, onUnauthenticated } from '../../lib/api';
+import { authBaseUrl, createAuthApi, unwrap } from './auth-client';
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -173,5 +173,45 @@ describe('createAuthApi', () => {
 
     expect(error).toBeInstanceOf(ApiError);
     expect(error).toMatchObject({ code: CLIENT_ERROR_CODES.network, status: 0 });
+  });
+});
+
+describe('unwrap and an ended session', () => {
+  it('reports a 401 UNAUTHORIZED from Better Auth (revoked session) to the expiry listeners', async () => {
+    const listener = vi.fn();
+    const stop = onUnauthenticated(listener);
+    try {
+      const { auth } = setup(jsonResponse({ code: 'UNAUTHORIZED', message: 'Unauthorized' }, 401));
+
+      const error = await unwrap(auth.client.updateUser({ name: 'An' })).catch((e: unknown) => e);
+
+      expect(error).toMatchObject({ code: 'UNAUTHORIZED', status: 401 });
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener.mock.calls[0]![0]).toBe(error);
+    } finally {
+      stop();
+    }
+  });
+
+  it('does not report a wrong password or other refusals as an ended session', async () => {
+    const listener = vi.fn();
+    const stop = onUnauthenticated(listener);
+    try {
+      const { auth } = setup(
+        jsonResponse({ code: 'INVALID_EMAIL_OR_PASSWORD', message: 'Invalid' }, 401),
+      );
+      await auth
+        .signIn({ email: 'an.nguyen@example.test', password: 'wrong-pass-1' })
+        .catch(() => {});
+
+      const second = setup(jsonResponse({ code: 'INVALID_PASSWORD', message: 'Invalid' }, 400));
+      await unwrap(
+        second.auth.client.changePassword({ currentPassword: 'a', newPassword: 'b' }),
+      ).catch(() => {});
+
+      expect(listener).not.toHaveBeenCalled();
+    } finally {
+      stop();
+    }
   });
 });

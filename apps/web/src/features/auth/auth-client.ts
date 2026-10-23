@@ -8,7 +8,7 @@
 import type { Locale } from '@ats/shared';
 import { inferAdditionalFields } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/vue';
-import { ApiError, CLIENT_ERROR_CODES } from '../../lib/api';
+import { ApiError, CLIENT_ERROR_CODES, notifyUnauthenticated } from '../../lib/api';
 
 /** Where the API mounts Better Auth, relative to the API base URL. */
 export const AUTH_PATH = '/auth';
@@ -40,7 +40,16 @@ interface BetterAuthError {
 
 type BetterAuthResult<T> = { data: T; error: null } | { data: null; error: BetterAuthError };
 
-/** Returns the data of a Better Auth call, or throws its failure as an `ApiError`. */
+/**
+ * What Better Auth answers (401) when a call needs a session and the request has none, e.g. after a
+ * password change on another device revoked this one (decisions §2).
+ */
+export const BETTER_AUTH_UNAUTHORIZED = 'UNAUTHORIZED';
+
+/**
+ * Returns the data of a Better Auth call, or throws its failure as an `ApiError`. A 401
+ * `UNAUTHORIZED` is first reported like the API's `UNAUTHENTICATED`, so the guard ends the session.
+ */
 export async function unwrap<T>(call: Promise<BetterAuthResult<T>>): Promise<T> {
   let result: BetterAuthResult<T>;
   try {
@@ -55,7 +64,11 @@ export async function unwrap<T>(call: Promise<BetterAuthResult<T>>): Promise<T> 
         ? error.code
         : CLIENT_ERROR_CODES.unknown;
     // The whole error body is the cause, so a screen can read extra fields such as `retryAfterSeconds`.
-    throw new ApiError(code, error.status, error.message, { cause: error });
+    const apiError = new ApiError(code, error.status, error.message, { cause: error });
+    if (apiError.status === 401 && apiError.code === BETTER_AUTH_UNAUTHORIZED) {
+      notifyUnauthenticated(apiError);
+    }
+    throw apiError;
   }
   return result.data as T;
 }
