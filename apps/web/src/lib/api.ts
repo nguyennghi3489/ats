@@ -51,7 +51,11 @@ export function onUnauthenticated(listener: UnauthenticatedListener): () => void
   return () => unauthenticatedListeners.delete(listener);
 }
 
-function notifyUnauthenticated(error: ApiError): void {
+/**
+ * Tells the `onUnauthenticated` listeners that `error` means the session is gone. This client calls
+ * it on a 401 `UNAUTHENTICATED`; the Better Auth client calls it on its own 401 `UNAUTHORIZED`.
+ */
+export function notifyUnauthenticated(error: ApiError): void {
   for (const listener of unauthenticatedListeners) listener(error);
 }
 
