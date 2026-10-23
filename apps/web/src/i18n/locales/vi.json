@@ -229,6 +229,22 @@
       "open": "Đang mở tuyển",
       "paused": "Tạm dừng",
       "closed": "Đã đóng"
+    },
+    "header": {
+      "breadcrumb": "Đường dẫn",
+      "code": "Mã tham chiếu: {code}",
+      "loading": "Đang tải vị trí tuyển dụng",
+      "notFound": "Vị trí không tồn tại hoặc bạn không có quyền xem",
+      "backToList": "Quay lại danh sách vị trí",
+      "retry": "Thử lại"
+    },
+    "tabs": {
+      "label": "Các mục của vị trí",
+      "applications": "Ứng tuyển",
+      "plan": "Kế hoạch",
+      "content": "Nội dung",
+      "stages": "Quy trình",
+      "team": "Nhóm & quyền truy cập"
     }
   },
   "shell": {

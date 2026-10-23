@@ -65,6 +65,8 @@ stay as they are); the components hold no text of their own.
 - `AtsTab`: `value`, `label`, `disabled`. Renders `role="tab"` with `aria-selected`; only the selected
   tab (or the first enabled one when nothing is selected) has `tabindex="0"`. Pass `aria-controls` to
   point at the panel. Disabled is `aria-disabled`, so a disabled selected tab keeps the Tab stop.
+  With `href` the tab is an `<a>` (tabs with their own URL): a plain click selects it and the caller
+  navigates on the `v-model` change; Ctrl/Cmd/Shift/Alt-click is left to the browser.
 - Selected: bold label and a 2 px underline; the underline space is reserved in every state, so the
   row never shifts. The label box is 72 px wide and long labels wrap. Desktop 38 px for one line
   (minimum 36); below 768 px 46 px (minimum 44). The 3 px focus ring is drawn outside the tab.

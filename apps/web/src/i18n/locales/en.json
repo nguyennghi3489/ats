@@ -229,6 +229,22 @@
       "open": "Open",
       "paused": "Paused",
       "closed": "Closed"
+    },
+    "header": {
+      "breadcrumb": "Breadcrumb",
+      "code": "Reference code: {code}",
+      "loading": "Loading job",
+      "notFound": "This job does not exist or you do not have permission to view it",
+      "backToList": "Back to the jobs list",
+      "retry": "Try again"
+    },
+    "tabs": {
+      "label": "Job sections",
+      "applications": "Applications",
+      "plan": "Plan",
+      "content": "Content",
+      "stages": "Stages",
+      "team": "Team & access"
     }
   },
   "shell": {

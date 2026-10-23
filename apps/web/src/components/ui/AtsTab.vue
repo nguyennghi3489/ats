@@ -5,8 +5,12 @@
   Disabled uses aria-disabled rather than the native attribute, so a disabled tab that is selected stays
   focusable and the row keeps its Tab stop; clicks on it are ignored and the arrow keys skip it.
   The 2 px indicator is always rendered (transparent unless selected), so switching never shifts the row.
+  With `href` the tab is a link (a tab with its own URL, such as the job page tabs): a plain click selects
+  it like a button tab and the caller navigates on the v-model change; a modified click (new tab or
+  window) is left to the browser.
 -->
 <script setup lang="ts">
+/* global HTMLElement, MouseEvent -- DOM types, which no-undef does not know in .vue files */
 import { computed, inject, onBeforeUnmount, useTemplateRef } from 'vue';
 import { TABS_CONTEXT, type TabValue } from './AtsTabs.vue';
 
@@ -15,15 +19,17 @@ const props = withDefaults(
     value: TabValue;
     label: string;
     disabled?: boolean;
+    /** Renders the tab as a link to this URL. */
+    href?: string;
   }>(),
-  { disabled: false },
+  { disabled: false, href: undefined },
 );
 
 const injected = inject(TABS_CONTEXT);
 if (!injected) throw new Error('AtsTab must be used inside AtsTabs');
 const tabs = injected;
 
-const button = useTemplateRef('button');
+const button = useTemplateRef<HTMLElement>('button');
 
 onBeforeUnmount(
   tabs.register({
@@ -36,17 +42,24 @@ onBeforeUnmount(
 const selected = computed(() => tabs.selected.value === props.value);
 const tabindex = computed(() => (tabs.focusable.value === props.value ? 0 : -1));
 
-function onClick() {
+function onClick(event: MouseEvent) {
+  if (props.href !== undefined) {
+    const modified = event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+    if (modified && !props.disabled) return;
+    event.preventDefault();
+  }
   if (props.disabled) return;
   tabs.select(props.value);
 }
 </script>
 
 <template>
-  <button
+  <component
+    :is="href === undefined ? 'button' : 'a'"
     ref="button"
     class="ats-tab"
-    type="button"
+    :type="href === undefined ? 'button' : undefined"
+    :href="href"
     role="tab"
     :aria-selected="selected ? 'true' : 'false'"
     :aria-disabled="disabled ? 'true' : undefined"
@@ -55,7 +68,7 @@ function onClick() {
   >
     <span class="ats-tab__label">{{ label }}</span>
     <span class="ats-tab__indicator" aria-hidden="true"></span>
-  </button>
+  </component>
 </template>
 
 <style scoped>
@@ -82,6 +95,7 @@ function onClick() {
   font-weight: var(--font-weight-regular);
   line-height: var(--line-height-xs);
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
 }
 

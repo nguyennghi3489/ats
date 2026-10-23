@@ -84,6 +84,7 @@ export {
   type JobStatus,
   type JobSummary,
 } from './jobs.js';
+export { jobHeaderSchema, type JobHeader } from './jobs-header.js';
 export {
   AUDIT_ACTIONS,
   AUDIT_METADATA_EXAMPLES,

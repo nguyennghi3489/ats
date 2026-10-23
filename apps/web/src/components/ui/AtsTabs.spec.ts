@@ -273,3 +273,82 @@ describe('AtsTabs', () => {
     });
   });
 });
+
+describe('AtsTab with href (tabs that are links)', () => {
+  async function mountLinkTabs(initial: string) {
+    const selected = ref<string | undefined>(initial);
+    const Host = defineComponent({
+      setup: () => () =>
+        h(
+          AtsTabs,
+          {
+            label: 'Vị trí',
+            modelValue: selected.value,
+            'onUpdate:modelValue': (value: string | number | undefined) => {
+              selected.value = value as string;
+            },
+          },
+          () => [
+            h(AtsTab, { value: 'apply', label: 'Ứng tuyển', href: '/jobs/1/applications' }),
+            h(AtsTab, { value: 'stages', label: 'Quy trình', href: '/jobs/1/stages' }),
+            h(AtsTab, { value: 'off', label: 'Tắt', href: '/jobs/1/off', disabled: true }),
+          ],
+        ),
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    mounted.push(wrapper);
+    await nextTick();
+    const tab = (index: number) => wrapper.findAll('[role="tab"]')[index]!;
+    return { selected, tab };
+  }
+
+  it('renders a link with its href instead of a button', async () => {
+    const { tab } = await mountLinkTabs('apply');
+
+    expect(tab(0).element.tagName).toBe('A');
+    expect(tab(0).attributes('href')).toBe('/jobs/1/applications');
+    expect(tab(0).attributes('type')).toBeUndefined();
+    expect(tab(0).attributes('aria-selected')).toBe('true');
+  });
+
+  it('selects on a plain click without following the link', async () => {
+    const { tab, selected } = await mountLinkTabs('apply');
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true });
+
+    tab(1).element.dispatchEvent(click);
+    await nextTick();
+
+    expect(click.defaultPrevented).toBe(true);
+    expect(selected.value).toBe('stages');
+  });
+
+  it('leaves a modified click to the browser (open in a new tab)', async () => {
+    const { tab, selected } = await mountLinkTabs('apply');
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true, ctrlKey: true });
+
+    tab(1).element.dispatchEvent(click);
+    await nextTick();
+
+    expect(click.defaultPrevented).toBe(false);
+    expect(selected.value).toBe('apply');
+  });
+
+  it('neither follows nor selects a disabled link tab', async () => {
+    const { tab, selected } = await mountLinkTabs('apply');
+    const click = new MouseEvent('click', { bubbles: true, cancelable: true, metaKey: true });
+
+    tab(2).element.dispatchEvent(click);
+    await nextTick();
+
+    expect(click.defaultPrevented).toBe(true);
+    expect(selected.value).toBe('apply');
+  });
+
+  it('moves selection with the arrow keys like button tabs', async () => {
+    const { tab, selected } = await mountLinkTabs('apply');
+
+    await tab(0).trigger('keydown', { key: 'ArrowRight' });
+
+    expect(selected.value).toBe('stages');
+  });
+});
