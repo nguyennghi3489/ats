@@ -231,13 +231,7 @@ test.describe('QA #113 routes and layout', () => {
     page,
   }, testInfo) => {
     await signInAs(browser, page, 'admin', `routes${testInfo.workerIndex}`);
-    for (const path of [
-      '/applications',
-      '/candidates',
-      '/jobs',
-      '/settings/workspace',
-      '/settings/personal',
-    ]) {
+    for (const path of ['/applications', '/candidates', '/jobs', '/settings/workspace']) {
       await page.goto(path);
       await expect(page, path).toHaveURL(new RegExp(`${path.replace(/\//g, '\\/')}$`));
       await expect(page.getByTestId('app-layout'), path).toBeVisible();
@@ -246,7 +240,11 @@ test.describe('QA #113 routes and layout', () => {
         vi.shell.placeholder.title,
       );
     }
-    // /settings/personal has no sidebar item, so nothing is marked current.
+    // /settings/personal is no longer a placeholder (#121) but still opens inside the layout, and
+    // it has no sidebar item, so nothing is marked current.
+    await page.goto('/settings/personal');
+    await expect(page.getByTestId('app-layout')).toBeVisible();
+    await expect(page.locator('main').getByTestId('personal-settings')).toBeVisible();
     await expect(sidebar(page).locator('[aria-current="page"]')).toHaveCount(0);
   });
 
