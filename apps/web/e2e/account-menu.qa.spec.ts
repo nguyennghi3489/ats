@@ -151,6 +151,41 @@ test.describe('account menu (QA)', () => {
     await expect(trigger(page)).toHaveAccessibleName(`Tài khoản của ${NAME}`);
   });
 
+  // Example · Account menu open at 1440 px: the panel's left edge lines up with the sidebar content
+  // (the user row, 16 px in) and its bottom stops above the footer divider (the user row's top
+  // border), which stays visible. Checked in vi then en, since the en copy changes the panel's size.
+  for (const [lang, copy] of [
+    ['vi', menuVi],
+    ['en', menuEn],
+  ] as const) {
+    test(`${lang}: the panel sits on the sidebar column and above the footer divider, as designed`, async ({
+      page,
+    }, testInfo) => {
+      await signInMember(page, uniqueEmail(testInfo, `qa116q-geo-${lang}`));
+      if (lang === 'en') {
+        await trigger(page).click();
+        await menu(page).getByRole('menuitemradio', { name: menuVi.languageEn }).click();
+        await expect(menu(page).getByTestId('account-menu-heading')).toHaveText(menuEn.heading);
+        await page.keyboard.press('Escape');
+      }
+      await trigger(page).click();
+      await expect(menu(page).getByTestId('account-menu-heading')).toHaveText(copy.heading);
+      await page.screenshot({ path: testInfo.outputPath(`account-menu-geometry-${lang}.png`) });
+
+      const panel = (await menu(page).boundingBox())!;
+      const userRow = (await page.getByTestId('app-sidebar-user').boundingBox())!;
+      expect
+        .soft(Math.round(panel.x), 'panel left edge vs sidebar content edge (design: 16)')
+        .toBe(Math.round(userRow.x));
+      expect
+        .soft(
+          Math.round(panel.y + panel.height),
+          'panel bottom vs footer divider (user row top border)',
+        )
+        .toBeLessThanOrEqual(Math.round(userRow.y));
+    });
+  }
+
   test('personal settings goes to /settings/personal', async ({ page }, testInfo) => {
     await signInMember(page, uniqueEmail(testInfo, 'qa116q-settings'));
     await trigger(page).click();
