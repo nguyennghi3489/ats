@@ -36,3 +36,21 @@ export const FORBIDDEN = 'FORBIDDEN';
 export const RECORD_ACCESS_ERROR_CODES = [JOB_NOT_FOUND, FORBIDDEN] as const;
 
 export type RecordAccessErrorCode = (typeof RECORD_ACCESS_ERROR_CODES)[number];
+
+/** 400 / draft check: a stage plan must keep at least one active stage (decisions §6). */
+export const STAGE_PLAN_NO_ACTIVE_STAGE = 'STAGE_PLAN_NO_ACTIVE_STAGE';
+
+/** 400 / draft check: a stage name is blank or longer than 100 characters after trimming. */
+export const STAGE_NAME_INVALID = 'STAGE_NAME_INVALID';
+
+/** 400 / draft check: a retire target is missing, retired, or the retired stage itself. */
+export const STAGE_RETIRE_TARGET_INVALID = 'STAGE_RETIRE_TARGET_INVALID';
+
+/** Error codes of the stage-plan checks shared by the Quy trình tab and its save endpoint. */
+export const STAGE_PLAN_ERROR_CODES = [
+  STAGE_PLAN_NO_ACTIVE_STAGE,
+  STAGE_NAME_INVALID,
+  STAGE_RETIRE_TARGET_INVALID,
+] as const;
+
+export type StagePlanErrorCode = (typeof STAGE_PLAN_ERROR_CODES)[number];

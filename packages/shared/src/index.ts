@@ -39,11 +39,16 @@ export {
   FORBIDDEN,
   JOB_NOT_FOUND,
   RECORD_ACCESS_ERROR_CODES,
+  STAGE_NAME_INVALID,
+  STAGE_PLAN_ERROR_CODES,
+  STAGE_PLAN_NO_ACTIVE_STAGE,
+  STAGE_RETIRE_TARGET_INVALID,
   UNAUTHENTICATED,
   WORKSPACE_ACCESS_REVOKED,
   WORKSPACE_REQUIRED,
   type AccessErrorCode,
   type RecordAccessErrorCode,
+  type StagePlanErrorCode,
 } from './errors.js';
 export { healthSchema, type Health } from './health.js';
 export {
@@ -109,3 +114,22 @@ export {
   type JobListResponse,
   type JobListStatus,
 } from './jobs-list.js';
+export {
+  addStage,
+  hasStagePlanChanges,
+  isEarlierTarget,
+  moveStage,
+  renameStage,
+  restoreStage,
+  retireStage,
+  STAGE_NAME_MAX_LENGTH,
+  stageNameSchema,
+  stagePlanChanges,
+  stagePlanSaveSchema,
+  validateStagePlan,
+  type StagePlan,
+  type StagePlanChanges,
+  type StagePlanError,
+  type StagePlanItem,
+  type StagePlanSave,
+} from './stage-plan.js';
