@@ -9,6 +9,7 @@ const header = {
   accessScope: 'normal',
   owner: { id: 'usr_1', name: 'Minh Anh' },
   canEdit: true,
+  version: 1,
 };
 
 describe('jobHeaderSchema', () => {
@@ -22,5 +23,12 @@ describe('jobHeaderSchema', () => {
     const withoutCanEdit: Record<string, unknown> = { ...header };
     delete withoutCanEdit.canEdit;
     expect(jobHeaderSchema.safeParse(withoutCanEdit).success).toBe(false);
+  });
+
+  it('requires the version a later change sends back', () => {
+    const withoutVersion: Record<string, unknown> = { ...header };
+    delete withoutVersion.version;
+    expect(jobHeaderSchema.safeParse(withoutVersion).success).toBe(false);
+    expect(jobHeaderSchema.safeParse({ ...header, version: 0 }).success).toBe(false);
   });
 });
