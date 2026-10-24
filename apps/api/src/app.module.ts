@@ -8,6 +8,7 @@ import { DatabaseModule } from './database/database.module.js';
 import { HealthModule } from './health/health.module.js';
 import { JobsModule } from './jobs/jobs.module.js';
 import { QueueModule } from './queue/queue.module.js';
+import { StagesModule } from './stages/stages.module.js';
 import { WorkspacesModule } from './workspaces/workspaces.module.js';
 
 export interface AppModuleOptions {
@@ -34,6 +35,7 @@ export class AppModule {
         AccessModule.forRoot(auth),
         WorkspacesModule.forRoot(auth),
         JobsModule,
+        StagesModule,
       ],
     };
   }

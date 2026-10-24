@@ -109,3 +109,11 @@ export {
   type JobListResponse,
   type JobListStatus,
 } from './jobs-list.js';
+export {
+  activeStageSchema,
+  jobStagesSchema,
+  retiredStageSchema,
+  type ActiveStage,
+  type JobStages,
+  type RetiredStage,
+} from './stages.js';
