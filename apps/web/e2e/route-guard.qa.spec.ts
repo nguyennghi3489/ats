@@ -28,7 +28,7 @@ test.describe('route guard (QA #82)', () => {
 
     await page.goto('/sign-up');
     await expect(page).toHaveURL(/\/jobs$/);
-    await expect(page.getByTestId('placeholder-page')).toBeVisible();
+    await expect(page.getByTestId('jobs-list-page')).toBeVisible();
   });
 
   test('signed out, every public auth route opens without a redirect', async ({ page }) => {

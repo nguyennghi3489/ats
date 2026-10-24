@@ -70,7 +70,7 @@ test.describe('choose workspace', () => {
     await rows.nth(1).click();
     expect((await switched).status()).toBe(200);
     await expect(page).toHaveURL(/\/jobs$/);
-    await expect(page.getByTestId('placeholder-page')).toBeVisible();
+    await expect(page.getByTestId('jobs-list-page')).toBeVisible();
 
     expect((await listWorkspaces(page)).activeWorkspaceId).toBe(mayId);
   });

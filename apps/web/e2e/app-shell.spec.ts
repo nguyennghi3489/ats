@@ -7,8 +7,8 @@
 // The 1440 px light / dark baselines (design "02 · App shell": Example · Desktop list, chrome only,
 // Example · Collaborator view and Example · Dark desktop) live in app-shell.spec.ts-snapshots/, one
 // per platform: `-linux` is what CI compares against and `-darwin` serves local runs on macOS. The
-// main area holds the "coming soon" placeholder until the jobs page lands. Refresh both with
-// `--update-snapshots` after a visual change.
+// main area holds the jobs list (#127): an empty workspace for the admin, no assigned jobs for the
+// collaborator. Refresh both with `--update-snapshots` after a visual change.
 import { type Browser, expect, type Page, test } from '@playwright/test';
 import vi from '../src/i18n/locales/vi.json' with { type: 'json' };
 import { psql, signInAsNewUser, sqlString, uniqueEmail } from './support/session';
@@ -108,7 +108,7 @@ test.describe('app shell sidebar by role', () => {
       await signInAs(browser, page, role, `items${testInfo.workerIndex}`);
 
       await page.goto('/jobs');
-      await expect(page.getByTestId('placeholder-page')).toBeVisible();
+      await expect(page.getByTestId('jobs-list-page')).toBeVisible();
       await expect(sidebar(page)).toBeVisible();
       await expect(sidebarLinks(page)).toHaveText(EXPECTED_ITEMS[role]);
       await expect(page.getByTestId('app-sidebar-user-name')).toHaveText(NAMES[role]);
@@ -130,7 +130,7 @@ test.describe('app shell sidebar by role', () => {
 
     await page.goto('/candidates');
     await expect(page).toHaveURL(/\/jobs$/);
-    await expect(page.getByTestId('placeholder-page')).toBeVisible();
+    await expect(page.getByTestId('jobs-list-page')).toBeVisible();
     await expect(sidebarLinks(page)).toHaveText(EXPECTED_ITEMS.collaborator);
 
     await page.goto('/settings/workspace');
@@ -237,7 +237,7 @@ test.describe('app shell breakpoint', () => {
       await signInAs(browser, page, 'admin', `bp${width}-${testInfo.workerIndex}`);
 
       await page.goto('/jobs');
-      await expect(page.getByTestId('placeholder-page')).toBeVisible();
+      await expect(page.getByTestId('jobs-list-page')).toBeVisible();
       if (shown) {
         await expect(sidebar(page)).toBeVisible();
         await expect(sidebarLinks(page)).toHaveText(EXPECTED_ITEMS.admin);
@@ -287,6 +287,8 @@ test.describe('app shell matches the design', () => {
         await expect(page.locator('html')).toHaveAttribute('data-theme', colorScheme);
         await expect(sidebarLinks(page)).toHaveText(EXPECTED_ITEMS.admin);
         await expect(page.getByTestId('app-sidebar-user-role')).toHaveText(roles.admin);
+        // The jobs list has loaded: the workspace has no jobs, so its empty state (#127).
+        await expect(page.getByTestId('jobs-empty')).toBeVisible();
         await expectScreenshot(page, `desktop-admin-1440-${colorScheme}`);
       });
 
@@ -297,6 +299,8 @@ test.describe('app shell matches the design', () => {
         await expect(page.locator('html')).toHaveAttribute('data-theme', colorScheme);
         await expect(sidebarLinks(page)).toHaveText(EXPECTED_ITEMS.collaborator);
         await expect(page.getByTestId('app-sidebar-user-role')).toHaveText(roles.collaborator);
+        // The jobs list has loaded: no assigned jobs, so the collaborator's empty state (#127).
+        await expect(page.getByTestId('jobs-empty')).toBeVisible();
         await expectScreenshot(page, `desktop-collaborator-1440-${colorScheme}`);
       });
     });

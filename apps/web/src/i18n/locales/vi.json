@@ -245,6 +245,48 @@
       "content": "Nội dung",
       "stages": "Quy trình",
       "team": "Nhóm & quyền truy cập"
+    },
+    "list": {
+      "title": "Vị trí tuyển dụng",
+      "titleCollaborator": "Vị trí của tôi",
+      "description": "Quản lý tất cả vị trí tuyển dụng và trạng thái tuyển dụng.",
+      "descriptionCollaborator": "Các vị trí được phân công cho bạn.",
+      "create": "Tạo vị trí",
+      "filters": "Lọc vị trí",
+      "searchLabel": "Tìm kiếm vị trí",
+      "searchPlaceholder": "Tìm theo chức danh hoặc mã tham chiếu",
+      "statusLabel": "Trạng thái",
+      "statusAll": "Tất cả",
+      "caption": "Danh sách vị trí tuyển dụng",
+      "columns": {
+        "position": "Vị trí",
+        "status": "Trạng thái",
+        "owner": "Phụ trách"
+      },
+      "noOwner": "—",
+      "loading": "Đang tải danh sách vị trí",
+      "empty": {
+        "title": "Chưa có vị trí tuyển dụng",
+        "description": "Tạo vị trí đầu tiên để bắt đầu nhận và quản lý ứng tuyển.",
+        "action": "Tạo vị trí đầu tiên"
+      },
+      "emptyCollaborator": {
+        "title": "Bạn chưa được phân công vị trí nào",
+        "description": "Khi bạn được phân công, vị trí sẽ hiện ở đây."
+      },
+      "noResults": {
+        "title": "Không có vị trí phù hợp",
+        "description": "Thử từ khóa khác hoặc chọn trạng thái khác.",
+        "action": "Xóa bộ lọc"
+      },
+      "error": "Không tải được danh sách vị trí.",
+      "retry": "Thử lại",
+      "pagination": {
+        "label": "Phân trang",
+        "range": "{from}–{to} / {total}",
+        "previous": "Trang trước",
+        "next": "Trang sau"
+      }
     }
   },
   "shell": {

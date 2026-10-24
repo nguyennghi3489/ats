@@ -75,7 +75,7 @@ test.describe('sign-in', () => {
     await signIn(page, email);
 
     await expect(page).toHaveURL(/\/jobs$/);
-    await expect(page.getByTestId('placeholder-page')).toBeVisible();
+    await expect(page.getByTestId('jobs-list-page')).toBeVisible();
   });
 
   test('redirect=%2Fjobs lands on /jobs after signing in', async ({ page }, testInfo) => {

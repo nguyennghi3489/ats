@@ -183,6 +183,8 @@ test.describe('workspace menu matches the design', () => {
       await page.emulateMedia({ colorScheme });
       await seed(page, uniqueEmail(testInfo, `qa115-shot-${colorScheme}`));
       await expect(page.locator('html')).toHaveAttribute('data-theme', colorScheme);
+      // The jobs list behind the menu has loaded: a new workspace, so its empty state (#127).
+      await expect(page.getByTestId('jobs-empty')).toBeVisible();
 
       await trigger(page).click();
       await expect(items(page)).toHaveCount(3);

@@ -207,7 +207,12 @@ const appRoutes: RouteRecordRaw = {
       // selected on every job (design "Example · Record · Product Designer").
       path: 'jobs',
       children: [
-        { path: '', name: 'jobs', component: placeholder },
+        {
+          // The jobs list (features/jobs/JobsListView.vue); search, status and page in the query.
+          path: '',
+          name: 'jobs',
+          component: () => import('../features/jobs/JobsListView.vue'),
+        },
         {
           // The job page (features/jobs/JobLayout.vue): header and tabs, each tab its own child route.
           // The applications tab is the default, so `/jobs/:id` shows it too.
