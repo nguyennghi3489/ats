@@ -95,6 +95,9 @@ async function memberPage(browser: Browser, workspaceId: string, email: string, 
 
 test.describe('job stages API (QA #139)', () => {
   test.use({ locale: 'vi-VN' });
+  // Each test signs up to three users through the browser and seeds with docker compose exec psql,
+  // which outgrows the default 30 s when the whole suite runs in parallel.
+  test.describe.configure({ timeout: 90_000 });
 
   test('a new job returns four active stages in order, no retired stage and its version', async ({
     page,
