@@ -79,7 +79,24 @@ const rows = (page: Page) => page.getByTestId('jobs-table').locator('tbody tr');
 
 async function setPreference(page: Page, name: string): Promise<void> {
   await page.goto('/settings/personal');
-  await page.getByRole('radio', { name, exact: true }).check();
+  const radio = page.getByRole('radio', { name, exact: true });
+  const theme = {
+    [vi.settings.personal.theme.dark]: 'dark',
+    [vi.settings.personal.theme.light]: 'light',
+  }[name];
+  if (theme) {
+    // The theme is kept in the browser.
+    await radio.check();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+    return;
+  }
+  // The language is saved on the account; leave only once the API has answered.
+  const saved = page.waitForResponse(
+    (response) => response.request().method() !== 'GET' && response.url().includes('/api/'),
+  );
+  await radio.check();
+  await expect(radio).toBeChecked();
+  await saved;
 }
 
 async function noSideScroll(page: Page): Promise<void> {
@@ -118,6 +135,8 @@ async function expectListCopy(page: Page, copy: typeof vi): Promise<void> {
 
 test.describe('jobs list QA', () => {
   test.use({ locale: 'vi-VN', viewport: { width: 1440, height: 900 } });
+  // Each test signs up to three synthetic accounts; the whole suite runs them under load.
+  test.describe.configure({ timeout: 90_000 });
 
   test('Example · Desktop list at 1440 px: vi light, vi dark, then en', async ({
     page,
@@ -226,19 +245,28 @@ test.describe('jobs list QA', () => {
     await page.goto('/jobs');
     await expect(rows(page)).toHaveCount(2);
 
-    const searches: string[] = [];
+    // One request, sent at least 300 ms after the last keystroke (decisions §11).
+    const searches: { search: string; at: number }[] = [];
     page.on('request', (request) => {
       const url = new URL(request.url());
-      if (url.pathname === '/api/jobs' && url.searchParams.get('q')) searches.push(url.search);
+      if (url.pathname === '/api/jobs' && url.searchParams.get('q')) {
+        searches.push({ search: url.search, at: Date.now() });
+      }
     });
-    await page.getByPlaceholder(vi.jobs.list.searchPlaceholder).pressSequentially('thiet ke', {
-      delay: 80,
+    const box = page.getByPlaceholder(vi.jobs.list.searchPlaceholder);
+    await box.evaluate((el) => {
+      el.addEventListener('input', () => {
+        (window as unknown as { lastInput: number }).lastInput = Date.now();
+      });
     });
-    await page.waitForTimeout(150);
-    expect(searches).toHaveLength(0);
+    await box.pressSequentially('thiet ke', { delay: 60 });
     await expect(rows(page)).toHaveCount(1);
     await expect(rows(page).first()).toContainText('Thiết kế sản phẩm');
-    expect(searches).toHaveLength(1);
+    const lastInput = await page.evaluate(
+      () => (window as unknown as { lastInput: number }).lastInput,
+    );
+    expect(searches.map((entry) => entry.search)).toEqual(['?q=thiet+ke']);
+    expect(searches[0]!.at - lastInput).toBeGreaterThanOrEqual(290);
 
     // Search by reference code too.
     await page.getByPlaceholder(vi.jobs.list.searchPlaceholder).fill('QA-002');
