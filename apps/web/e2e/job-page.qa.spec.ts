@@ -88,8 +88,10 @@ test.describe('job page (QA #129)', () => {
       for (const text of ['Đăng tuyển', 'Chưa công khai', 'Publishing', 'Not published']) {
         await expect(page.getByText(text, { exact: true })).toHaveCount(0);
       }
-      // The header actions slot is left empty.
-      await expect(page.getByRole('button', { name: 'Thao tác tuyển dụng' })).toHaveCount(0);
+      // The header actions slot holds "Thao tác tuyển dụng" for an admin since #130.
+      await expect(
+        page.getByRole('button', { name: copy.jobs.status.actions.trigger }),
+      ).toHaveCount(1);
       // Only one h1 on the page: the tab placeholder uses h2.
       await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
       await page.screenshot({ path: testInfo.outputPath(`job-page-1440-${lang}.png`) });
@@ -184,8 +186,10 @@ test.describe('job page (QA #129)', () => {
     await page.keyboard.press('Home');
     await expect(page.getByRole('tab', { name: vi.jobs.tabs.applications })).toBeFocused();
 
-    // The breadcrumb link comes before the tab row in Tab order, the tab row is a single stop.
+    // Tab order: breadcrumb link, "Thao tác tuyển dụng" (#130), then the tab row as a single stop.
     await page.getByTestId('job-breadcrumb').getByRole('link').focus();
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: vi.jobs.status.actions.trigger })).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(page.getByRole('tab', { name: vi.jobs.tabs.applications })).toBeFocused();
   });

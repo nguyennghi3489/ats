@@ -38,13 +38,24 @@ export {
   accessErrorCodeSchema,
   FORBIDDEN,
   JOB_NOT_FOUND,
+  JOB_NOT_READY,
+  JOB_STATUS_ERROR_CODES,
+  JOB_STATUS_TRANSITION_INVALID,
+  JOB_VERSION_STALE,
   RECORD_ACCESS_ERROR_CODES,
   UNAUTHENTICATED,
   WORKSPACE_ACCESS_REVOKED,
   WORKSPACE_REQUIRED,
   type AccessErrorCode,
+  type JobStatusErrorCode,
   type RecordAccessErrorCode,
 } from './errors.js';
+export {
+  allowedTransitions,
+  canTransition,
+  changeJobStatusRequestSchema,
+  type ChangeJobStatusRequest,
+} from './job-status.js';
 export { healthSchema, type Health } from './health.js';
 export {
   createWorkspaceRequestSchema,

@@ -36,3 +36,21 @@ export const FORBIDDEN = 'FORBIDDEN';
 export const RECORD_ACCESS_ERROR_CODES = [JOB_NOT_FOUND, FORBIDDEN] as const;
 
 export type RecordAccessErrorCode = (typeof RECORD_ACCESS_ERROR_CODES)[number];
+
+/** 409: the lifecycle (decisions §5) does not allow moving the job from its status to the target. */
+export const JOB_STATUS_TRANSITION_INVALID = 'JOB_STATUS_TRANSITION_INVALID';
+
+/** 409: the job changed since the caller loaded it (its `version` moved on); reload and retry. */
+export const JOB_VERSION_STALE = 'JOB_VERSION_STALE';
+
+/** 409: a Draft job cannot open yet: it needs a title and at least one active stage. */
+export const JOB_NOT_READY = 'JOB_NOT_READY';
+
+/** Error codes of `POST /api/jobs/:id/status`, besides the record access ones. */
+export const JOB_STATUS_ERROR_CODES = [
+  JOB_STATUS_TRANSITION_INVALID,
+  JOB_VERSION_STALE,
+  JOB_NOT_READY,
+] as const;
+
+export type JobStatusErrorCode = (typeof JOB_STATUS_ERROR_CODES)[number];

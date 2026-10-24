@@ -1,7 +1,9 @@
 <!--
   The job page at /jobs/:id (design page "02 · App shell", Example · Record · Product Designer): the
   breadcrumb back to the jobs list, the title as the page's only h1, "Mã tham chiếu", the status badge,
-  the empty `actions` slot for "Thao tác tuyển dụng" and the job tabs. This header and its tabs are a
+  the `actions` slot with "Thao tác tuyển dụng" (JobStatusMenu, only when the user can edit the job;
+  a status change swaps in the header it answers, so the badge follows without a reload) and the job
+  tabs. This header and its tabs are a
   local layer of the page, separate from the global chrome (AppLayout). The tab's content is the child
   route below it.
   Differences from the design (decisions §5, §16): no "Chưa công khai" badge and no "Đăng tuyển" tab;
@@ -22,10 +24,11 @@ import AtsTab from '../../components/ui/AtsTab.vue';
 import AtsTabs, { type TabValue } from '../../components/ui/AtsTabs.vue';
 import { ApiError } from '../../lib/api';
 import { useWorkspaceStore } from '../workspaces/workspace.store';
+import JobStatusMenu from './JobStatusMenu.vue';
 import { getJob } from './jobs.api';
 
 defineSlots<{
-  /** "Thao tác tuyển dụng": the job's status actions (filled by the status actions step). */
+  /** "Thao tác tuyển dụng": by default the job's status actions (JobStatusMenu). */
   actions?: () => unknown;
 }>();
 
@@ -115,6 +118,12 @@ async function load(id: string) {
 
 watch(jobId, (id) => void load(id), { immediate: true });
 
+function onStatusChanged(job: JobHeader) {
+  if (state.value.kind === 'ready' && state.value.job.id === job.id) {
+    state.value = { kind: 'ready', job };
+  }
+}
+
 const errorText = computed(() => {
   if (state.value.kind !== 'error') return '';
   const { error } = state.value;
@@ -189,8 +198,10 @@ const errorText = computed(() => {
               }}</AtsBadge>
             </div>
           </div>
-          <div v-if="$slots.actions" class="job-layout__actions">
-            <slot name="actions" />
+          <div v-if="$slots.actions || state.job.canEdit" class="job-layout__actions">
+            <slot name="actions">
+              <JobStatusMenu :job="state.job" @changed="onStatusChanged" @reload="load(jobId)" />
+            </slot>
           </div>
         </div>
 
