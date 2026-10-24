@@ -35,6 +35,7 @@ export class JobHeaderService {
       accessScope: job.accessScope,
       owner,
       canEdit: canEditJob(actor, job),
+      version: job.version,
     };
   }
 }

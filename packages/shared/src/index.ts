@@ -38,6 +38,10 @@ export {
   accessErrorCodeSchema,
   FORBIDDEN,
   JOB_NOT_FOUND,
+  JOB_NOT_READY,
+  JOB_STATUS_ERROR_CODES,
+  JOB_STATUS_TRANSITION_INVALID,
+  JOB_VERSION_STALE,
   RECORD_ACCESS_ERROR_CODES,
   STAGE_NAME_INVALID,
   STAGE_PLAN_ERROR_CODES,
@@ -47,9 +51,16 @@ export {
   WORKSPACE_ACCESS_REVOKED,
   WORKSPACE_REQUIRED,
   type AccessErrorCode,
+  type JobStatusErrorCode,
   type RecordAccessErrorCode,
   type StagePlanErrorCode,
 } from './errors.js';
+export {
+  allowedTransitions,
+  canTransition,
+  changeJobStatusRequestSchema,
+  type ChangeJobStatusRequest,
+} from './job-status.js';
 export { healthSchema, type Health } from './health.js';
 export {
   createWorkspaceRequestSchema,
@@ -133,3 +144,11 @@ export {
   type StagePlanItem,
   type StagePlanSave,
 } from './stage-plan.js';
+export {
+  activeStageSchema,
+  jobStagesSchema,
+  retiredStageSchema,
+  type ActiveStage,
+  type JobStages,
+  type RetiredStage,
+} from './stages.js';
