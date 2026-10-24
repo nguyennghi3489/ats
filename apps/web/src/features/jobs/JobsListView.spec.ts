@@ -137,7 +137,10 @@ describe('JobsListView', () => {
     await rows(wrapper)[1]!.findAll('td')[2]!.trigger('click');
 
     // The job page is a lazy chunk, so the navigation settles after it loads.
-    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe(`/jobs/${frontend.id}`));
+    // A cold or busy run can take seconds to load it, so wait longer than the 1 s default.
+    await vi.waitFor(() => expect(router.currentRoute.value.path).toBe(`/jobs/${frontend.id}`), {
+      timeout: 15_000,
+    });
   });
 
   it('offers the status filter: all except closed by default, closed as its own option', async () => {
@@ -153,6 +156,20 @@ describe('JobsListView', () => {
     ]);
     expect(statusSelect(wrapper).element.value).toBe('active');
     expect(search(wrapper).attributes('placeholder')).toBe('Tìm theo chức danh hoặc mã tham chiếu');
+  });
+
+  it('draws the status filter as "Trạng thái: <option>", like the design', async () => {
+    const { wrapper } = await mountAt('/jobs');
+    const face = () => wrapper.get('.jobs-list__toolbar .ats-select__value').text();
+
+    expect(face()).toBe('Trạng thái: Tất cả');
+    await statusSelect(wrapper).setValue('closed');
+    await flushPromises();
+    expect(face()).toBe('Trạng thái: Đã đóng');
+
+    setLocale('en');
+    await flushPromises();
+    expect(face()).toBe('Status: Closed');
   });
 
   it('puts the chosen status in the URL and asks the API for it', async () => {

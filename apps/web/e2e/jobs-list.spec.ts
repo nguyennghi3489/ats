@@ -92,10 +92,17 @@ test.describe('jobs list', () => {
     await expect(rows(page).first()).toContainText('Kỹ sư Frontend');
     await expect(rows(page).first()).toContainText('AN-001');
     await expect(rows(page).first()).toContainText(vi.jobs.status.draft);
+    // The closed select reads "Trạng thái: Tất cả", as drawn in the design.
+    await expect(page.locator('[role="search"] .ats-select__value')).toHaveText(
+      'Trạng thái: Tất cả',
+    );
 
     await page.getByLabel(vi.jobs.list.statusLabel).selectOption({ label: vi.jobs.status.closed });
 
     await expect(page).toHaveURL(/[?&]status=closed$/);
+    await expect(page.locator('[role="search"] .ats-select__value')).toHaveText(
+      'Trạng thái: Đã đóng',
+    );
     await expect(rows(page)).toHaveCount(1);
     await expect(rows(page).first()).toContainText('Kế toán');
   });

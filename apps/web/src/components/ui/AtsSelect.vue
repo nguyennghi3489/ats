@@ -5,7 +5,9 @@
   label is aria-hidden: assistive technology reads the select itself.
   Desktop: a 36 px surface, long labels end with an ellipsis. Below the mobile breakpoint the select is
   a 44 px tap target, and a long label wraps to two lines on a min 60 px surface instead of being cut.
-  Option labels come from the caller, already translated (decisions §12).
+  Option labels come from the caller, already translated (decisions §12). `valueLabel`, when given,
+  is drawn on the closed control instead of the selected option's label (e.g. "Trạng thái: Tất cả")
+  while the options keep their own labels.
   Attributes other than class and style (name, data-testid, ...) go to the <select>.
 -->
 <script setup lang="ts">
@@ -27,6 +29,8 @@ const props = withDefaults(
     options: AtsSelectOption[];
     /** Shown while the value is null, as an empty first option that cannot be chosen. */
     placeholder?: string;
+    /** Drawn on the closed control instead of the selected option's label. */
+    valueLabel?: string;
     helper?: string;
     error?: string;
     required?: boolean;
@@ -35,6 +39,7 @@ const props = withDefaults(
   }>(),
   {
     placeholder: undefined,
+    valueLabel: undefined,
     helper: undefined,
     error: undefined,
     required: false,
@@ -53,8 +58,12 @@ const selectAttrs = computed(() =>
 
 const selected = computed(() => props.options.find((option) => option.value === model.value));
 const showsPlaceholder = computed(() => !selected.value && props.placeholder !== undefined);
-const shownLabel = computed(
-  () => selected.value?.label ?? (showsPlaceholder.value ? props.placeholder : ''),
+const shownLabel = computed(() =>
+  selected.value
+    ? (props.valueLabel ?? selected.value.label)
+    : showsPlaceholder.value
+      ? props.placeholder
+      : '',
 );
 
 const select = useTemplateRef('select');

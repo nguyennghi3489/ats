@@ -257,6 +257,7 @@
       "searchPlaceholder": "Tìm theo chức danh hoặc mã tham chiếu",
       "statusLabel": "Trạng thái",
       "statusAll": "Tất cả",
+      "statusValue": "Trạng thái: {status}",
       "caption": "Danh sách vị trí tuyển dụng",
       "columns": {
         "position": "Vị trí",

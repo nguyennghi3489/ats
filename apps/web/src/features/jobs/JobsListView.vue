@@ -7,8 +7,8 @@
   Differences from the design:
   - no "Tạo vị trí" for collaborators, who cannot create jobs (decisions §3);
   - the status filter's "Tất cả" is every status except Closed, and "Đã đóng" is its own option
-    (decisions §5); the select shows the bare option ("Tất cả") with "Trạng thái" as its accessible
-    label rather than the drawn "Trạng thái: Tất cả";
+    (decisions §5); the closed select is drawn "Trạng thái: Tất cả" as designed, while "Trạng thái"
+    stays its accessible label and the options keep their bare names;
   - no "Địa điểm" filter yet (a separate issue);
   - the subtitle says "trạng thái tuyển dụng": publishing is out of v1 (decisions §16);
   - the status is an AtsBadge, not coloured text, so it never relies on colour alone;
@@ -171,6 +171,12 @@ const statusOptions = computed<AtsSelectOption[]>(() => [
   })),
 ]);
 
+/** The closed select's face, "Trạng thái: Tất cả" as in the design. */
+const statusValueLabel = computed(() => {
+  const option = statusOptions.value.find((candidate) => candidate.value === filter.value.status);
+  return option ? t('jobs.list.statusValue', { status: option.label }) : undefined;
+});
+
 const statusModel = computed<string | null>({
   get: () => filter.value.status,
   set: (value) => {
@@ -324,6 +330,7 @@ function closeCreate() {
           class="jobs-list__status"
           :label="t('jobs.list.statusLabel')"
           :options="statusOptions"
+          :value-label="statusValueLabel"
           data-testid="jobs-status"
         />
       </div>
@@ -453,7 +460,8 @@ function closeCreate() {
 }
 
 .jobs-list__status {
-  flex: 0 0 180px;
+  /* Wide enough for the longest face, "Trạng thái: Đang mở tuyển". */
+  flex: 0 0 220px;
 }
 
 /* The design's toolbar has no visible labels; the fields keep them for assistive technology. */

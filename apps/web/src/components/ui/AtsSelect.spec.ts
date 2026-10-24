@@ -183,6 +183,15 @@ describe('AtsSelect', () => {
     expect(chevron.find('svg').exists()).toBe(true);
   });
 
+  it('draws the given value label instead of the bare option, and keeps the options as they are', () => {
+    const wrapper = mountSelect({ modelValue: 'full_time', valueLabel: 'Loại: Toàn thời gian' });
+
+    expect(shownValue(wrapper)).toBe('Loại: Toàn thời gian');
+    expect(wrapper.findAll('option').map((option) => option.text())).toEqual(
+      OPTIONS.map((option) => option.label),
+    );
+  });
+
   it('hides the drawn value from assistive technology, which reads the select itself', () => {
     const wrapper = mountSelect({ modelValue: 'full_time' });
 

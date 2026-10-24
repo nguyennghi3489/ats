@@ -257,6 +257,7 @@
       "searchPlaceholder": "Search by title or reference code",
       "statusLabel": "Status",
       "statusAll": "All",
+      "statusValue": "Status: {status}",
       "caption": "Jobs",
       "columns": {
         "position": "Job",
