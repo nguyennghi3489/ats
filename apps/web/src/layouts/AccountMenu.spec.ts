@@ -39,7 +39,7 @@ let fetchFn: ReturnType<typeof vi.fn<typeof fetch>>;
 let answers: Record<string, () => Response>;
 const mounted: { unmount(): void }[] = [];
 
-async function mountMenu() {
+async function mountMenu(attachTo: HTMLElement = document.body) {
   router = createRouter({
     history: createMemoryHistory(),
     routes: ['/jobs', '/settings/personal', '/sign-in'].map((path) => ({ path, component: Page })),
@@ -48,7 +48,7 @@ async function mountMenu() {
   await router.isReady();
   const wrapper = mount(AccountMenu, {
     global: { plugins: [router, pinia, i18n] },
-    attachTo: document.body,
+    attachTo,
   });
   mounted.push(wrapper);
   await flushPromises();
@@ -281,5 +281,49 @@ describe('AccountMenu', () => {
 
     expect(panel()).toBeNull();
     expect(document.activeElement).toBe(trigger());
+  });
+
+  it('opens above the sidebar footer row, on its start edge, leaving the divider visible', async () => {
+    // At 1440 x 900 the footer row (with its 1 px top divider) runs 16..207 from y 831; the "..."
+    // trigger sits at its right end. The panel is 232 x 210.
+    const row = document.createElement('div');
+    row.setAttribute('data-testid', 'app-sidebar-user');
+    document.body.append(row);
+    const box = (left: number, top: number, width: number, height: number) =>
+      ({
+        left,
+        top,
+        width,
+        height,
+        right: left + width,
+        bottom: top + height,
+        x: left,
+        y: top,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(1440);
+    vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(900);
+    const original = Element.prototype.getBoundingClientRect;
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: Element,
+    ) {
+      if (this === row) return box(16, 831, 191, 53);
+      if (this.getAttribute('data-testid') === 'account-menu-trigger') return box(180, 848, 28, 28);
+      if (this.getAttribute('role') === 'menu') return box(0, 0, 232, 210);
+      return original.call(this);
+    });
+    try {
+      await mountMenu(row);
+      await open();
+
+      const left = parseFloat(panel()!.style.left);
+      const top = parseFloat(panel()!.style.top);
+      expect(left).toBe(16);
+      expect(top + 210).toBeLessThanOrEqual(831);
+      expect(top + 210).toBeGreaterThanOrEqual(831 - 8);
+    } finally {
+      mounted.splice(0).forEach((wrapper) => wrapper.unmount());
+      row.remove();
+    }
   });
 });

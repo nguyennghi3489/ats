@@ -368,7 +368,8 @@ describe('AtsMenu', () => {
     async function openAt(
       triggerRect: DOMRect,
       viewport: { width: number; height: number },
-      placement: 'bottom-start' | 'bottom-end' = 'bottom-start',
+      placement: 'bottom-start' | 'bottom-end' | 'top-start' = 'bottom-start',
+      anchorRect?: DOMRect,
     ) {
       vi.spyOn(document.documentElement, 'clientWidth', 'get').mockReturnValue(viewport.width);
       vi.spyOn(document.documentElement, 'clientHeight', 'get').mockReturnValue(viewport.height);
@@ -378,10 +379,18 @@ describe('AtsMenu', () => {
         this: Element,
       ) {
         if (this.getAttribute('data-testid') === 'trigger') return triggerRect;
+        if (this.getAttribute('data-testid') === 'anchor' && anchorRect) return anchorRect;
         if (this.getAttribute('role') === 'menu') return panel;
         return original.call(this);
       });
-      const { trigger, menu } = await mountMenu(ITEMS, { heading: 'Hồ sơ ứng viên', placement });
+      const anchor = document.createElement('div');
+      anchor.setAttribute('data-testid', 'anchor');
+      document.body.append(anchor);
+      const { trigger, menu } = await mountMenu(ITEMS, {
+        heading: 'Hồ sơ ứng viên',
+        placement,
+        ...(anchorRect ? { anchor: () => anchor } : {}),
+      });
       trigger().click();
       await settle();
       const el = menu()!;
@@ -390,6 +399,7 @@ describe('AtsMenu', () => {
 
     afterEach(() => {
       vi.restoreAllMocks();
+      document.querySelector('[data-testid="anchor"]')?.remove();
     });
 
     it('opens under the trigger, aligned to its start', async () => {
@@ -408,6 +418,31 @@ describe('AtsMenu', () => {
       const at = await openAt(rect(310, 50, 44, 44), { width: 360, height: 640 });
       expect(at.left).toBeGreaterThanOrEqual(0);
       expect(at.left + 232).toBeLessThanOrEqual(360);
+    });
+
+    it('opens above the trigger, aligned to its start, with top-start', async () => {
+      const at = await openAt(rect(100, 500, 100, 36), { width: 1280, height: 800 }, 'top-start');
+      expect(at.left).toBe(100);
+      expect(at.top + 176).toBeLessThanOrEqual(500);
+      expect(at.top + 176).toBeGreaterThanOrEqual(500 - 8);
+    });
+
+    it('opens under the trigger with top-start when there is no room above', async () => {
+      const at = await openAt(rect(100, 40, 100, 36), { width: 1280, height: 800 }, 'top-start');
+      expect(at.top).toBeGreaterThanOrEqual(76);
+    });
+
+    it('places itself against the anchor element when one is given', async () => {
+      // The sidebar footer row (16..207, from y 831) holds the "..." trigger at its right end.
+      const at = await openAt(
+        rect(180, 848, 28, 28),
+        { width: 1440, height: 900 },
+        'top-start',
+        rect(16, 831, 191, 53),
+      );
+      expect(at.left).toBe(16);
+      expect(at.top + 176).toBeLessThanOrEqual(831);
+      expect(at.top + 176).toBeGreaterThanOrEqual(831 - 8);
     });
 
     it('flips above the trigger when there is no room below', async () => {

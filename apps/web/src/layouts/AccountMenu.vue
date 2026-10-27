@@ -1,6 +1,7 @@
 <!--
   Account menu of the app shell (design page "02 · App shell", Example · Account menu open): the "..."
-  trigger next to the user's name opens, upward from the sidebar footer, the heading "Tài khoản cá
+  trigger next to the user's name opens, upward from the sidebar footer (above its divider, on the
+  sidebar content's start edge; outside the footer, above the trigger), the heading "Tài khoản cá
   nhân", the personal settings link, the theme group, the language group, and sign out.
   Differs from the design: the "Ngôn ngữ" group below "Giao diện" is added (decisions §12), in the
   same style.
@@ -14,7 +15,7 @@
   The options are role="menuitemradio" with aria-checked, so AtsMenu's arrow keys reach them.
 -->
 <script setup lang="ts">
-/* global HTMLButtonElement, HTMLElement -- DOM types, which no-undef does not know in .vue files */
+/* global Element, HTMLButtonElement, HTMLElement -- DOM types, which no-undef does not know in .vue files */
 import { computed, ref, useTemplateRef } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
@@ -29,6 +30,8 @@ import { type ThemePreference, useTheme } from '../lib/theme';
 
 const PERSONAL_SETTINGS_PATH = '/settings/personal';
 const SIGN_IN_PATH = '/sign-in';
+/** The sidebar footer row (avatar, name, "..."): the panel opens above it, on its start edge. */
+const FOOTER_ROW = '[data-testid="app-sidebar-user"]';
 
 const { t, locale } = useI18n({ useScope: 'global' });
 const session = useSessionStore();
@@ -56,6 +59,11 @@ const root = useTemplateRef<HTMLElement>('root');
 const triggerLabel = computed(() =>
   t('shell.accountMenu.trigger', { name: session.user?.name ?? '' }),
 );
+
+/** The design opens the panel above the footer divider, lined up with the sidebar content. */
+function footerRow(): Element | null {
+  return root.value?.closest(FOOTER_ROW) ?? null;
+}
 
 function triggerButton(): HTMLButtonElement | null {
   return root.value?.querySelector('button') ?? null;
@@ -110,7 +118,7 @@ async function signOut(): Promise<void> {
 
 <template>
   <span ref="root" class="account-menu">
-    <AtsMenu placement="bottom-end">
+    <AtsMenu placement="top-start" :anchor="footerRow">
       <template #trigger="{ props }">
         <AtsIconButton
           v-bind="props"
