@@ -2,7 +2,7 @@ import type { JobStages } from '@ats/shared';
 import { Inject, Injectable } from '@nestjs/common';
 import { asc, eq } from 'drizzle-orm';
 import { canEditJob, findVisibleJob, type JobAccessActor } from '../access/jobs.access.js';
-import type { Database } from '../database/database.js';
+import type { Database, DatabaseClient } from '../database/database.js';
 import { DATABASE } from '../database/database.module.js';
 import { jobStages } from '../jobs/jobs.schema.js';
 
@@ -13,13 +13,18 @@ export class StagesService {
   /**
    * The stages of `jobId` as `actor` sees them, or `null` when the job does not exist, is hidden
    * from the actor, belongs to another workspace or `jobId` is not a uuid (decisions §3). One
-   * statement for the job (through the visibility filter), one for its stages.
+   * statement for the job (through the visibility filter), one for its stages. Pass `db` to read
+   * inside a transaction.
    */
-  async find(actor: JobAccessActor, jobId: string): Promise<JobStages | null> {
-    const job = await findVisibleJob(this.database.db, actor, jobId);
+  async find(
+    actor: JobAccessActor,
+    jobId: string,
+    db: DatabaseClient = this.database.db,
+  ): Promise<JobStages | null> {
+    const job = await findVisibleJob(db, actor, jobId);
     if (!job) return null;
 
-    const rows = await this.database.db
+    const rows = await db
       .select({
         id: jobStages.id,
         name: jobStages.name,
