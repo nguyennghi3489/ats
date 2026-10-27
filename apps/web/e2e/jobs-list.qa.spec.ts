@@ -5,7 +5,8 @@
 // the status filter, reload on page 2, the no-results state with "Xóa bộ lọc", the loading skeleton,
 // the error notice with retry, keyboard reach of the controls and rows, status badges that carry text,
 // a recruiter's create button and a collaborator in a workspace without any job. Screenshots at
-// 1440 px light/dark and 360 px, in vi and en.
+// 1440 px light/dark and 360 px, in vi and en. Also: a workspace switch while /jobs is open replaces
+// the rows with the new workspace's jobs.
 import { randomUUID } from 'node:crypto';
 import { type Browser, expect, type Page, test } from '@playwright/test';
 import en from '../src/i18n/locales/en.json' with { type: 'json' };
@@ -487,5 +488,54 @@ test.describe('jobs list QA', () => {
     ).toBeVisible();
     await noSideScroll(page);
     await page.screenshot({ path: testInfo.outputPath('jobs-list-en-360.png'), fullPage: true });
+  });
+
+  test('switching workspace while on /jobs shows the new workspace rows, never the old ones (vi, en)', async ({
+    page,
+  }, testInfo) => {
+    const email = uniqueEmail(testInfo, 'qa127-switch');
+    const first = await adminWorkspace(page, email);
+    seedJobs(first, email, DESIGN_JOBS);
+    const second = await createWorkspace(page, 'Hải Đăng Labs');
+    psql(
+      `insert into jobs (id, workspace_id, code, title, status, created_by, owner_user_id)
+       select ${sqlString(randomUUID())}, ${sqlString(second)}, 'HD-001', 'Kế toán trưởng',
+              'open', id, id
+       from "user" where email = ${sqlString(email)}`,
+    );
+    const active = await page.request.put('/api/workspaces/active', {
+      data: { workspaceId: first },
+    });
+    expect(active.status()).toBe(200);
+
+    const table = page.getByTestId('jobs-table');
+    const switchTo = async (name: string) => {
+      await page.getByTestId('workspace-menu-trigger').click();
+      await page.getByRole('menu').getByRole('menuitem', { name }).click();
+      await expect(page.getByTestId('workspace-menu-name')).toHaveText(name);
+      await expect(page).toHaveURL(/\/jobs/);
+    };
+
+    await page.goto('/jobs');
+    await expect(rows(page)).toHaveCount(3);
+    await expect(table).toContainText('Product Designer');
+
+    // Already on /jobs, the view stays mounted; it must load the new workspace's list.
+    await switchTo('Hải Đăng Labs');
+    await expect(rows(page)).toHaveCount(1);
+    await expect(rows(page).nth(0)).toContainText('Kế toán trưởng');
+    await expect(rows(page).nth(0)).toContainText('HD-001');
+    await expect(table).not.toContainText('Product Designer');
+    await page.screenshot({ path: testInfo.outputPath('jobs-list-vi-after-switch-1440.png') });
+
+    await setPreference(page, vi.settings.personal.language.en);
+    await page.goto('/jobs');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(en.jobs.list.title);
+    await expect(rows(page)).toHaveCount(1);
+    await switchTo('An Nhiên');
+    await expect(rows(page)).toHaveCount(3);
+    await expect(table).not.toContainText('Kế toán trưởng');
+    await expect(rows(page).nth(2).getByTestId('job-status')).toHaveText(en.jobs.status.draft);
+    await page.screenshot({ path: testInfo.outputPath('jobs-list-en-after-switch-1440.png') });
   });
 });
