@@ -285,6 +285,23 @@
       "title": "Trang này sắp ra mắt",
       "description": "Chúng tôi đang hoàn thiện trang này."
     },
+    "accountMenu": {
+      "trigger": "Tài khoản của {name}",
+      "heading": "Tài khoản cá nhân",
+      "personalSettings": "Cài đặt cá nhân",
+      "theme": "Giao diện",
+      "themeSystem": "Hệ thống",
+      "themeLight": "Sáng",
+      "themeDark": "Tối",
+      "language": "Ngôn ngữ",
+      "languageVi": "Tiếng Việt",
+      "languageEn": "English",
+      "signOut": "Đăng xuất",
+      "errors": {
+        "languageFailed": "Không lưu được ngôn ngữ. Vui lòng thử lại.",
+        "signOutFailed": "Không đăng xuất được. Vui lòng thử lại."
+      }
+    },
     "workspaceMenu": {
       "heading": "Không gian làm việc",
       "trigger": "Không gian làm việc: {name}",

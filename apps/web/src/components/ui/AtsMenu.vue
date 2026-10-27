@@ -1,9 +1,12 @@
 <!--
   Dropdown action menu (design page "01 · Foundations", ATS/Menu). The caller renders its own trigger
   (usually AtsButton or AtsIconButton) in the `trigger` slot and binds the slot's `props` to it; the menu
-  supplies the ARIA wiring and the open/keyboard handlers. Items are AtsMenuItem children.
-  The panel (role="menu") lives in a teleport layer on <body>, fixed under the trigger, flipped above it
-  when there is no room below and kept inside the viewport (so it fits a 360 px screen). It takes the
+  supplies the ARIA wiring and the open/keyboard handlers. Items are AtsMenuItem children; caller-drawn
+  role="menuitemradio" elements (single-choice options) take part in the keys the same way.
+  The panel (role="menu") lives in a teleport layer on <body>, fixed under the trigger (or above it with
+  placement="top-start", or against an `anchor` element such as the row holding the trigger), flipped
+  when there is no room and kept inside the viewport (so it fits a 360 px screen); it is placed
+  again when its content grows while open, so a panel above the trigger never covers it. It takes the
   theme of the trigger's nearest [data-theme], so a dark area keeps a dark menu.
   Keyboard: Enter, Space or Arrow Down on the trigger open it on the first item, Arrow Up on the last.
   Inside: Arrow Up/Down (wrapping) and Home/End move between enabled items, a letter moves to the next
@@ -12,7 +15,7 @@
   caller passes only the actions the user may perform (decisions §3).
 -->
 <script lang="ts">
-/* global document, window, Event, HTMLElement, KeyboardEvent, Node -- DOM globals */
+/* global document, window, Element, Event, HTMLElement, KeyboardEvent, Node -- DOM globals */
 import type { InjectionKey } from 'vue';
 
 export interface MenuContext {
@@ -48,9 +51,16 @@ const props = withDefaults(
   defineProps<{
     /** Optional group heading shown above the items (uppercase), which also names the menu. */
     heading?: string;
-    placement?: 'bottom-start' | 'bottom-end';
+    /**
+     * bottom-start / bottom-end: under the anchor, aligned to its start / end, flipped above when
+     * there is no room below. top-start: above the anchor, aligned to its start, flipped below when
+     * there is no room above.
+     */
+    placement?: 'bottom-start' | 'bottom-end' | 'top-start';
+    /** Element the panel is placed against instead of the trigger (a row holding the trigger). */
+    anchor?: () => Element | null | undefined;
   }>(),
-  { heading: undefined, placement: 'bottom-start' },
+  { heading: undefined, placement: 'bottom-start', anchor: undefined },
 );
 
 defineSlots<{
@@ -86,7 +96,7 @@ const triggerProps = computed<AtsMenuTriggerProps>(() => ({
 function enabledItems() {
   return [
     ...(panel.value?.querySelectorAll<HTMLElement>(
-      '[role="menuitem"]:not([aria-disabled="true"])',
+      '[role="menuitem"]:not([aria-disabled="true"]), [role="menuitemradio"]:not([aria-disabled="true"])',
     ) ?? []),
   ];
 }
@@ -98,15 +108,18 @@ function place() {
   const root = document.documentElement;
   const viewportWidth = root.clientWidth;
   const viewportHeight = root.clientHeight;
-  const anchor = trigger.getBoundingClientRect();
+  const anchor = (props.anchor?.() ?? trigger).getBoundingClientRect();
   const { width, height } = el.getBoundingClientRect();
 
   let left = props.placement === 'bottom-end' ? anchor.right - width : anchor.left;
   left = Math.max(MARGIN, Math.min(left, viewportWidth - width - MARGIN));
 
-  let top = anchor.bottom + OFFSET;
+  const below = anchor.bottom + OFFSET;
   const above = anchor.top - OFFSET - height;
-  if (top + height > viewportHeight - MARGIN && above >= MARGIN) top = above;
+  const fitsBelow = below + height <= viewportHeight - MARGIN;
+  let top: number;
+  if (props.placement === 'top-start') top = above >= MARGIN || !fitsBelow ? above : below;
+  else top = fitsBelow || above < MARGIN ? below : above;
 
   position.value = { left, top };
 }
@@ -188,7 +201,9 @@ function onPanelKeydown(event: KeyboardEvent) {
     case ' ':
       // Handled here rather than on each item, so links and buttons select the same way.
       event.preventDefault();
-      (event.target as HTMLElement | null)?.closest<HTMLElement>('[role="menuitem"]')?.click();
+      (event.target as HTMLElement | null)
+        ?.closest<HTMLElement>('[role="menuitem"], [role="menuitemradio"]')
+        ?.click();
       return;
     case 'Tab':
       // Focus goes back to the trigger first, so the browser's Tab moves on from there.
@@ -222,6 +237,19 @@ function reposition() {
   place();
 }
 
+let resizeObserver: { disconnect(): void } | undefined;
+
+/** Places the panel again whenever its own size changes (an error row added while it is open). */
+function watchSize(on: boolean) {
+  resizeObserver?.disconnect();
+  resizeObserver = undefined;
+  const el = panel.value;
+  if (!on || !el || typeof window.ResizeObserver !== 'function') return;
+  const observer = new window.ResizeObserver(reposition);
+  observer.observe(el);
+  resizeObserver = observer;
+}
+
 function listen(on: boolean) {
   const method = on ? 'addEventListener' : 'removeEventListener';
   document[method]('pointerdown', onPointerdown, true);
@@ -230,7 +258,11 @@ function listen(on: boolean) {
 }
 
 watch(open, (isOpen) => listen(isOpen));
-onBeforeUnmount(() => listen(false));
+watch(panel, (el) => watchSize(Boolean(el)));
+onBeforeUnmount(() => {
+  listen(false);
+  watchSize(false);
+});
 </script>
 
 <template>

@@ -3,7 +3,7 @@
   ATS/App chrome/Desktop and the desktop examples): the fixed 224 px sidebar and a scrolling main area
   holding the routed page. The page header, tabs and body belong to each page, not to this chrome.
   The sidebar gets the workspace menu (WorkspaceMenu) unless the `workspace` slot replaces it, and the
-  `account` slot for the account menu.
+  account menu (AccountMenu) unless the `account` slot replaces it.
   Below 768 px the sidebar is not shown (the mobile top bar replaces it).
   The role comes from the active workspace in the workspace store, loaded here when nobody has yet.
 -->
@@ -11,6 +11,7 @@
 import { computed } from 'vue';
 import { useSessionStore } from '../features/auth/session.store';
 import { useWorkspaceStore } from '../features/workspaces/workspace.store';
+import AccountMenu from './AccountMenu.vue';
 import AppSidebar from './AppSidebar.vue';
 import WorkspaceMenu from './WorkspaceMenu.vue';
 
@@ -40,7 +41,9 @@ const userName = computed(() => session.user?.name ?? '');
       <template #workspace
         ><slot name="workspace"><WorkspaceMenu /></slot
       ></template>
-      <template v-if="$slots.account" #account><slot name="account" /></template>
+      <template #account>
+        <slot name="account"><AccountMenu /></slot>
+      </template>
     </AppSidebar>
     <main class="app-layout__main">
       <RouterView />

@@ -14,6 +14,7 @@ const ICONS = [
   'empty',
   'error',
   'info',
+  'more',
   'profile',
   'spinner',
   'success',
@@ -26,7 +27,7 @@ const INK = { light: 'rgb(41, 40, 34)', dark: 'rgb(244, 241, 232)' };
 const colour = (locator: Locator) => locator.evaluate((el) => getComputedStyle(el).color);
 
 test.describe('UI gallery', () => {
-  test('shows all 11 icons in light, dark and 360 px panels, in the panel text colour', async ({
+  test('shows all 12 icons in light, dark and 360 px panels, in the panel text colour', async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme: 'light' });
