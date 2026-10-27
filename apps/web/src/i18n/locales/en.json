@@ -264,6 +264,49 @@
       "content": "Content",
       "stages": "Stages",
       "team": "Team & access"
+    },
+    "list": {
+      "title": "Jobs",
+      "titleCollaborator": "My jobs",
+      "description": "Manage all jobs and their hiring status.",
+      "descriptionCollaborator": "The jobs assigned to you.",
+      "create": "Create job",
+      "filters": "Filter jobs",
+      "searchLabel": "Search jobs",
+      "searchPlaceholder": "Search by title or reference code",
+      "statusLabel": "Status",
+      "statusAll": "All",
+      "statusValue": "Status: {status}",
+      "caption": "Jobs",
+      "columns": {
+        "position": "Job",
+        "status": "Status",
+        "owner": "Owner"
+      },
+      "noOwner": "—",
+      "loading": "Loading jobs",
+      "empty": {
+        "title": "No jobs yet",
+        "description": "Create your first job to start receiving and managing applications.",
+        "action": "Create your first job"
+      },
+      "emptyCollaborator": {
+        "title": "You have not been assigned to any jobs",
+        "description": "Jobs appear here once you are assigned to them."
+      },
+      "noResults": {
+        "title": "No matching jobs",
+        "description": "Try another search or a different status.",
+        "action": "Clear filters"
+      },
+      "error": "The jobs could not be loaded.",
+      "retry": "Try again",
+      "pagination": {
+        "label": "Pagination",
+        "range": "{from}–{to} of {total}",
+        "previous": "Previous page",
+        "next": "Next page"
+      }
     }
   },
   "shell": {

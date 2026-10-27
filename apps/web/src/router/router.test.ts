@@ -87,11 +87,11 @@ describe('router', () => {
 
     expect(router.currentRoute.value.fullPath).toBe('/jobs');
     expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(true);
-    expect(wrapper.get('main').find('[data-testid="placeholder-page"]').exists()).toBe(true);
+    expect(wrapper.get('main').find('[data-testid="jobs-list-page"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="not-found-page"]').exists()).toBe(false);
   });
 
-  it.each(['/applications', '/candidates', '/jobs', '/settings/workspace'])(
+  it.each(['/applications', '/candidates', '/settings/workspace'])(
     'renders the placeholder page for %s inside the layout for an admin',
     async (path) => {
       const { router, wrapper } = await mountAt(path);

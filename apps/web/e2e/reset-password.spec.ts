@@ -82,7 +82,7 @@ test.describe('reset password pages', () => {
     await page.getByTestId('sign-in-password').fill(newPassword);
     await page.getByTestId('sign-in-submit').click();
     await expect(page).toHaveURL(/\/jobs$/);
-    await expect(page.getByTestId('placeholder-page')).toBeVisible();
+    await expect(page.getByTestId('jobs-list-page')).toBeVisible();
 
     await page.goto(link);
     await expect(page).toHaveURL(/\/reset-password\/invalid$/);

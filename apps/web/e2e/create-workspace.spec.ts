@@ -101,7 +101,7 @@ test.describe('create workspace', () => {
       expect(workspace).toMatchObject({ name: workspaceName, codePrefix: 'AN', role: 'admin' });
       createdId = workspace.id;
       await expect(page).toHaveURL(/\/jobs$/);
-      await expect(page.getByTestId('placeholder-page')).toBeVisible();
+      await expect(page.getByTestId('jobs-list-page')).toBeVisible();
     });
 
     await test.step('it is the active workspace', async () => {

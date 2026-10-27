@@ -49,6 +49,6 @@ test.describe('deep links', () => {
     await page.getByTestId('job-unavailable').getByRole('link').click();
 
     await expect(page).toHaveURL(/\/jobs$/);
-    await expect(page.getByTestId('placeholder-page')).toBeVisible();
+    await expect(page.getByTestId('jobs-list-page')).toBeVisible();
   });
 });

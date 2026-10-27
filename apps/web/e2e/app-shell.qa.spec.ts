@@ -125,7 +125,8 @@ test.describe('QA #113 English copy', () => {
         page,
       }, testInfo) => {
         await signInAs(browser, page, role, `en${testInfo.workerIndex}`);
-        await page.goto('/jobs');
+        // A placeholder page every role has (/jobs is the jobs list since #127).
+        await page.goto('/applications');
         await expect(navLinks(page)).toHaveText(expectedItems('vi', role));
         await expect(page.getByTestId('app-sidebar-user-role')).toHaveText(vi.shell.roles[role]);
         await expect(page.getByTestId('placeholder-page')).toContainText(
@@ -231,7 +232,8 @@ test.describe('QA #113 routes and layout', () => {
     page,
   }, testInfo) => {
     await signInAs(browser, page, 'admin', `routes${testInfo.workerIndex}`);
-    for (const path of ['/applications', '/candidates', '/jobs', '/settings/workspace']) {
+    // /jobs is the jobs list since #127.
+    for (const path of ['/applications', '/candidates', '/settings/workspace']) {
       await page.goto(path);
       await expect(page, path).toHaveURL(new RegExp(`${path.replace(/\//g, '\\/')}$`));
       await expect(page.getByTestId('app-layout'), path).toBeVisible();
@@ -254,7 +256,7 @@ test.describe('QA #113 routes and layout', () => {
   }, testInfo) => {
     await signInAs(browser, page, 'admin', `scroll${testInfo.workerIndex}`);
     await page.goto('/jobs');
-    await expect(page.getByTestId('placeholder-page')).toBeVisible();
+    await expect(page.getByTestId('jobs-list-page')).toBeVisible();
 
     // Make the routed page taller than the viewport, as a long list would.
     await page.locator('main').evaluate((main) => {

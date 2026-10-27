@@ -1,18 +1,18 @@
-// Issue #28: the scaffolded web app serves a placeholder home page and a 404 route.
+// Issue #28: the scaffolded web app serves the home page (the jobs list since #127) and a 404 route.
 // Runs against `pnpm --filter web dev` (or `preview` of the built bundle).
 import { expect, test } from '@playwright/test';
 import { signInAsNewMember, uniqueEmail } from './support/session';
 
 test.describe('web scaffold', () => {
-  test('serves the placeholder home page at /', async ({ page }, testInfo) => {
+  test('serves the home page at /', async ({ page }, testInfo) => {
     // `/` needs a session since #82, and opens /jobs inside the app layout since #113.
     await signInAsNewMember(page, uniqueEmail(testInfo, 'qa-scaffold'));
     const response = await page.goto('/');
     expect(response?.status()).toBe(200);
 
     await expect(page).toHaveURL(/\/jobs$/);
-    await expect(page.getByTestId('placeholder-page')).toBeVisible();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Trang này sắp ra mắt');
+    await expect(page.getByTestId('jobs-list-page')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Vị trí tuyển dụng');
     await expect(page.getByTestId('not-found-page')).toHaveCount(0);
     await page.screenshot({ path: test.info().outputPath('home.png'), fullPage: true });
   });
@@ -24,7 +24,7 @@ test.describe('web scaffold', () => {
 
     await expect(page.getByTestId('not-found-page')).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('404');
-    await expect(page.getByTestId('placeholder-page')).toHaveCount(0);
+    await expect(page.getByTestId('jobs-list-page')).toHaveCount(0);
     await page.screenshot({ path: test.info().outputPath('not-found.png'), fullPage: true });
   });
 
@@ -34,6 +34,6 @@ test.describe('web scaffold', () => {
     await page.getByTestId('not-found-home-link').click();
 
     await expect(page).toHaveURL(/\/jobs$/);
-    await expect(page.getByTestId('placeholder-page')).toBeVisible();
+    await expect(page.getByTestId('jobs-list-page')).toBeVisible();
   });
 });

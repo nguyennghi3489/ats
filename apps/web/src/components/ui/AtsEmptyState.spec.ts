@@ -58,6 +58,18 @@ describe('AtsEmptyState', () => {
     expect(wrapper.getComponent(AtsIcon).props('name')).toBe('archive-box');
   });
 
+  it('draws the icon slot on the icon surface instead of an AtsIcon', () => {
+    const wrapper = mount(AtsEmptyState, {
+      props: { title: TITLE },
+      slots: { icon: () => h('svg', { class: 'custom-glyph' }) },
+    });
+
+    const surface = wrapper.get('.ats-empty-state__icon');
+    expect(surface.attributes('aria-hidden')).toBe('true');
+    expect(surface.find('.custom-glyph').exists()).toBe(true);
+    expect(wrapper.findComponent(AtsIcon).exists()).toBe(false);
+  });
+
   it('renders an action button from actionLabel and emits action when clicked', async () => {
     const wrapper = mount(AtsEmptyState, {
       props: { title: TITLE, actionLabel: 'Xóa bộ lọc' },
