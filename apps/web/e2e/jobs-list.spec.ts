@@ -141,6 +141,13 @@ test.describe('jobs list', () => {
     const empty = page.getByTestId('jobs-empty');
     await expect(empty.getByRole('heading', { level: 2 })).toHaveText(vi.jobs.list.empty.title);
     await expect(empty.getByRole('button', { name: vi.jobs.list.empty.action })).toBeVisible();
+    // Example · Empty workspace: the header action reads "Tạo vị trí đầu tiên" as well, the state
+    // shows a "+" and starts about 150 px under the header instead of mid-page.
+    await expect(page.getByTestId('jobs-create')).toHaveText(vi.jobs.list.empty.action);
+    await expect(empty.getByTestId('jobs-empty-plus')).toBeVisible();
+    const header = (await page.locator('.ats-page-header').boundingBox())!;
+    const surface = (await empty.locator('.ats-empty-state__icon').boundingBox())!;
+    expect(Math.abs(surface.y - (header.y + header.height) - 150)).toBeLessThanOrEqual(8);
 
     seedJobs(workspaceId, email, [{ title: 'Product Designer', status: 'open' }]);
     const other = await collaborator(

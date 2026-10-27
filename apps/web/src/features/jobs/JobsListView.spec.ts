@@ -292,6 +292,13 @@ describe('JobsListView', () => {
     expect(empty.get('h2').text()).toBe('Chưa có vị trí tuyển dụng');
     expect(empty.text()).toContain('Tạo vị trí đầu tiên để bắt đầu nhận và quản lý ứng tuyển.');
     expect(empty.get('button').text()).toBe('Tạo vị trí đầu tiên');
+    // As in Example · Empty workspace: the header action reads "Tạo vị trí đầu tiên" too, and the
+    // empty state's surface shows a "+" rather than the generic empty icon.
+    expect(wrapper.get('[data-testid="jobs-create"]').text()).toBe('Tạo vị trí đầu tiên');
+    expect(createButtons(wrapper)).toHaveLength(0);
+    expect(empty.find('.ats-empty-state__icon [data-testid="jobs-empty-plus"]').exists()).toBe(
+      true,
+    );
     expect(wrapper.find('[data-testid="jobs-search"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="jobs-table"]').exists()).toBe(false);
   });

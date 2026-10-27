@@ -3,6 +3,7 @@
   icon, title, optional description and optional action, so an empty list or a search with no results
   says what to do next. Hidden records behave like missing ones (decisions §3), so callers show the same
   empty state either way. All copy comes from the caller, already translated (decisions §12).
+  The `icon` slot replaces the AtsIcon on the 64 px surface, for a glyph a screen draws itself.
   The action is the `action` slot (put an <AtsButton> in it) or, for the common case, `actionLabel`,
   which renders an AtsButton and emits `action` when it is clicked.
 -->
@@ -28,6 +29,8 @@ withDefaults(
 const emit = defineEmits<{ action: [] }>();
 
 defineSlots<{
+  /** A glyph for the icon surface, decorative. Replaces the `icon` prop's AtsIcon. */
+  icon?: () => unknown;
   /** The action, usually an <AtsButton>. Replaces the `actionLabel` button. */
   action?: () => unknown;
 }>();
@@ -36,7 +39,7 @@ defineSlots<{
 <template>
   <div class="ats-empty-state">
     <span class="ats-empty-state__icon" aria-hidden="true">
-      <AtsIcon :name="icon" :size="32" />
+      <slot name="icon"><AtsIcon :name="icon" :size="32" /></slot>
     </span>
     <component :is="`h${headingLevel}`" class="ats-empty-state__title">{{ title }}</component>
     <p v-if="description" class="ats-empty-state__description">{{ description }}</p>

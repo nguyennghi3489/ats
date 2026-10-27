@@ -380,7 +380,8 @@ test.describe('jobs list QA', () => {
     await expect(page.getByPlaceholder(vi.jobs.list.searchPlaceholder)).toHaveCount(0);
     await page.screenshot({ path: testInfo.outputPath('jobs-list-vi-empty-1440.png') });
 
-    // The empty workspace's "Tạo vị trí đầu tiên" is the empty state's; the header keeps "Tạo vị trí".
+    // As in the design, the header action and the empty state both read "Tạo vị trí đầu tiên".
+    await expect(page.getByTestId('jobs-create')).toHaveText(vi.jobs.list.empty.action);
     await setPreference(page, vi.settings.personal.language.en);
     await page.goto('/jobs');
     await expect(empty.getByRole('heading', { level: 2 })).toHaveText(en.jobs.list.empty.title);

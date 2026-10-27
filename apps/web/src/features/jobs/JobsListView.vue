@@ -12,8 +12,8 @@
   - no "Địa điểm" filter yet (a separate issue);
   - the subtitle says "trạng thái tuyển dụng": publishing is out of v1 (decisions §16);
   - the status is an AtsBadge, not coloured text, so it never relies on colour alone;
-  - the empty workspace keeps "Tạo vị trí" in the header, so its one "Tạo vị trí đầu tiên" is the
-    empty state's.
+  The empty workspace follows Example · Empty workspace: the header action reads "Tạo vị trí đầu
+  tiên" like the empty state's, the state's surface shows a "+", and the state sits near the top.
   An empty default list is only an "empty workspace" when there is no Closed job either; otherwise
   the toolbar stays so the Closed jobs remain reachable.
   "Tạo vị trí" emits `create` and opens the `create` slot, which the create dialog issue fills.
@@ -292,12 +292,17 @@ function closeCreate() {
     >
       <template v-if="canCreate" #actions>
         <AtsButton data-testid="jobs-create" @click="openCreate">{{
-          t('jobs.list.create')
+          state.kind === 'empty' ? t('jobs.list.empty.action') : t('jobs.list.create')
         }}</AtsButton>
       </template>
     </AtsPageHeader>
 
-    <AtsPageBody v-if="state.kind === 'empty'" variant="centered" data-testid="jobs-empty">
+    <AtsPageBody
+      v-if="state.kind === 'empty'"
+      variant="centered"
+      class="jobs-list__empty"
+      data-testid="jobs-empty"
+    >
       <AtsEmptyState
         v-if="isCollaborator || !canCreate"
         :title="t('jobs.list.emptyCollaborator.title')"
@@ -309,7 +314,24 @@ function closeCreate() {
         :description="t('jobs.list.empty.description')"
         :action-label="t('jobs.list.empty.action')"
         @action="openCreate"
-      />
+      >
+        <template #icon>
+          <svg
+            class="jobs-list__plus"
+            viewBox="0 0 32 32"
+            width="32"
+            height="32"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            focusable="false"
+            data-testid="jobs-empty-plus"
+          >
+            <path d="M16 8v16M8 16h16" />
+          </svg>
+        </template>
+      </AtsEmptyState>
     </AtsPageBody>
 
     <template v-else>
@@ -446,6 +468,12 @@ function closeCreate() {
   color: var(--color-ink);
 }
 
+.jobs-list__empty.ats-page-body--centered {
+  /* Example · Empty workspace: the state's surface starts 150 px under the header, not mid-page. */
+  justify-content: flex-start;
+  padding-top: 122px;
+}
+
 .jobs-list__toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -550,6 +578,10 @@ function closeCreate() {
 }
 
 @media (max-width: 767px) {
+  .jobs-list__empty.ats-page-body--centered {
+    padding-top: var(--space-8);
+  }
+
   .jobs-list__toolbar {
     flex-direction: column;
     align-items: stretch;
