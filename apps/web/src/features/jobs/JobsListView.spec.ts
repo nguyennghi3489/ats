@@ -46,6 +46,8 @@ let role: WorkspaceRole;
 let listAnswer: (url: URL) => Response | Promise<Response>;
 let fetchFn: ReturnType<typeof vi.fn<typeof fetch>>;
 let uninstall: (() => void) | undefined;
+/** The app mounted by the current test, unmounted after it so its teleported menus go too. */
+let unmount: (() => void) | undefined;
 
 /** The `GET /api/jobs` requests made so far, as path plus query string. */
 function listRequests(): string[] {
@@ -77,6 +79,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  unmount?.();
+  unmount = undefined;
   uninstall?.();
   uninstall = undefined;
   vi.useRealTimers();
@@ -95,6 +99,7 @@ async function mountAt(path: string) {
     global: { plugins: [router, pinia, i18n] },
     attachTo: document.body,
   });
+  unmount = () => wrapper.unmount();
   await flushPromises();
   return { wrapper, router };
 }
@@ -395,5 +400,56 @@ describe('JobsListView', () => {
     expect(rows(wrapper)[0]!.get('[data-testid="job-status"]').text()).toBe('Open');
     expect(createButtons(wrapper)).toHaveLength(0);
     expect(wrapper.findAll('button').filter((b) => b.text() === 'Create job')).toHaveLength(1);
+  });
+
+  it('reloads on a workspace switch, so no job of the previous workspace stays on screen', async () => {
+    let active = 'org_1';
+    const workspaces = [
+      { id: 'org_1', name: 'An Nhiên', codePrefix: 'AN', role: 'admin' },
+      { id: 'org_2', name: 'Mây Studio', codePrefix: 'MS', role: 'collaborator' },
+    ];
+    const mayJob = job(9, { code: 'MS-009', title: 'Biên tập viên' });
+    let releaseMay: () => void = () => {};
+    const mayHeld = new Promise<void>((resolve) => {
+      releaseMay = resolve;
+    });
+    fetchFn.mockImplementation(async (input, init) => {
+      const request = input instanceof Request ? input : new Request(input, init);
+      const url = new URL(request.url, 'http://localhost');
+      if (url.pathname === '/api/workspaces/active' && request.method === 'PUT') {
+        const { workspaceId } = (await request.json()) as { workspaceId: string };
+        active = workspaceId;
+        return jsonResponse(workspaces.find((workspace) => workspace.id === workspaceId));
+      }
+      if (url.pathname === '/api/workspaces') {
+        return jsonResponse({ activeWorkspaceId: active, workspaces });
+      }
+      if (url.pathname === '/api/jobs') {
+        if (active === 'org_1') return page([designer, frontend]);
+        await mayHeld;
+        return page([mayJob]);
+      }
+      return jsonResponse({ user });
+    });
+    const { wrapper, router } = await mountAt('/jobs');
+    expect(rowTitles(wrapper)).toEqual(['Thiết kế sản phẩm', 'Kỹ sư Frontend']);
+
+    await wrapper.get('[data-testid="workspace-menu-trigger"]').trigger('click');
+    await flushPromises();
+    document.querySelector<HTMLElement>('[data-testid="workspace-menu-item-org_2"]')!.click();
+    await vi.waitFor(() =>
+      expect(wrapper.get('[data-testid="workspace-menu-name"]').text()).toBe('Mây Studio'),
+    );
+    await flushPromises();
+
+    // While Mây Studio's list loads, nothing of An Nhiên is left.
+    expect(router.currentRoute.value.fullPath).toBe('/jobs');
+    expect(wrapper.get('h1').text()).toBe('Vị trí của tôi');
+    expect(wrapper.text()).not.toContain('Thiết kế sản phẩm');
+    expect(wrapper.text()).not.toContain('Kỹ sư Frontend');
+
+    releaseMay();
+    await flushPromises();
+    expect(rowTitles(wrapper)).toEqual(['Biên tập viên']);
   });
 });

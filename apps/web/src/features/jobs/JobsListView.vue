@@ -16,6 +16,8 @@
   tiên" like the empty state's, the state's surface shows a "+", and the state sits near the top.
   An empty default list is only an "empty workspace" when there is no Closed job either; otherwise
   the toolbar stays so the Closed jobs remain reachable.
+  The list belongs to the active workspace: a switch (or revoked access) forgets it at once and the
+  new workspace's list is loaded, even when the view stays mounted on `/jobs` (decisions §3).
   "Tạo vị trí" emits `create` and opens the `create` slot, which the create dialog issue fills.
 -->
 <script setup lang="ts">
@@ -43,6 +45,7 @@ import AtsTable, { type TableColumn } from '../../components/ui/AtsTable.vue';
 import AtsTableCell from '../../components/ui/AtsTableCell.vue';
 import AtsTextField from '../../components/ui/AtsTextField.vue';
 import { ApiError } from '../../lib/api';
+import { registerWorkspaceCache } from '../workspaces/workspace-cache';
 import { useWorkspaceStore } from '../workspaces/workspace.store';
 import { listJobs } from './jobs.api';
 
@@ -232,7 +235,24 @@ function reload() {
   void load(filter.value);
 }
 
-watch(() => JSON.stringify(filter.value), reload, { immediate: true });
+/** Drops the list and any answer still on its way, so nothing of a workspace outlives it. */
+function forget() {
+  latest++;
+  state.value = { kind: 'loading' };
+}
+
+// A workspace switch clears the cache and pushes `/jobs` again, which keeps this view when it is
+// already open: forget the old list at once, then load the new workspace's once it is known.
+onBeforeUnmount(registerWorkspaceCache(forget));
+
+watch(
+  [() => JSON.stringify(filter.value), () => workspaces.activeWorkspaceId],
+  ([, workspaceId], previous) => {
+    if (previous && previous[1] !== workspaceId) forget();
+    if (workspaceId !== null) reload();
+  },
+  { immediate: true },
+);
 
 const errorText = computed(() => {
   if (state.value.kind !== 'error') return '';
