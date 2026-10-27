@@ -17,6 +17,7 @@ const DESIGN_ICONS: IconName[] = [
   'empty',
   'error',
   'info',
+  'menu',
   'more',
   'profile',
   'spinner',

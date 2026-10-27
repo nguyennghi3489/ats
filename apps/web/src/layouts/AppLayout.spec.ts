@@ -158,11 +158,84 @@ describe('AppLayout', () => {
     expect(trigger.attributes('aria-haspopup')).toBe('menu');
   });
 
+  describe('below 768 px', () => {
+    let matches: boolean;
+    let listeners: Array<(event: MediaQueryListEvent) => void>;
+
+    function resize(width: number) {
+      matches = width >= 768;
+      listeners.forEach((listener) => listener({ matches } as MediaQueryListEvent));
+    }
+
+    beforeEach(() => {
+      matches = false;
+      listeners = [];
+      vi.stubGlobal('matchMedia', (query: string) => {
+        expect(query).toBe('(min-width: 768px)');
+        return {
+          get matches() {
+            return matches;
+          },
+          media: query,
+          addEventListener: (_: string, listener: (event: MediaQueryListEvent) => void) =>
+            listeners.push(listener),
+          removeEventListener: (_: string, listener: (event: MediaQueryListEvent) => void) =>
+            listeners.splice(listeners.indexOf(listener), 1),
+        } as unknown as MediaQueryList;
+      });
+    });
+
+    it('shows the top bar instead of the sidebar, above the routed page', async () => {
+      const wrapper = await mountLayout();
+      mounted.push(wrapper);
+
+      expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(false);
+      const bar = wrapper.get('[data-testid="app-top-bar"]');
+      expect(bar.find('[data-testid="workspace-menu-trigger"]').exists()).toBe(true);
+      expect(bar.find('[data-testid="account-menu-trigger"]').exists()).toBe(true);
+      expect(wrapper.get('main').find('[data-testid="child-page"]').exists()).toBe(true);
+    });
+
+    it('swaps to the sidebar and drops an open list when the viewport grows to 768 px', async () => {
+      const wrapper = await mountLayout();
+      mounted.push(wrapper);
+      await wrapper.get('[data-testid="app-top-bar-menu"]').trigger('click');
+      expect(wrapper.find('[data-testid="mobile-nav"]').exists()).toBe(true);
+
+      resize(1024);
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="app-top-bar"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="mobile-nav"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(true);
+
+      resize(360);
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="app-sidebar"]').exists()).toBe(false);
+      expect(wrapper.get('[data-testid="app-top-bar-menu"]').attributes('aria-expanded')).toBe(
+        'false',
+      );
+    });
+
+    it('stops listening once unmounted', async () => {
+      const wrapper = await mountLayout();
+      expect(listeners).toHaveLength(1);
+
+      wrapper.unmount();
+
+      expect(listeners).toHaveLength(0);
+    });
+  });
+
   it('hides the sidebar below 768 px', () => {
     const source = readFileSync(join(__dirname, 'AppLayout.vue'), 'utf8');
     const mobile = /@media \(max-width: 767px\) \{([\s\S]*?)\n\}/.exec(source)?.[1] ?? '';
 
     expect(mobile).toMatch(/\.app-layout__sidebar\s*\{\s*display: none;/);
     expect(mobile).toMatch(/grid-template-columns: minmax\(0, 1fr\);/);
+    expect(source).toMatch(
+      /@media \(min-width: 768px\) \{\s*\.app-layout__top-bar \{\s*display: none;/,
+    );
   });
 });

@@ -13,6 +13,8 @@
     §2: nothing of a workspace stays in memory on a shared device) and goes to sign-in. If the server
     call fails nothing changes and the error shows in the menu.
   The options are role="menuitemradio" with aria-checked, so AtsMenu's arrow keys reach them.
+  `variant="compact"` is the trigger of the mobile top bar (ATS/App chrome/Mobile): a round avatar
+  with the user's initials in a 44 px touch target; the same menu opens under it, at its end edge.
 -->
 <script setup lang="ts">
 /* global Element, HTMLButtonElement, HTMLElement -- DOM types, which no-undef does not know in .vue files */
@@ -27,6 +29,14 @@ import { useSessionStore } from '../features/auth/session.store';
 import { clearWorkspaceCache } from '../features/workspaces/workspace-cache';
 import { type Locale, setLocale } from '../i18n';
 import { type ThemePreference, useTheme } from '../lib/theme';
+
+withDefaults(
+  defineProps<{
+    /** `sidebar`: the "..." in the sidebar footer. `compact`: the initials avatar of the top bar. */
+    variant?: 'sidebar' | 'compact';
+  }>(),
+  { variant: 'sidebar' },
+);
 
 const PERSONAL_SETTINGS_PATH = '/settings/personal';
 const SIGN_IN_PATH = '/sign-in';
@@ -59,6 +69,13 @@ const root = useTemplateRef<HTMLElement>('root');
 const triggerLabel = computed(() =>
   t('shell.accountMenu.trigger', { name: session.user?.name ?? '' }),
 );
+
+/** First letters of the first and last words, e.g. "Nguyễn Văn An" → "NA" (as in the sidebar). */
+const initials = computed(() => {
+  const words = (session.user?.name ?? '').trim().split(/\s+/).filter(Boolean);
+  const ends = words.length > 1 ? [words[0], words[words.length - 1]] : words;
+  return ends.map((word) => [...(word ?? '')][0]?.toLocaleUpperCase() ?? '').join('');
+});
 
 /** The design opens the panel above the footer divider, lined up with the sidebar content. */
 function footerRow(): Element | null {
@@ -118,10 +135,29 @@ async function signOut(): Promise<void> {
 
 <template>
   <span ref="root" class="account-menu">
-    <AtsMenu placement="top-start" :anchor="footerRow">
-      <template #trigger="{ props }">
+    <AtsMenu
+      :placement="variant === 'compact' ? 'bottom-end' : 'top-start'"
+      :anchor="variant === 'compact' ? undefined : footerRow"
+    >
+      <template #trigger="{ props: triggerProps }">
+        <button
+          v-if="variant === 'compact'"
+          v-bind="triggerProps"
+          type="button"
+          class="account-menu__avatar-trigger"
+          :aria-label="triggerLabel"
+          :title="triggerLabel"
+          data-testid="account-menu-trigger"
+          @click="error = null"
+          @keydown="error = null"
+        >
+          <span class="account-menu__avatar" aria-hidden="true" data-testid="account-menu-avatar">{{
+            initials
+          }}</span>
+        </button>
         <AtsIconButton
-          v-bind="props"
+          v-else
+          v-bind="triggerProps"
           class="account-menu__trigger"
           icon="more"
           :label="triggerLabel"
@@ -214,6 +250,47 @@ async function signOut(): Promise<void> {
 .account-menu__trigger {
   border-color: transparent;
   background: transparent;
+}
+
+/*
+ * Top bar avatar (ATS/App chrome/Mobile): a 32 px circle with a 1 px line border on the surface, the
+ * initials in bold, centred in a frameless 44 px touch target.
+ */
+.account-menu__avatar-trigger {
+  display: inline-flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-family-sans);
+  cursor: pointer;
+}
+
+.account-menu__avatar-trigger:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  outline-offset: calc(-1 * var(--focus-ring-width));
+}
+
+.account-menu__avatar {
+  display: inline-flex;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-xs);
 }
 
 .account-menu__heading {

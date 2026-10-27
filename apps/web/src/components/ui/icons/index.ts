@@ -58,6 +58,11 @@ export const ICONS = {
     grid: 20,
     paths: ['M17.5 10a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0z', 'M10 9v4.5', 'M10 6.5v.01'],
   },
+  // Hamburger of the mobile top bar in ATS/App chrome/Mobile · 16: three bars
+  menu: {
+    grid: 16,
+    paths: ['M2.5 4h11', 'M2.5 8h11', 'M2.5 12h11'],
+  },
   // "..." of the account trigger in ATS/App chrome/Desktop · 16: three dots
   more: {
     grid: 16,
