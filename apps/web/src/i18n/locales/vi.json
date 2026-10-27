@@ -221,14 +221,33 @@
     "RESEND_LIMIT": "Bạn đã gửi lại quá nhiều lần. Vui lòng thử lại sau một giờ.",
     "INVALID_CREDENTIALS": "Email hoặc mật khẩu chưa đúng.",
     "EMAIL_NOT_VERIFIED": "Email này chưa được xác minh. Mở email xác minh để kích hoạt tài khoản.",
-    "SIGN_IN_RATE_LIMITED": "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau."
+    "SIGN_IN_RATE_LIMITED": "Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau.",
+    "FORBIDDEN": "Bạn không có quyền thực hiện thao tác này.",
+    "JOB_NOT_FOUND": "Vị trí không tồn tại hoặc bạn không có quyền xem.",
+    "JOB_STATUS_TRANSITION_INVALID": "Không thể chuyển vị trí sang trạng thái này.",
+    "JOB_VERSION_STALE": "Vị trí vừa được thay đổi ở nơi khác. Tải lại để xem trạng thái mới nhất.",
+    "JOB_NOT_READY": "Chưa thể mở tuyển: vị trí cần có tiêu đề và ít nhất một vòng tuyển dụng đang dùng."
   },
   "jobs": {
     "status": {
       "draft": "Bản nháp",
       "open": "Đang mở tuyển",
       "paused": "Tạm dừng",
-      "closed": "Đã đóng"
+      "closed": "Đã đóng",
+      "actions": {
+        "trigger": "Thao tác tuyển dụng",
+        "open": "Mở tuyển",
+        "pause": "Tạm dừng",
+        "resume": "Tiếp tục tuyển",
+        "close": "Đóng vị trí",
+        "reopen": "Mở lại",
+        "reload": "Tải lại",
+        "closeConfirm": {
+          "title": "Đóng vị trí này?",
+          "body": "Vị trí sẽ không nhận ứng tuyển mới và bị ẩn khỏi danh sách mặc định.",
+          "confirm": "Đóng vị trí"
+        }
+      }
     },
     "header": {
       "breadcrumb": "Đường dẫn",

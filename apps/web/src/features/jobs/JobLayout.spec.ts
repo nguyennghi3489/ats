@@ -25,6 +25,7 @@ const job = {
   accessScope: 'normal',
   owner: { id: 'user-1', name: 'Minh Anh' },
   canEdit: true,
+  version: 1,
 };
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -246,10 +247,88 @@ describe('JobLayout', () => {
     expect(wrapper.get('[data-testid="job-status"]').text()).toBe('Đang mở tuyển');
   });
 
+  describe('Thao tác tuyển dụng', () => {
+    const trigger = (w: Wrapper) =>
+      w.get<HTMLButtonElement>('[data-testid="job-status-trigger"]').element;
+
+    async function choose(w: Wrapper, label: string) {
+      trigger(w).click();
+      await flushPromises();
+      [...document.querySelectorAll<HTMLElement>('[role="menuitem"]')]
+        .find((item) => item.textContent?.trim() === label)!
+        .click();
+      await flushPromises();
+    }
+
+    let statusAnswer: () => Response;
+
+    beforeEach(() => {
+      statusAnswer = () => jsonResponse({ ...job, status: 'open', version: 2 });
+      const base = fetchFn.getMockImplementation()!;
+      fetchFn.mockImplementation(async (input, init) => {
+        const request = input instanceof Request ? input : new Request(input, init);
+        if (new URL(request.url, 'http://localhost').pathname.endsWith('/status')) {
+          return statusAnswer();
+        }
+        return base(input, init);
+      });
+    });
+
+    it('sits in the header actions for a job the user can edit', async () => {
+      const { wrapper } = await mountAt(`/jobs/${JOB_ID}`);
+
+      const actions = wrapper.get('[data-testid="job-header"] .job-layout__actions');
+      expect(actions.get('[data-testid="job-status-trigger"]').text()).toBe('Thao tác tuyển dụng');
+    });
+
+    it('updates the badge without loading the job again', async () => {
+      const { wrapper } = await mountAt(`/jobs/${JOB_ID}`);
+
+      await choose(wrapper, 'Mở tuyển');
+
+      expect(wrapper.get('[data-testid="job-status"]').text()).toBe('Đang mở tuyển');
+      expect(jobRequests()).toEqual([`/api/jobs/${JOB_ID}`, `/api/jobs/${JOB_ID}/status`]);
+      trigger(wrapper).click();
+      await flushPromises();
+      expect(
+        [...document.querySelectorAll('[role="menuitem"]')].map((item) => item.textContent?.trim()),
+      ).toEqual(['Tạm dừng', 'Đóng vị trí']);
+    });
+
+    it('loads the job again from "Tải lại" after a stale version', async () => {
+      statusAnswer = () => jsonResponse({ code: 'JOB_VERSION_STALE' }, 409);
+      const { wrapper } = await mountAt(`/jobs/${JOB_ID}`);
+      await choose(wrapper, 'Mở tuyển');
+      jobAnswer = () => jsonResponse({ ...job, status: 'paused', version: 3 });
+
+      wrapper.get<HTMLButtonElement>('[data-testid="job-status-reload"]').element.click();
+      await flushPromises();
+
+      expect(wrapper.get('[data-testid="job-status"]').text()).toBe('Tạm dừng');
+      expect(jobRequests().filter((path) => path === `/api/jobs/${JOB_ID}`)).toHaveLength(2);
+      expect(wrapper.find('[data-testid="job-status-error"]').exists()).toBe(false);
+    });
+
+    it('is not offered when the job is read-only', async () => {
+      jobAnswer = () => jsonResponse({ ...job, canEdit: false });
+
+      const { wrapper } = await mountAt(`/jobs/${JOB_ID}`);
+
+      expect(wrapper.find('[data-testid="job-status-trigger"]').exists()).toBe(false);
+      expect(wrapper.find('.job-layout__actions').exists()).toBe(false);
+    });
+  });
+
   describe('for a collaborator', () => {
     beforeEach(() => {
       role = 'collaborator';
       jobAnswer = () => jsonResponse({ ...job, canEdit: false });
+    });
+
+    it('shows no "Thao tác tuyển dụng" button', async () => {
+      const { wrapper } = await mountAt(`/jobs/${JOB_ID}`);
+
+      expect(wrapper.text()).not.toContain('Thao tác tuyển dụng');
     });
 
     it('hides the team tab and names the list "Vị trí của tôi"', async () => {

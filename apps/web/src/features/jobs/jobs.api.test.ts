@@ -17,6 +17,7 @@ const header = {
   accessScope: 'normal',
   owner: null,
   canEdit: true,
+  version: 1,
 };
 
 function setup(response: () => Response) {
@@ -120,6 +121,43 @@ describe('jobsApi.listJobs', () => {
     const error = await jobs.listJobs().catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).code).toBe('UNKNOWN_ERROR');
+  });
+});
+
+describe('jobsApi.changeJobStatus', () => {
+  it('posts { to, version } to /api/jobs/:id/status and answers the new header', async () => {
+    const changed = { ...header, status: 'open', version: 2 };
+    const { fetchFn, jobs } = setup(() => jsonResponse(changed));
+
+    await expect(jobs.changeJobStatus(header.id, { to: 'open', version: 1 })).resolves.toEqual(
+      changed,
+    );
+    const [url, init] = fetchFn.mock.calls[0]!;
+    expect(url).toBe(`/api/jobs/${header.id}/status`);
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(String(init?.body))).toEqual({ to: 'open', version: 1 });
+  });
+
+  it('throws the API code, e.g. JOB_VERSION_STALE', async () => {
+    const { jobs } = setup(() => jsonResponse({ code: 'JOB_VERSION_STALE', message: 'x' }, 409));
+
+    const error = await jobs
+      .changeJobStatus(header.id, { to: 'paused', version: 1 })
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).code).toBe('JOB_VERSION_STALE');
+    expect((error as ApiError).status).toBe(409);
+  });
+
+  it('throws UNKNOWN_ERROR for a body that is not a job header', async () => {
+    const { jobs } = setup(() => jsonResponse({ ok: true }));
+
+    const error = await jobs
+      .changeJobStatus(header.id, { to: 'open', version: 1 })
+      .catch((e: unknown) => e);
+
     expect((error as ApiError).code).toBe('UNKNOWN_ERROR');
   });
 });

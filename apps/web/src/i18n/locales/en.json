@@ -221,14 +221,33 @@
     "RESEND_LIMIT": "Too many resend attempts. Please try again in an hour.",
     "INVALID_CREDENTIALS": "The email or password is incorrect.",
     "EMAIL_NOT_VERIFIED": "This email is not verified yet. Open the verification email to activate your account.",
-    "SIGN_IN_RATE_LIMITED": "Too many failed sign-ins. Please try again later."
+    "SIGN_IN_RATE_LIMITED": "Too many failed sign-ins. Please try again later.",
+    "FORBIDDEN": "You do not have permission to do this.",
+    "JOB_NOT_FOUND": "This job does not exist or you do not have permission to view it.",
+    "JOB_STATUS_TRANSITION_INVALID": "The job cannot move to this status.",
+    "JOB_VERSION_STALE": "This job was just changed elsewhere. Reload to see its latest status.",
+    "JOB_NOT_READY": "This job cannot open yet: it needs a title and at least one active stage."
   },
   "jobs": {
     "status": {
       "draft": "Draft",
       "open": "Open",
       "paused": "Paused",
-      "closed": "Closed"
+      "closed": "Closed",
+      "actions": {
+        "trigger": "Hiring actions",
+        "open": "Open job",
+        "pause": "Pause",
+        "resume": "Resume hiring",
+        "close": "Close job",
+        "reopen": "Reopen",
+        "reload": "Reload",
+        "closeConfirm": {
+          "title": "Close this job?",
+          "body": "The job will stop taking new applications and be hidden from the default list.",
+          "confirm": "Close job"
+        }
+      }
     },
     "header": {
       "breadcrumb": "Breadcrumb",

@@ -111,6 +111,7 @@ describe('GET /api/jobs/:id', () => {
       accessScope: 'normal',
       owner: { id: creatorId, name: 'Lan Test' },
       canEdit: true,
+      version: 1,
     });
   });
 
