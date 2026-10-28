@@ -248,4 +248,19 @@ test.describe('mobile navigation QA', () => {
     await expect(mobileNav(page)).toHaveCount(0);
     await expect(hamburger(page)).toHaveAttribute('aria-expanded', 'false');
   });
+
+  test('the breakpoint sits at 768 px: top bar at 767 px, sidebar at 768 px', async ({
+    page,
+  }, testInfo) => {
+    await admin(page, uniqueEmail(testInfo, 'qa117-breakpoint'));
+    await page.setViewportSize({ width: 767, height: 800 });
+    await page.goto('/jobs');
+    await expect(page.getByTestId('jobs-list-page')).toBeVisible();
+    await expect(page.getByTestId('app-top-bar')).toBeVisible();
+    await expect(page.getByTestId('app-sidebar')).toHaveCount(0);
+
+    await page.setViewportSize({ width: 768, height: 800 });
+    await expect(page.getByTestId('app-sidebar')).toBeVisible();
+    await expect(page.getByTestId('app-top-bar')).toHaveCount(0);
+  });
 });
