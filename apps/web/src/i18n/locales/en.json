@@ -349,6 +349,10 @@
       "heading": "Workspaces",
       "trigger": "Workspace: {name}",
       "unavailable": "This workspace is no longer available. The list has been updated."
+    },
+    "mobileNav": {
+      "open": "Open navigation",
+      "close": "Close navigation"
     }
   },
   "settings": {

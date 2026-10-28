@@ -13,6 +13,8 @@
   The check is a text glyph above the name, as in the design (the icon set has no bare check); it is
   hidden from assistive technology, which reads aria-current instead. No "create workspace" entry:
   the design has none here, and the chooser offers it.
+  `variant="compact"` is the trigger of the mobile top bar (ATS/App chrome/Mobile): only the name in
+  bold and the chevron, frameless on the bar, 44 px high. The menu is the same.
 -->
 <script setup lang="ts">
 import type { Workspace } from '@ats/shared';
@@ -27,6 +29,14 @@ import { clearWorkspaceCache } from '../features/workspaces/workspace-cache';
 import { useWorkspaceStore } from '../features/workspaces/workspace.store';
 import { translateError } from '../i18n/errors';
 import { ApiError, CLIENT_ERROR_CODES } from '../lib/api';
+
+withDefaults(
+  defineProps<{
+    /** `sidebar`: the full-width desktop trigger. `compact`: name and chevron, for the top bar. */
+    variant?: 'sidebar' | 'compact';
+  }>(),
+  { variant: 'sidebar' },
+);
 
 const WORKSPACE_UNAVAILABLE = 'WORKSPACE_UNAVAILABLE';
 /** Where a switch lands: every role has the jobs page. */
@@ -96,13 +106,17 @@ async function onChoose(id: string) {
           v-bind="triggerProps"
           type="button"
           class="workspace-menu__trigger"
-          :class="{ 'workspace-menu__trigger--open': open }"
+          :class="{
+            'workspace-menu__trigger--open': open,
+            'workspace-menu__trigger--compact': variant === 'compact',
+          }"
           :disabled="switching"
           :aria-busy="switching ? 'true' : undefined"
           :aria-label="t('shell.workspaceMenu.trigger', { name })"
           data-testid="workspace-menu-trigger"
         >
           <span
+            v-if="variant === 'sidebar'"
             class="workspace-menu__tile"
             aria-hidden="true"
             data-testid="workspace-menu-initial"
@@ -205,6 +219,24 @@ async function onChoose(id: string) {
 
 .workspace-menu__trigger--open .workspace-menu__chevron {
   transform: rotate(180deg);
+}
+
+/*
+ * Compact trigger from "ATS/App chrome/Mobile": no frame or tile, the bold name then the chevron, on
+ * the bar's colour; 44 px high for touch.
+ */
+.workspace-menu__trigger--compact {
+  gap: var(--space-1);
+  width: auto;
+  min-height: var(--touch-target-min);
+  padding-block: 0;
+  padding-inline: var(--space-1);
+  border-color: transparent;
+  background: transparent;
+}
+
+.workspace-menu__trigger--compact .workspace-menu__name {
+  flex: 0 1 auto;
 }
 
 /*

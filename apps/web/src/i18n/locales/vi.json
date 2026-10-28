@@ -349,6 +349,10 @@
       "heading": "Không gian làm việc",
       "trigger": "Không gian làm việc: {name}",
       "unavailable": "Không gian này không còn khả dụng. Danh sách đã được cập nhật."
+    },
+    "mobileNav": {
+      "open": "Mở điều hướng",
+      "close": "Đóng điều hướng"
     }
   },
   "settings": {
