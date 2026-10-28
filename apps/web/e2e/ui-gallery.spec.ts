@@ -1,4 +1,4 @@
-// Issue #41: the ATS icon set (AtsIcon) and the dev-only UI gallery at /dev/ui.
+// Issue #41 (menu icon added by #117): the ATS icon set (AtsIcon) and the dev-only UI gallery at /dev/ui.
 // The gallery collects every src/components/ui/**/*.demo.vue and shows each demo in a light panel,
 // a dark panel (data-theme="dark" on the wrapper) and a 360 px panel. Icons are drawn in currentColor,
 // so they must take each panel's text colour. The gallery is developer tooling with no product copy,
@@ -14,6 +14,7 @@ const ICONS = [
   'empty',
   'error',
   'info',
+  'menu',
   'more',
   'profile',
   'spinner',
@@ -27,7 +28,7 @@ const INK = { light: 'rgb(41, 40, 34)', dark: 'rgb(244, 241, 232)' };
 const colour = (locator: Locator) => locator.evaluate((el) => getComputedStyle(el).color);
 
 test.describe('UI gallery', () => {
-  test('shows all 12 icons in light, dark and 360 px panels, in the panel text colour', async ({
+  test('shows all 13 icons in light, dark and 360 px panels, in the panel text colour', async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme: 'light' });
